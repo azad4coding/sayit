@@ -455,55 +455,55 @@ function PreviewInner() {
           </a>
         )}
 
-        {/* Card — full 3:4 size matching the revealed card, front cover flips open */}
-        <div style={{ perspective: 1200 }}>
-          <div style={{ position: "relative", width: PANEL_W, height: CARD_H, borderRadius: 16, boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+        {/* Card — full 3:4 size, cover fades out to reveal message */}
+        <div style={{ position: "relative", width: PANEL_W, height: CARD_H, borderRadius: 16, boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
 
-            {/* INSIDE — message panel, always present underneath the cover */}
-            <div style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)" }}>
-              <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 20px" }}>
-                <div style={{ padding: "18px 20px 10px" }}>
-                  <p style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: goldAccent, margin: 0, opacity: 0.8 }}>✦ {dbCategory?.name ?? "A personal note"}</p>
-                </div>
-                <div style={{ flex: 1, padding: "8px 20px", overflowY: "auto", display: "flex", alignItems: "center" }}>
-                  {message
-                    ? <p style={{ fontFamily: "Georgia,serif", fontSize: 15, lineHeight: "1.75", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
-                    : <p style={{ fontFamily: "Georgia,serif", fontSize: 13, color: "#9ca3af", fontStyle: "italic", margin: 0 }}>No message added</p>
-                  }
-                </div>
-                <div style={{ borderTop: `1px solid ${goldAccent}40`, paddingTop: 10, margin: "0 20px" }}>
-                  <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 13, color: "#7A5240", margin: 0, opacity: 0.8 }}>— {senderName}</p>
-                </div>
+          {/* INSIDE — message panel, fades in when card opens */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: isOpening ? 1 : 0 }}
+            transition={{ duration: 0.4, delay: isOpening ? 0.25 : 0 }}
+            style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)", pointerEvents: "none" }}
+          >
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px" }} />
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 20px" }}>
+              <div style={{ padding: "18px 20px 10px" }}>
+                <p style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: goldAccent, margin: 0, opacity: 0.8 }}>✦ {dbCategory?.name ?? "A personal note"}</p>
+              </div>
+              <div style={{ flex: 1, padding: "8px 20px", overflowY: "auto", display: "flex", alignItems: "center" }}>
+                {message
+                  ? <p style={{ fontFamily: "Georgia,serif", fontSize: 15, lineHeight: "1.75", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
+                  : <p style={{ fontFamily: "Georgia,serif", fontSize: 13, color: "#9ca3af", fontStyle: "italic", margin: 0 }}>No message added</p>
+                }
+              </div>
+              <div style={{ borderTop: `1px solid ${goldAccent}40`, paddingTop: 10, margin: "0 20px" }}>
+                <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 13, color: "#7A5240", margin: 0, opacity: 0.8 }}>— {senderName}</p>
               </div>
             </div>
+          </motion.div>
 
-            {/* FRONT COVER — full card size, flips open from left edge to reveal message */}
-            <motion.div
-              animate={{ rotateY: isOpening ? -180 : 0 }}
-              transition={{ type: "spring", stiffness: 55, damping: 14, mass: 1.3 }}
-              style={{ position: "absolute", inset: 0, transformOrigin: "left center", transformStyle: "preserve-3d", zIndex: 10, cursor: isOpening ? "default" : "pointer", WebkitTapHighlightColor: "transparent", pointerEvents: isOpening ? "none" : "auto" }}
-              onClick={handleCardOpen}
-            >
-              <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden" }}>
-                {(isPaw || isMeme) ? (
-                  <div style={{ width: "100%", height: "100%", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : "linear-gradient(135deg,#FF6B8A,#FF8C42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 80 }}>{isPaw ? "🐾" : "🔥"}</span>
-                  </div>
-                ) : coverUrl ? (
-                  <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 64 }}>{dbCategory?.icon ?? "💌"}</span>
-                  </div>
-                )}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(30,10,5,0.28) 100%)" }} />
-                {/* Spine highlight */}
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg,transparent,${goldAccent},transparent)`, opacity: 0.5 }} />
+          {/* FRONT COVER — fades out and lifts slightly when card opens */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: isOpening ? 0 : 1, y: isOpening ? -16 : 0, scale: isOpening ? 1.03 : 1 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", zIndex: 10, cursor: isOpening ? "default" : "pointer", WebkitTapHighlightColor: "transparent", pointerEvents: isOpening ? "none" : "auto" }}
+            onClick={handleCardOpen}
+          >
+            {(isPaw || isMeme) ? (
+              <div style={{ width: "100%", height: "100%", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : "linear-gradient(135deg,#FF6B8A,#FF8C42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 80 }}>{isPaw ? "🐾" : "🔥"}</span>
               </div>
-            </motion.div>
+            ) : coverUrl ? (
+              <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 64 }}>{dbCategory?.icon ?? "💌"}</span>
+              </div>
+            )}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(30,10,5,0.28) 100%)" }} />
+          </motion.div>
 
-          </div>
         </div>
 
         {/* Tap to open text */}
