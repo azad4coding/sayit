@@ -384,9 +384,8 @@ function PreviewInner() {
   const isSender    = isLoggedIn && userId !== null && userId === (card as any)?.sender_id;
 
   const goldAccent  = "#C9A84C";
-  const PANEL_W     = 175;
-  const SPREAD_W    = 350;
-  const CARD_H      = 480;
+  const PANEL_W     = 330;   // matches revealed card width (~full phone width minus padding)
+  const CARD_H      = 440;   // 3:4 ratio
   const isOpening   = previewStage === "opening";
 
   // ── Envelope stage ───────────────────────────────────────────────
@@ -456,83 +455,54 @@ function PreviewInner() {
           </a>
         )}
 
-        {/* Card with perspective for 3-D flip */}
+        {/* Card — full 3:4 size matching the revealed card, front cover flips open */}
         <div style={{ perspective: 1200 }}>
-          <div style={{ position: "relative", paddingBottom: 14 }}>
+          <div style={{ position: "relative", width: PANEL_W, height: CARD_H, borderRadius: 16, boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
 
-            {/* Expanding container */}
+            {/* INSIDE — message panel, always present underneath the cover */}
+            <div style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)" }}>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 20px" }}>
+                <div style={{ padding: "18px 20px 10px" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: goldAccent, margin: 0, opacity: 0.8 }}>✦ {dbCategory?.name ?? "A personal note"}</p>
+                </div>
+                <div style={{ flex: 1, padding: "8px 20px", overflowY: "auto", display: "flex", alignItems: "center" }}>
+                  {message
+                    ? <p style={{ fontFamily: "Georgia,serif", fontSize: 15, lineHeight: "1.75", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
+                    : <p style={{ fontFamily: "Georgia,serif", fontSize: 13, color: "#9ca3af", fontStyle: "italic", margin: 0 }}>No message added</p>
+                  }
+                </div>
+                <div style={{ borderTop: `1px solid ${goldAccent}40`, paddingTop: 10, margin: "0 20px" }}>
+                  <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 13, color: "#7A5240", margin: 0, opacity: 0.8 }}>— {senderName}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* FRONT COVER — full card size, flips open from left edge to reveal message */}
             <motion.div
-              animate={{ width: isOpening ? SPREAD_W : PANEL_W }}
-              transition={{ duration: 0.42, ease: "easeInOut" }}
-              style={{ height: CARD_H, position: "relative", display: "flex", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,0.18)", borderRadius: 16 }}
+              animate={{ rotateY: isOpening ? -180 : 0 }}
+              transition={{ type: "spring", stiffness: 55, damping: 14, mass: 1.3 }}
+              style={{ position: "absolute", inset: 0, transformOrigin: "left center", transformStyle: "preserve-3d", zIndex: 10, cursor: isOpening ? "default" : "pointer", WebkitTapHighlightColor: "transparent", pointerEvents: isOpening ? "none" : "auto" }}
+              onClick={handleCardOpen}
             >
-              {/* LEFT PANEL — inside */}
-              <motion.div
-                animate={{ borderRadius: isOpening ? "16px 0 0 16px" : "16px" }}
-                style={{ width: PANEL_W, height: CARD_H, flexShrink: 0, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse at 50% 30%,#FFFDF9,#FBF7F0,#F5EDDF)" }}
-              >
-                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 16px", gap: 10 }}>
-                  <p style={{ fontSize: 8, letterSpacing: 3, color: goldAccent, opacity: 0.7, textTransform: "uppercase", margin: 0 }}>{dbCategory?.name ?? "With Love"}</p>
-                  <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
-                  <div style={{ width: 110, height: 110, borderRadius: "50%", overflow: "hidden", border: `3px solid ${goldAccent}`, boxShadow: `0 0 0 4px rgba(201,168,76,0.12),0 4px 16px rgba(0,0,0,0.12)`, display: "flex", alignItems: "center", justifyContent: "center", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : isMeme ? "linear-gradient(135deg,#FF6B8A,#FF8C42)" : `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})` }}>
-                    {(isPaw || isMeme)
-                      ? <span style={{ fontSize: 42 }}>{isPaw ? "🐾" : "🔥"}</span>
-                      : coverUrl
-                        ? <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <span style={{ fontSize: 38 }}>{dbCategory?.icon ?? "💌"}</span>
-                    }
+              <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden" }}>
+                {(isPaw || isMeme) ? (
+                  <div style={{ width: "100%", height: "100%", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : "linear-gradient(135deg,#FF6B8A,#FF8C42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 80 }}>{isPaw ? "🐾" : "🔥"}</span>
                   </div>
-                  <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
-                </div>
-              </motion.div>
-
-              {/* RIGHT PANEL — message */}
-              <AnimatePresence>
-                {isOpening && (
-                  <motion.div
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    transition={{ delay: 0.38, duration: 0.25 }}
-                    style={{ width: PANEL_W, height: CARD_H, flexShrink: 0, position: "relative", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)", borderRadius: "0 16px 16px 0", overflow: "hidden" }}
-                  >
-                    <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px", pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 16px" }}>
-                      <div style={{ padding: "12px 14px 8px" }}>
-                        <p style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: goldAccent, margin: 0 }}>✦ A personal note</p>
-                      </div>
-                      <div style={{ flex: 1, padding: "4px 16px", overflowY: "auto" }}>
-                        {message && (
-                          <p style={{ fontFamily: "Georgia,serif", fontSize: 11, lineHeight: "24px", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
-                        )}
-                      </div>
-                      <div style={{ borderTop: `1px solid ${goldAccent}`, paddingTop: 8, opacity: 0.7, margin: "0 16px" }}>
-                        <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 11, color: "#7A5240", margin: 0 }}>— {senderName}</p>
-                      </div>
-                    </div>
-                  </motion.div>
+                ) : coverUrl ? (
+                  <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 64 }}>{dbCategory?.icon ?? "💌"}</span>
+                  </div>
                 )}
-              </AnimatePresence>
-
-              {/* FRONT COVER — flips open */}
-              <motion.div
-                style={{ position: "absolute", left: 0, top: 0, width: PANEL_W, height: CARD_H, transformOrigin: "left center", transformStyle: "preserve-3d", zIndex: 10, cursor: isOpening ? "default" : "pointer", WebkitTapHighlightColor: "transparent", pointerEvents: isOpening ? "none" : "auto" }}
-                animate={{ rotateY: isOpening ? -180 : 0 }}
-                transition={{ type: "spring", stiffness: 62, damping: 14, mass: 1.3 }}
-                onClick={handleCardOpen}
-              >
-                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden" }}>
-                  {coverUrl ? (
-                    <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 48 }}>{isMeme ? "🔥" : isPaw ? "🐾" : "💌"}</span>
-                    </div>
-                  )}
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(40,15,5,0.30) 100%)" }} />
-                  <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg,transparent,${goldAccent},transparent)`, opacity: 0.6 }} />
-                </div>
-              </motion.div>
-
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(30,10,5,0.28) 100%)" }} />
+                {/* Spine highlight */}
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg,transparent,${goldAccent},transparent)`, opacity: 0.5 }} />
+              </div>
             </motion.div>
+
           </div>
         </div>
 
@@ -555,7 +525,7 @@ function PreviewInner() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.4 }}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 24, width: "100%", maxWidth: SPREAD_W }}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 24, width: "100%", maxWidth: PANEL_W }}
           >
             {isLoggedIn && !isSender && (
               <a href={sayitBackUrl} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px 20px", borderRadius: 16, background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 14px rgba(255,107,138,0.35)" }}>
