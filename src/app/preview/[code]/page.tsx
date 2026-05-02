@@ -474,12 +474,12 @@ function PreviewInner() {
                 <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 16px", gap: 10 }}>
                   <p style={{ fontSize: 8, letterSpacing: 3, color: goldAccent, opacity: 0.7, textTransform: "uppercase", margin: 0 }}>{dbCategory?.name ?? "With Love"}</p>
                   <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
-                  <div style={{ width: 110, height: 140, borderRadius: "50%", overflow: "hidden", border: `3px solid ${goldAccent}`, boxShadow: `0 0 0 4px rgba(201,168,76,0.12),0 4px 16px rgba(0,0,0,0.12)` }}>
-                    {coverUrl
-                      ? <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ fontSize: 38 }}>{dbCategory?.icon ?? "💌"}</span>
-                        </div>
+                  <div style={{ width: 110, height: 110, borderRadius: "50%", overflow: "hidden", border: `3px solid ${goldAccent}`, boxShadow: `0 0 0 4px rgba(201,168,76,0.12),0 4px 16px rgba(0,0,0,0.12)`, display: "flex", alignItems: "center", justifyContent: "center", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : isMeme ? "linear-gradient(135deg,#FF6B8A,#FF8C42)" : `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})` }}>
+                    {(isPaw || isMeme)
+                      ? <span style={{ fontSize: 42 }}>{isPaw ? "🐾" : "🔥"}</span>
+                      : coverUrl
+                        ? <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ fontSize: 38 }}>{dbCategory?.icon ?? "💌"}</span>
                     }
                   </div>
                   <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
@@ -756,7 +756,7 @@ function PreviewInner() {
                   className="text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest"
                   style={{ background: "rgba(255,215,0,0.25)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,215,0,0.45)", color: "#FFD700" }}
                 >
-                  ✨ Couple Card
+                  ✨ AI Card
                 </span>
               </div>
               {/* Message overlay */}
@@ -864,7 +864,8 @@ function PreviewInner() {
       )}
 
       {/* ── Regular greeting card ─────────────────────────────────── */}
-      {!isMeme && !isPaw && !isCustom && !isAiCard && !isVibes && cardImageUrl && (
+      {/* dbCategory guard prevents a brief flash as regular card before isVibes resolves */}
+      {!isMeme && !isPaw && !isCustom && !isAiCard && !isVibes && cardImageUrl && (!card?.template_id || dbCategory) && (
         <div className="px-4 mb-6">
           <div className="rounded-3xl overflow-hidden shadow-xl bg-white border border-gray-200">
             {/* Front image — clean, no text overlay */}
@@ -888,7 +889,7 @@ function PreviewInner() {
       )}
 
       {/* ── Fallback when no image available ─────────────────────── */}
-      {!isMeme && !isPaw && !isCustom && !isAiCard && !isVibes && !cardImageUrl && (
+      {!isMeme && !isPaw && !isCustom && !isAiCard && !isVibes && !cardImageUrl && (!card?.template_id || dbCategory) && (
         <div className="px-8 mb-6">
           <div className="rounded-3xl overflow-hidden shadow-2xl"
             style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", minHeight: "280px" }}>

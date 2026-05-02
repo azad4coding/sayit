@@ -64,7 +64,12 @@ function SendPageInner() {
   const [country,        setCountry]        = useState("US");
   const [foundUser,      setFoundUser]      = useState<FoundUser | null>(null);
   const [searchStatus,   setSearchStatus]   = useState<SearchStatus>("idle");
+  const [phoneError,     setPhoneError]     = useState<string | null>(null);
   const [recipientOnApp, setRecipientOnApp] = useState(false);
+  // Deferred save: store the pending insert payload until user actually taps WA/SMS
+  const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null);
+  const [pendingCircle,  setPendingCircle]  = useState<Record<string, unknown> | null>(null);
+  const [cardSaved,      setCardSaved]      = useState(false);
 
   // Unified search
   const [searchQuery,    setSearchQuery]    = useState("");
@@ -169,7 +174,16 @@ function SendPageInner() {
   const cardUrl = shortCode ? `${BASE_URL}/preview/${shortCode}` : "";
 
   async function handleSend() {
-    if (!phone.trim()) return;
+    setPhoneError(null);
+    if (!phone.trim()) {
+      setPhoneError("Please enter a phone number");
+      return;
+    }
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 6) {
+      setPhoneError("Please enter a valid phone number");
+      return;
+    }
 
     // ── Daily limit check ─────────────────────────────────────────
     const { data: { user } } = await supabase.auth.getUser();
@@ -241,11 +255,12 @@ function SendPageInner() {
     }
 
     const recipientName = foundUser?.name ?? null;
+    const senderPhone   = user.phone ?? (profile as any)?.phone ?? null;
 
-    let { error } = await supabase.from("sent_cards").insert({
+    const cardPayload: Record<string, unknown> = {
       sender_id:       user.id,
       recipient_phone: fullPhone,
-      recipient_id:    foundUser?.id ?? null,   // set immediately if on SayIt
+      recipient_id:    foundUser?.id ?? null,
       recipient_name:  recipientName,
       template_id:     templateId || null,
       message:         finalMessage,
@@ -255,29 +270,9 @@ function SendPageInner() {
       ...(isPawCard    && { card_type: "paw-moments",  paw_photos: pawPhotos, paw_frame: pawFrame }),
       ...(isCustomCard && { card_type: "custom-card",  paw_photos: customBgPhoto ? [customBgPhoto] : [] }),
       ...(isMemeCard   && { card_type: "meme",         meme_image_url: memeImageUrl }),
-    });
+    };
 
-    if (error) {
-      ({ error } = await supabase.from("sent_cards").insert({
-        sender_id:       user.id,
-        recipient_phone: fullPhone,
-        recipient_id:    foundUser?.id ?? null,
-        recipient_name:  recipientName,
-        template_id:     templateId || null,
-        message:         finalMessage,
-        short_code:      code,
-        sender_name:     name,
-        ...(isPawCard    && { card_type: "paw-moments",  paw_photos: pawPhotos, paw_frame: pawFrame }),
-        ...(isCustomCard && { card_type: "custom-card",  paw_photos: customBgPhoto ? [customBgPhoto] : [] }),
-        ...(isMemeCard   && { card_type: "meme",         meme_image_url: memeImageUrl }),
-      }));
-    }
-
-    if (error) { alert("Failed to send: " + error.message); setSending(false); return; }
-
-    // ── Create/upsert a My Circle request for this recipient ──────────────
-    const senderPhone = user.phone ?? (profile as any)?.phone ?? null;
-    await supabase.from("circles").upsert({
+    const circlePayload: Record<string, unknown> = {
       sender_id:       user.id,
       sender_phone:    senderPhone,
       sender_name:     name,
@@ -285,19 +280,60 @@ function SendPageInner() {
       recipient_id:    foundUser?.id ?? null,
       status:          "accepted",
       updated_at:      new Date().toISOString(),
-    }, { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+    };
 
+    // ── SayIt-to-SayIt: save immediately so recipient sees it right away ──
+    if (foundUser) {
+      let { error } = await supabase.from("sent_cards").insert(cardPayload);
+      if (error) {
+        // retry without front_image_url (RLS edge case)
+        const { front_image_url: _, ...slim } = cardPayload;
+        ({ error } = await supabase.from("sent_cards").insert(slim));
+      }
+      if (error) { alert("Failed to send: " + error.message); setSending(false); return; }
+
+      await supabase.from("circles").upsert(circlePayload,
+        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+
+      setDailyCount(prev => (prev ?? 0) + 1);
+      setSending(false);
+      setRecipientOnApp(true);
+      setShortCode(code);
+      return;
+    }
+
+    // ── External recipient: stage data, save only when user taps WA/SMS ──
+    setPendingPayload(cardPayload);
+    setPendingCircle(circlePayload);
+    setCardSaved(false);
     setSending(false);
-    if (foundUser) setRecipientOnApp(true); // skip share sheet for SayIt users
     setShortCode(code);
   }
 
-  async function cancelSend() {
-    if (!shortCode) return;
-    // Delete the card and restore the daily count
-    await supabase.from("sent_cards").delete().eq("short_code", shortCode);
+  // Called when user taps WhatsApp or SMS — this is when we actually persist
+  async function saveCardNow() {
+    if (cardSaved || !pendingPayload) return;
+    setCardSaved(true); // prevent double-save if both buttons are tapped
+
+    let { error } = await supabase.from("sent_cards").insert(pendingPayload);
+    if (error) {
+      const { front_image_url: _, ...slim } = pendingPayload;
+      ({ error } = await supabase.from("sent_cards").insert(slim));
+    }
+
+    if (!error && pendingCircle) {
+      await supabase.from("circles").upsert(pendingCircle,
+        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+      setDailyCount(prev => (prev ?? 0) + 1);
+    }
+  }
+
+  function cancelSend() {
+    // Nothing was saved — just clear local state
+    setPendingPayload(null);
+    setPendingCircle(null);
+    setCardSaved(false);
     setShortCode("");
-    setDailyCount(prev => Math.max(0, (prev ?? 1) - 1));
   }
 
   // ── Upgrade screen ───────────────────────────────────────────────
@@ -482,7 +518,7 @@ function SendPageInner() {
       <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#FFF5F7,#F8F0FF)" }}>
         {/* Header */}
         <div className="px-5 pt-14 pb-2 flex items-center gap-3">
-          <button onClick={async () => { await cancelSend(); router.push("/home"); }}
+          <button onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
@@ -528,7 +564,7 @@ function SendPageInner() {
           <div className="w-full flex flex-col gap-3">
             {/* iMessage / SMS */}
             <a href={smsHref}
-              onClick={() => setTimeout(() => setShared(true), 600)}
+              onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
               style={{ background: "linear-gradient(135deg,#34C759,#30D158)" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
@@ -541,7 +577,7 @@ function SendPageInner() {
 
             {/* WhatsApp */}
             <a href={waHref} target="_blank" rel="noopener noreferrer"
-              onClick={() => setTimeout(() => setShared(true), 600)}
+              onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
               style={{ background: "linear-gradient(135deg,#25D366,#128C7E)" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
@@ -554,9 +590,9 @@ function SendPageInner() {
 
           </div>
 
-          {/* Cancel — restores daily count */}
+          {/* Cancel — nothing was saved so nothing to clean up */}
           <button
-            onClick={async () => { await cancelSend(); router.push("/home"); }}
+            onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
             Cancel
           </button>
@@ -626,6 +662,7 @@ function SendPageInner() {
                 onChange={e => {
                   const v = e.target.value;
                   setSearchQuery(v);
+                  setPhoneError(null);
                   // If it looks like a phone, also update the phone state
                   if (/^\+?[\d\s\-()]+$/.test(v)) {
                     setPhone(v.replace(/\D/g, ""));
@@ -691,6 +728,11 @@ function SendPageInner() {
             </div>
           )}
         </div>
+
+        {/* Phone validation error */}
+        {phoneError && (
+          <p className="text-sm text-red-500 px-1 -mt-2">{phoneError}</p>
+        )}
 
         {/* Daily limit indicator */}
         {dailyCount !== null && (
