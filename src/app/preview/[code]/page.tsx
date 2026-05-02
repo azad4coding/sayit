@@ -384,8 +384,11 @@ function PreviewInner() {
   const isSender    = isLoggedIn && userId !== null && userId === (card as any)?.sender_id;
 
   const goldAccent  = "#C9A84C";
-  const PANEL_W     = 330;   // matches revealed card width (~full phone width minus padding)
-  const CARD_H      = 440;   // 3:4 ratio
+  const CLOSED_W    = 310;   // full-size closed card (3:4, matches app preview)
+  const CLOSED_H    = 413;   // 310 * 4/3
+  const PANEL_W     = 175;   // each panel of the open two-panel view
+  const SPREAD_W    = 350;   // total width when open
+  const CARD_H      = 480;   // height of open view
   const isOpening   = previewStage === "opening";
 
   // ── Envelope stage ───────────────────────────────────────────────
@@ -455,56 +458,93 @@ function PreviewInner() {
           </a>
         )}
 
-        {/* Card — full 3:4 size, cover fades out to reveal message */}
-        <div style={{ position: "relative", width: PANEL_W, height: CARD_H, borderRadius: 16, boxShadow: "0 12px 32px rgba(0,0,0,0.18)" }}>
+        <AnimatePresence mode="wait">
+          {!isOpening ? (
+            /* ── CLOSED: full-size card matching the app preview ── */
+            <motion.div
+              key="closed"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.18 } }}
+              transition={{ type: "spring", stiffness: 80, damping: 16 }}
+              onClick={handleCardOpen}
+              style={{ width: CLOSED_W, height: CLOSED_H, borderRadius: 16, overflow: "hidden", boxShadow: "0 12px 32px rgba(0,0,0,0.18)", cursor: "pointer", WebkitTapHighlightColor: "transparent", position: "relative", flexShrink: 0 }}
+            >
+              {(isPaw || isMeme) ? (
+                <div style={{ width: "100%", height: "100%", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : "linear-gradient(135deg,#FF6B8A,#FF8C42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 80 }}>{isPaw ? "🐾" : "🔥"}</span>
+                </div>
+              ) : coverUrl ? (
+                <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 64 }}>{dbCategory?.icon ?? "💌"}</span>
+                </div>
+              )}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(30,10,5,0.28) 100%)" }} />
+              {/* Spine hint */}
+              <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: `linear-gradient(180deg,transparent,${goldAccent},transparent)`, opacity: 0.5 }} />
+            </motion.div>
+          ) : (
+            /* ── OPEN: original two-panel layout ── */
+            <motion.div
+              key="open"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              style={{ perspective: 1200 }}
+            >
+              <div style={{ position: "relative", paddingBottom: 14 }}>
+                <motion.div
+                  animate={{ width: SPREAD_W }}
+                  initial={{ width: PANEL_W }}
+                  transition={{ duration: 0.42, ease: "easeInOut" }}
+                  style={{ height: CARD_H, position: "relative", display: "flex", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,0.18)", borderRadius: 16 }}
+                >
+                  {/* LEFT PANEL — inside decoration */}
+                  <div style={{ width: PANEL_W, height: CARD_H, flexShrink: 0, position: "relative", overflow: "hidden", background: "radial-gradient(ellipse at 50% 30%,#FFFDF9,#FBF7F0,#F5EDDF)", borderRadius: "16px 0 0 16px" }}>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 16px", gap: 10 }}>
+                      <p style={{ fontSize: 8, letterSpacing: 3, color: goldAccent, opacity: 0.7, textTransform: "uppercase", margin: 0 }}>{dbCategory?.name ?? "With Love"}</p>
+                      <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
+                      <div style={{ width: 110, height: 110, borderRadius: "50%", overflow: "hidden", border: `3px solid ${goldAccent}`, boxShadow: `0 0 0 4px rgba(201,168,76,0.12),0 4px 16px rgba(0,0,0,0.12)`, display: "flex", alignItems: "center", justifyContent: "center", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : isMeme ? "linear-gradient(135deg,#FF6B8A,#FF8C42)" : `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})` }}>
+                        {(isPaw || isMeme)
+                          ? <span style={{ fontSize: 42 }}>{isPaw ? "🐾" : "🔥"}</span>
+                          : coverUrl
+                            ? <img src={coverUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <span style={{ fontSize: 38 }}>{dbCategory?.icon ?? "💌"}</span>
+                        }
+                      </div>
+                      <svg viewBox="0 0 140 12" style={{ width: 140, height: 12 }}><line x1="0" y1="6" x2="60" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /><polygon points="70,2 74,6 70,10 66,6" fill={goldAccent} opacity="0.8" /><line x1="80" y1="6" x2="140" y2="6" stroke={goldAccent} strokeWidth="0.8" opacity="0.6" /></svg>
+                    </div>
+                  </div>
 
-          {/* INSIDE — message panel, fades in when card opens */}
-          <motion.div
-            initial={false}
-            animate={{ opacity: isOpening ? 1 : 0 }}
-            transition={{ duration: 0.4, delay: isOpening ? 0.25 : 0 }}
-            style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)", pointerEvents: "none" }}
-          >
-            <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px" }} />
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 20px" }}>
-              <div style={{ padding: "18px 20px 10px" }}>
-                <p style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: goldAccent, margin: 0, opacity: 0.8 }}>✦ {dbCategory?.name ?? "A personal note"}</p>
-              </div>
-              <div style={{ flex: 1, padding: "8px 20px", overflowY: "auto", display: "flex", alignItems: "center" }}>
-                {message
-                  ? <p style={{ fontFamily: "Georgia,serif", fontSize: 15, lineHeight: "1.75", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
-                  : <p style={{ fontFamily: "Georgia,serif", fontSize: 13, color: "#9ca3af", fontStyle: "italic", margin: 0 }}>No message added</p>
-                }
-              </div>
-              <div style={{ borderTop: `1px solid ${goldAccent}40`, paddingTop: 10, margin: "0 20px" }}>
-                <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 13, color: "#7A5240", margin: 0, opacity: 0.8 }}>— {senderName}</p>
-              </div>
-            </div>
-          </motion.div>
+                  {/* RIGHT PANEL — message */}
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    transition={{ delay: 0.38, duration: 0.25 }}
+                    style={{ width: PANEL_W, height: CARD_H, flexShrink: 0, position: "relative", background: "linear-gradient(170deg,#FFFCF8,#FDF8F2)", borderRadius: "0 16px 16px 0", overflow: "hidden" }}
+                  >
+                    <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(transparent,transparent 23px,rgba(201,168,76,0.08) 24px)", backgroundSize: "100% 24px", backgroundPosition: "0 40px", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "0 0 16px" }}>
+                      <div style={{ padding: "12px 14px 8px" }}>
+                        <p style={{ fontSize: 8, letterSpacing: 2, textTransform: "uppercase", color: goldAccent, margin: 0 }}>✦ A personal note</p>
+                      </div>
+                      <div style={{ flex: 1, padding: "4px 16px", overflowY: "auto" }}>
+                        {message && (
+                          <p style={{ fontFamily: "Georgia,serif", fontSize: 11, lineHeight: "24px", color: "#5C3D2E", fontStyle: "italic", margin: 0 }}>&ldquo;{message}&rdquo;</p>
+                        )}
+                      </div>
+                      <div style={{ borderTop: `1px solid ${goldAccent}`, paddingTop: 8, opacity: 0.7, margin: "0 16px" }}>
+                        <p style={{ fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 11, color: "#7A5240", margin: 0 }}>— {senderName}</p>
+                      </div>
+                    </div>
+                  </motion.div>
 
-          {/* FRONT COVER — fades out and lifts slightly when card opens */}
-          <motion.div
-            initial={false}
-            animate={{ opacity: isOpening ? 0 : 1, y: isOpening ? -16 : 0, scale: isOpening ? 1.03 : 1 }}
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            style={{ position: "absolute", inset: 0, borderRadius: 16, overflow: "hidden", zIndex: 10, cursor: isOpening ? "default" : "pointer", WebkitTapHighlightColor: "transparent", pointerEvents: isOpening ? "none" : "auto" }}
-            onClick={handleCardOpen}
-          >
-            {(isPaw || isMeme) ? (
-              <div style={{ width: "100%", height: "100%", background: isPaw ? "linear-gradient(135deg,#9B59B6,#C39BD3)" : "linear-gradient(135deg,#FF6B8A,#FF8C42)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 80 }}>{isPaw ? "🐾" : "🔥"}</span>
+                </motion.div>
               </div>
-            ) : coverUrl ? (
-              <img src={coverUrl} alt={dbTemplate?.title ?? "Card"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg,${dbCategory?.gradient_from ?? "#FF6B8A"},${dbCategory?.gradient_to ?? "#9B59B6"})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 64 }}>{dbCategory?.icon ?? "💌"}</span>
-              </div>
-            )}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(30,10,5,0.28) 100%)" }} />
-          </motion.div>
-
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tap to open text */}
         {!isOpening && (
@@ -525,7 +565,7 @@ function PreviewInner() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.4 }}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 24, width: "100%", maxWidth: PANEL_W }}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 24, width: "100%", maxWidth: SPREAD_W }}
           >
             {isLoggedIn && !isSender && (
               <a href={sayitBackUrl} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px 20px", borderRadius: 16, background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 14px rgba(255,107,138,0.35)" }}>
