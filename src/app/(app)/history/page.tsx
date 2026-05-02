@@ -106,7 +106,7 @@ function CardThumb({ card, small, templateMap }: { card: CardWithDir; small?: bo
   let imgUrl: string | null = null;
   if (card.card_type === "meme") {
     imgUrl = card.meme_image_url ?? null;
-  } else if (card.card_type === "paw-moments") {
+  } else if (card.card_type === "paw-moments" || card.card_type === "custom-card") {
     imgUrl = card.paw_photos?.[0] ?? null;
   } else {
     // Prefer Supabase template image, fall back to stored front_image_url

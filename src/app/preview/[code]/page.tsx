@@ -110,17 +110,19 @@ function PreviewInner() {
   useEffect(() => {
     if (!card || !authChecked) return;
     const isSenderViewing = userId !== null && userId === card.sender_id;
+    // Instant reveal: card types that have no greeting-card flip experience
     const isInstantReveal =
       card.card_type === "meme" ||
       card.card_type === "paw-moments" ||
       card.card_type === "ai-card" ||
       card.card_type === "gift-card" ||
-      !!card.meme_image_url ||
-      isSenderViewing;  // sender always skips to revealed — no envelope/flip
+      !!card.meme_image_url;
+    // custom-card and template-based cards always show the closed-card animation,
+    // even for the sender (isSenderViewing no longer bypasses the flip)
     if (isInstantReveal) {
       setCardRevealed(true);
-    } else if (isLoggedIn && !isSenderViewing) {
-      // Registered recipient: skip envelope, go straight to closed card
+    } else if (isLoggedIn) {
+      // Both recipients and the sender skip the envelope and go straight to closed card
       setPreviewStage("card");
     }
   }, [card, authChecked, userId, isLoggedIn]);
@@ -442,7 +444,7 @@ function PreviewInner() {
 
   // ── Card stage (closed + opening animation) ──────────────────────
   if (!cardRevealed) {
-    const coverUrl = isMeme ? card?.meme_image_url : isPaw ? card?.paw_photos?.[0] : cardImageUrl;
+    const coverUrl = isMeme ? card?.meme_image_url : (isPaw || isCustom) ? card?.paw_photos?.[0] : cardImageUrl;
 
     return (
       <motion.div
