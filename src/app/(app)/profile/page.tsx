@@ -6,19 +6,8 @@ import { createClient } from "@/lib/supabase";
 import {
   LogOut, Edit2, Check, X, Trash2, Camera,
   Phone, Mail, ChevronRight, Send, Heart,
-  Share2, ShieldCheck, HelpCircle, Bell,
+  Share2, ShieldCheck, HelpCircle, Bell, Users,
 } from "lucide-react";
-
-interface CircleMember {
-  id:              string;
-  sender_id:       string;
-  sender_name:     string | null;
-  sender_phone:    string | null;
-  recipient_phone: string;
-  recipient_name:  string | null;
-  recipient_id:    string | null;
-  status:          string;
-}
 
 export default function ProfilePage() {
   const router   = useRouter();
@@ -40,7 +29,6 @@ export default function ProfilePage() {
   const [clearing,       setClearing]       = useState(false);
   const [confirmClear,   setConfirmClear]   = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [circleMembers, setCircleMembers] = useState<CircleMember[]>([]);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,45 +74,6 @@ export default function ProfilePage() {
       }
       const { count: rc } = await receivedQ;
       setReceivedCount(rc ?? 0);
-
-      // ── Load My Circle — accepted connections both directions ──────────
-      const { data: accepted, error: circleErr } = await supabase
-        .from("circles")
-        .select("*")
-        .eq("status", "accepted")
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
-
-      if (!circleErr && accepted && accepted.length > 0) {
-        // Enrich outgoing circles with recipient names from sent_cards
-        const outgoingPhones = accepted
-          .filter((c: any) => c.sender_id === user.id)
-          .map((c: any) => c.recipient_phone as string);
-
-        let nameMap: Record<string, string> = {};
-        if (outgoingPhones.length > 0) {
-          const { data: cards } = await supabase
-            .from("sent_cards")
-            .select("recipient_phone, recipient_name")
-            .eq("sender_id", user.id)
-            .in("recipient_phone", outgoingPhones)
-            .not("recipient_name", "is", null);
-          for (const card of (cards ?? [])) {
-            if (card.recipient_name && !nameMap[card.recipient_phone]) {
-              nameMap[card.recipient_phone] = card.recipient_name;
-            }
-          }
-        }
-
-        const enriched = accepted.map((c: any) => ({
-          ...c,
-          recipient_name: c.sender_id === user.id
-            ? (c.recipient_name ?? nameMap[c.recipient_phone] ?? null)
-            : null,
-        }));
-        setCircleMembers(enriched as CircleMember[]);
-      } else {
-        setCircleMembers([]);
-      }
 
       setLoading(false);
     }
@@ -186,11 +135,6 @@ export default function ProfilePage() {
     await supabase.from("sent_cards").delete().eq("sender_id", userId);
     setSentCount(0); setReceivedCount(0);
     setClearing(false); setConfirmClear(false);
-  }
-
-  async function removeFromCircle(circleId: string) {
-    await supabase.from("circles").delete().eq("id", circleId);
-    setCircleMembers(prev => prev.filter(c => c.id !== circleId));
   }
 
   async function handleSignOut() {
@@ -308,52 +252,22 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ── My Circle ── */}
+      {/* ── My Circle shortcut ── */}
       <div className="mx-5 mb-5">
-        <div className="flex items-center justify-between px-1 mb-2">
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">My Circle</p>
-          <span className="text-[11px] text-gray-300">{circleMembers.length} connected</span>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
-          {circleMembers.length === 0 ? (
-            <div className="flex flex-col items-center py-8 gap-2">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-                style={{ background: "linear-gradient(135deg,#FFF5F7,#F8F0FF)" }}>💫</div>
-              <p className="text-xs text-gray-400 text-center px-6">
-                Your Circle grows every time you send a card. Start sending!
-              </p>
-            </div>
-          ) : (
-            <>
-              {circleMembers.map((c, i) => {
-                const isOutgoing = c.sender_id === userId;
-                const displayName = isOutgoing
-                  ? (c.recipient_name ?? c.recipient_phone)
-                  : (c.sender_name ?? c.sender_phone ?? "SayIt User");
-                const initials = displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
-                return (
-                  <div key={c.id}
-                    className={`flex items-center gap-3 px-4 py-3.5 ${i < circleMembers.length - 1 ? "border-b border-gray-50" : ""}`}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)", color: purple }}>
-                      {initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
-                      <p className="text-[10px] text-green-500 font-semibold">✓ In your Circle</p>
-                    </div>
-                  <button
-                    onClick={() => removeFromCircle(c.id)}
-                    className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                    <Trash2 className="w-3.5 h-3.5 text-gray-300" />
-                  </button>
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
+        <button
+          onClick={() => router.push("/circle")}
+          className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm text-left"
+          style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
+            <Users className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800">My Circle</p>
+            <p className="text-xs text-gray-400">View your connections</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-gray-300" />
+        </button>
       </div>
 
       {/* ── Quick actions ── */}

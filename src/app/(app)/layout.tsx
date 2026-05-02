@@ -4,14 +4,14 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { Home, Heart, MessageSquare, User, Gift } from "lucide-react";
+import { Home, Heart, MessageSquare, User, Users } from "lucide-react";
 
 const NAV = [
-  { href: "/home",        label: "Home",       Icon: Home          },
-  { href: "/wishes",      label: "Wishes",     Icon: Heart         },
-  { href: "/history",     label: "Chats",      Icon: MessageSquare },
-  { href: "/gift-cards",  label: "Gift Cards", Icon: Gift          },
-  { href: "/profile",     label: "Profile",    Icon: User          },
+  { href: "/home",    label: "Home",    Icon: Home          },
+  { href: "/wishes",  label: "Wishes",  Icon: Heart         },
+  { href: "/history", label: "Chats",   Icon: MessageSquare },
+  { href: "/circle",  label: "Circle",  Icon: Users         },
+  { href: "/profile", label: "Profile", Icon: User          },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
