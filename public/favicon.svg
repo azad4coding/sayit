@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#2D1FA6"/>
+      <stop offset="100%" stop-color="#080650"/>
+    </radialGradient>
+    <linearGradient id="sg" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#FF2090"/>
+      <stop offset="45%"  stop-color="#A030FF"/>
+      <stop offset="100%" stop-color="#28CCFF"/>
+    </linearGradient>
+    <linearGradient id="sgDark" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#AA0060"/>
+      <stop offset="45%"  stop-color="#5A14AA"/>
+      <stop offset="100%" stop-color="#0888AA"/>
+    </linearGradient>
+    <linearGradient id="sgLight" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#FF88D0"/>
+      <stop offset="45%"  stop-color="#CC90FF"/>
+      <stop offset="100%" stop-color="#90EAFF"/>
+    </linearGradient>
+    <linearGradient id="sgSpec" x1="0.8" y1="0.05" x2="0.2" y2="0.95">
+      <stop offset="0%"   stop-color="rgba(255,230,245,0.95)"/>
+      <stop offset="100%" stop-color="rgba(200,240,255,0.3)"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,60,0.5)"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="18" fill="url(#bg)"/>
+
+  <!-- Layer 0: shadow -->
+  <g filter="url(#sh)" opacity="0.85">
+    <path d="M 68 20 C 86 20, 83 52, 50 52 C 17 52, 14 80, 32 84"
+          fill="none" stroke="url(#sg)" stroke-width="15" stroke-linecap="round"/>
+  </g>
+  <!-- Layer 1: dark base shifted down-right -->
+  <g transform="translate(2,1.5)">
+    <path d="M 68 20 C 86 20, 83 52, 50 52 C 17 52, 14 80, 32 84"
+          fill="none" stroke="url(#sgDark)" stroke-width="16" stroke-linecap="round" opacity="0.55"/>
+  </g>
+  <!-- Layer 2: main ribbon -->
+  <path d="M 68 20 C 86 20, 83 52, 50 52 C 17 52, 14 80, 32 84"
+        fill="none" stroke="url(#sg)" stroke-width="13" stroke-linecap="round"/>
+  <!-- Layer 3: mid highlight shifted up-left -->
+  <g transform="translate(-1.8,-1)">
+    <path d="M 68 20 C 86 20, 83 52, 50 52 C 17 52, 14 80, 32 84"
+          fill="none" stroke="url(#sgLight)" stroke-width="8" stroke-linecap="round" opacity="0.65"/>
+  </g>
+  <!-- Layer 4: specular edge shifted further up-left -->
+  <g transform="translate(-3,-1.8)">
+    <path d="M 68 20 C 86 20, 83 52, 50 52 C 17 52, 14 80, 32 84"
+          fill="none" stroke="url(#sgSpec)" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <!-- Chat-bubble tail -->
+  <path d="M 26 82 L 14 97 L 38 88 Z" fill="#28CCFF" opacity="0.9"/>
+  <!-- Heart -->
+  <path d="M 46 23 A 4 4 0 0 1 50 23 A 4 4 0 0 1 54 23 Q 54 30 50 34 Q 46 30 46 23 Z"
+        fill="white" opacity="0.97"/>
+</svg>

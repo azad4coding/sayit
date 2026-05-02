@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SayIt Share Flow</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; gap: 32px; flex-wrap: wrap; padding: 40px 20px; }
+
+  .phone {
+    width: 320px;
+    height: 640px;
+    background: white;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .screen { width: 100%; height: 100%; overflow: hidden; }
+
+  /* Step label */
+  .step-label {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #888;
+    font-size: 13px;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* Arrow between screens */
+  .arrow {
+    color: #444;
+    font-size: 28px;
+    margin-top: -60px;
+  }
+
+  /* ── SCREEN 1: Send page ── */
+  .send-screen {
+    background: #f9fafb;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .send-header {
+    background: white;
+    padding: 52px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .send-header-text h2 { font-size: 15px; font-weight: 700; color: #1f2937; }
+  .send-header-text p { font-size: 11px; color: #9ca3af; }
+  .card-thumb { width: 40px; height: 56px; border-radius: 10px; overflow: hidden; margin-left: auto; }
+  .card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .send-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  .card-strip {
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .card-strip-img {
+    width: 44px; height: 60px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #FF6B8A, #9B59B6);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .card-strip-text p:first-child { font-size: 10px; color: #9ca3af; }
+  .card-strip-text p:last-child { font-size: 13px; font-weight: 700; color: #1f2937; margin-top: 2px; }
+
+  .phone-box {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .phone-label { font-size: 10px; font-weight: 700; color: #6b7280; margin-bottom: 8px; display: block; }
+  .phone-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid #f3f4f6;
+    background: #f9fafb;
+    font-size: 13px;
+    color: #374151;
+  }
+  .phone-hint { font-size: 10px; color: #9ca3af; margin-top: 6px; }
+
+  .send-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #FF6B8A, #9B59B6);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(255,107,138,0.4);
+  }
+
+  /* ── SCREEN 2: Success + Share ── */
+  .success-screen {
+    background: linear-gradient(160deg, #FFF5F7, #F8F0FF);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 24px;
+  }
+
+  .success-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-top: 70px;
+    margin-bottom: 28px;
+  }
+
+  .success-icon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF6B8A, #9B59B6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    box-shadow: 0 12px 28px rgba(255,107,138,0.35);
+  }
+
+  .success-top h2 { font-size: 22px; font-weight: 800; color: #1f2937; }
+  .success-top p { font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.5; }
+
+  .card-preview {
+    width: 100%;
+    height: 140px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #FF6B8A, #9B59B6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    box-shadow: 0 8px 24px rgba(255,107,138,0.3);
+    margin-bottom: 24px;
+  }
+
+  .share-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    align-self: flex-start;
+  }
+
+  .share-buttons { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+
+  .share-btn {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  .share-btn .icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .share-btn .arrow-right { margin-left: auto; opacity: 0.7; font-size: 16px; }
+
+  .btn-imessage { background: linear-gradient(135deg, #34C759, #30D158); }
+  .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); }
+  .btn-copy { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+
+  .share-btn .sub { font-size: 10px; font-weight: 400; opacity: 0.85; display: block; margin-top: 1px; }
+
+</style>
+</head>
+<body>
+
+  <!-- SCREEN 1 -->
+  <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+    <div class="phone">
+      <div class="screen send-screen">
+        <div class="send-header">
+          <div class="back-btn">←</div>
+          <div class="send-header-text">
+            <h2>Send Card</h2>
+            <p>Enter recipient's phone number</p>
+          </div>
+        </div>
+        <div class="send-body">
+          <div class="card-strip">
+            <div class="card-strip-img">💖</div>
+            <div class="card-strip-text">
+              <p>Sending</p>
+              <p>Just Because You're You</p>
+            </div>
+          </div>
+          <div class="phone-box">
+            <span class="phone-label">Phone number</span>
+            <div class="phone-input">+91 98765 43210</div>
+            <p class="phone-hint">They'll receive a link via SMS to open the card</p>
+          </div>
+          <div class="send-btn">Send Card 💌</div>
+        </div>
+      </div>
+    </div>
+    <span class="step-label">Step 1 — Enter number & tap Send</span>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow" style="margin-top:-20px;">→</div>
+
+  <!-- SCREEN 2 -->
+  <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+    <div class="phone">
+      <div class="screen success-screen">
+        <div class="success-top">
+          <div class="success-icon">🎉</div>
+          <h2>Card Ready!</h2>
+          <p>Now choose how you want to send it to them</p>
+        </div>
+
+        <div class="card-preview">💖</div>
+
+        <span class="share-label">Send via</span>
+        <div class="share-buttons">
+          <div class="share-btn btn-imessage">
+            <div class="icon">💬</div>
+            <div>
+              iMessage / SMS
+              <span class="sub">Opens Messages app</span>
+            </div>
+            <span class="arrow-right">›</span>
+          </div>
+          <div class="share-btn btn-whatsapp">
+            <div class="icon">💚</div>
+            <div>
+              WhatsApp
+              <span class="sub">Opens WhatsApp chat</span>
+            </div>
+            <span class="arrow-right">›</span>
+          </div>
+          <div class="share-btn btn-copy">
+            <div class="icon">🔗</div>
+            <div>
+              Copy Link
+              <span class="sub">Paste anywhere</span>
+            </div>
+            <span class="arrow-right">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="step-label">Step 2 — Choose how to share</span>
+  </div>
+
+</body>
+</html>

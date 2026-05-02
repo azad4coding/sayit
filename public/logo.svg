@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 420">
+  <defs>
+    <!-- Deep blue radial background -->
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#2D1FA6"/>
+      <stop offset="100%" stop-color="#080650"/>
+    </radialGradient>
+
+    <!-- Main S ribbon gradient: hot-pink → purple → sky-blue -->
+    <linearGradient id="sg" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#FF2090"/>
+      <stop offset="45%"  stop-color="#A030FF"/>
+      <stop offset="100%" stop-color="#28CCFF"/>
+    </linearGradient>
+
+    <!-- Darker (shadow) version of the ribbon -->
+    <linearGradient id="sgDark" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#AA0060"/>
+      <stop offset="45%"  stop-color="#5A14AA"/>
+      <stop offset="100%" stop-color="#0888AA"/>
+    </linearGradient>
+
+    <!-- Lighter (highlight) version of the ribbon -->
+    <linearGradient id="sgLight" x1="0.85" y1="0.02" x2="0.12" y2="0.98">
+      <stop offset="0%"   stop-color="#FF80CC"/>
+      <stop offset="45%"  stop-color="#CC88FF"/>
+      <stop offset="100%" stop-color="#88E8FF"/>
+    </linearGradient>
+
+    <!-- Specular edge: near-white -->
+    <linearGradient id="sgSpec" x1="0.8" y1="0.05" x2="0.2" y2="0.95">
+      <stop offset="0%"   stop-color="rgba(255,230,245,0.95)"/>
+      <stop offset="60%"  stop-color="rgba(220,200,255,0.5)"/>
+      <stop offset="100%" stop-color="rgba(180,240,255,0.25)"/>
+    </linearGradient>
+
+    <!-- Soft drop-shadow filter -->
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="rgba(0,0,60,0.6)"/>
+    </filter>
+  </defs>
+
+  <!-- ── Background ── -->
+  <rect width="400" height="420" rx="44" fill="url(#bg)"/>
+
+  <!--
+    ── 3-D TUBE S RIBBON ──
+    Single S-spine path.  Layered from widest (shadow) to narrowest (specular)
+    with each highlight layer shifted toward the upper-left light source to
+    simulate a round tube cross-section.
+
+    Path: M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348
+      upper arc  – starts top-right, bulges right, sweeps to centre
+      lower arc  – centre, bulges left, ends bottom-left (tail here)
+  -->
+
+  <!-- Layer 0: ambient occlusion / shadow blob under the whole ribbon -->
+  <g filter="url(#shadow)" opacity="0.9">
+    <path d="M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348"
+          fill="none" stroke="url(#sg)" stroke-width="58" stroke-linecap="round"/>
+  </g>
+
+  <!-- Layer 1: dark base — shifted toward shadow (lower-right) -->
+  <g transform="translate(9,5)">
+    <path d="M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348"
+          fill="none" stroke="url(#sgDark)" stroke-width="62" stroke-linecap="round" opacity="0.55"/>
+  </g>
+
+  <!-- Layer 2: main colour ribbon (centred) -->
+  <path d="M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348"
+        fill="none" stroke="url(#sg)" stroke-width="54" stroke-linecap="round"/>
+
+  <!-- Layer 3: mid-highlight — shifted toward light (upper-left) -->
+  <g transform="translate(-7,-4)">
+    <path d="M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348"
+          fill="none" stroke="url(#sgLight)" stroke-width="32" stroke-linecap="round" opacity="0.65"/>
+  </g>
+
+  <!-- Layer 4: specular highlight — shifted further toward light -->
+  <g transform="translate(-13,-7)">
+    <path d="M 272 82 C 346 82, 332 212, 200 214 C 68 216, 54 332, 126 348"
+          fill="none" stroke="url(#sgSpec)" stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <!-- ── Chat-bubble tail at the bottom-left endpoint ── -->
+  <path d="M 108 344 L 68 395 L 154 368 Z" fill="#28CCFF" opacity="0.92"/>
+
+  <!-- ── White heart in the upper concave of the S ── -->
+  <!-- Concave hollow of upper arc is to the left of the ribbon at y≈100–140 -->
+  <path d="M 174 100
+           A 16 16 0 0 1 190 100
+           A 16 16 0 0 1 206 100
+           Q 206 125 190 140
+           Q 174 125 174 100 Z"
+        fill="white" opacity="0.97"/>
+
+  <!-- ── "SayIt" wordmark ── -->
+  <text x="200" y="406"
+        text-anchor="middle"
+        font-family="'Arial Rounded MT Bold','Nunito','Helvetica Neue',Arial,sans-serif"
+        font-weight="800"
+        font-size="66"
+        letter-spacing="-1"
+        fill="white">SayIt</text>
+</svg>

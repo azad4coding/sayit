@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --app-max-width: 430px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #f0f0f5;
+  min-height: 100dvh;
+}
+
+/* ── Phone shell wrapper ──────────────────────────────────────────── */
+.app-shell {
+  max-width: var(--app-max-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: #fff;
+  position: relative;
+  overflow-x: hidden;
+  box-shadow: 0 0 40px rgba(0,0,0,0.15);
+}
+
+/* ── Scrollable page content (leaves room for bottom nav) ─────────── */
+.page-content {
+  padding-bottom: calc(80px + var(--safe-bottom));
+  min-height: 100dvh;
+}
+
+/* ── Bottom navigation ────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-max-width);
+  background: #fff;
+  border-top: 1px solid #f0f0f5;
+  padding-bottom: var(--safe-bottom);
+  z-index: 50;
+}
+
+/* ── 3D page-turn card animation ──────────────────────────────────── */
+.card-scene {
+  perspective: 1200px;
+}
+
+.card-book {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+}
+
+.card-book.open {
+  transform: rotateY(-180deg);
+}
+
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+/* ── Gradient text helper ─────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #FF6B8A, #9B59B6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Custom scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Smooth transitions everywhere ───────────────────────────────── */
+a, button { transition: opacity 0.15s ease, transform 0.15s ease; }
+button:active { transform: scale(0.97); }
+
+/* ── Shimmer loading animation ────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
