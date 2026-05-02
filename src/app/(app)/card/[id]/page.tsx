@@ -839,10 +839,13 @@ function CardPageInner() {
                   try {
                     sessionStorage.setItem("paw_photos", JSON.stringify(validPhotos));
                     sessionStorage.setItem("paw_message", message);
+                    if (sender.trim()) sessionStorage.setItem("card_signature", sender.trim());
+                    else sessionStorage.removeItem("card_signature");
                   } catch {}
                   router.push("/send?type=paw-moments");
                 } else {
-                  router.push(`/send?templateId=${encodeURIComponent(template.id)}&message=${encodeURIComponent(message)}`);
+                  const sigParam = sender.trim() ? `&signature=${encodeURIComponent(sender.trim())}` : "";
+                  router.push(`/send?templateId=${encodeURIComponent(template.id)}&message=${encodeURIComponent(message)}${sigParam}`);
                 }
               }} style={{ marginTop: 16, padding: '14px 48px', borderRadius: 30, border: 'none', background: isPawMoments ? 'linear-gradient(135deg,#8B5E3C,#6B3F1F)' : 'linear-gradient(135deg,#C9A84C,#B8892A)', color: '#FFF8EC', fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'Georgia,serif', cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,0.22)', minWidth: 180 }}>
               {isPawMoments ? '🐾 Sayit' : '✦ Sayit'}

@@ -29,9 +29,10 @@ function SendPageInner() {
   const params   = useSearchParams();
   const supabase = createClient();
 
-  const templateId = params.get("templateId") ?? "";
-  const cardType   = params.get("type") ?? "";          // "paw-moments" for paw flow
-  const message    = params.get("message") ?? "";
+  const templateId  = params.get("templateId") ?? "";
+  const cardType    = params.get("type") ?? "";          // "paw-moments" for paw flow
+  const message     = params.get("message") ?? "";
+  const signatureParam = params.get("signature") ?? ""; // custom signature typed in card
 
   const isPawCard    = cardType === "paw-moments";
   const isCustomCard = cardType === "custom-card";
@@ -209,7 +210,10 @@ function SendPageInner() {
       .select("full_name, phone")
       .eq("id", user.id)
       .single();
-    const name = profile?.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split("@")[0] ?? "Someone";
+    const profileName = profile?.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split("@")[0] ?? "Someone";
+    // Use custom signature from card compose if provided, otherwise fall back to profile name
+    const pawSignature = (() => { try { return sessionStorage.getItem("card_signature") ?? ""; } catch { return ""; } })();
+    const name = signatureParam.trim() || pawSignature.trim() || profileName;
     setSenderName(name);
 
     // Safety net: ensure a profile row exists before inserting sent_cards
