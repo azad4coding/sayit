@@ -4,14 +4,15 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { Home, Heart, MessageSquare, User, Users } from "lucide-react";
+import { Home, Heart, MessageSquare, User, Users, Gift } from "lucide-react";
 
 const NAV = [
-  { href: "/home",    label: "Home",    Icon: Home          },
-  { href: "/wishes",  label: "Wishes",  Icon: Heart         },
-  { href: "/history", label: "Chats",   Icon: MessageSquare },
-  { href: "/circle",  label: "Circle",  Icon: Users         },
-  { href: "/profile", label: "Profile", Icon: User          },
+  { href: "/home",       label: "Home",       Icon: Home          },
+  { href: "/wishes",     label: "Wishes",     Icon: Heart         },
+  { href: "/history",    label: "Chats",      Icon: MessageSquare },
+  { href: "/gift-cards", label: "Gifts",      Icon: Gift          },
+  { href: "/circle",     label: "Circle",     Icon: Users         },
+  { href: "/profile",    label: "Profile",    Icon: User          },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -149,8 +150,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-bold transition-colors relative z-10"
-                  style={{ color: active ? "#9B59B6" : "#c0c0c0", letterSpacing: "0.3px" }}>
+                <span className="text-[9px] font-bold transition-colors relative z-10"
+                  style={{ color: active ? "#9B59B6" : "#c0c0c0", letterSpacing: "0.2px" }}>
                   {label}
                 </span>
               </Link>

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase";
 import {
   LogOut, Edit2, Check, X, Trash2, Camera,
   Phone, Mail, ChevronRight, Send, Heart,
-  Share2, ShieldCheck, HelpCircle, Bell, Users,
+  Share2, ShieldCheck, HelpCircle, Bell,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -250,24 +250,6 @@ export default function ProfilePage() {
           <span className="text-2xl font-bold text-gray-700">{sentCount + receivedCount}</span>
           <span className="text-[11px] font-semibold text-gray-400">Total Cards</span>
         </div>
-      </div>
-
-      {/* ── My Circle shortcut ── */}
-      <div className="mx-5 mb-5">
-        <button
-          onClick={() => router.push("/circle")}
-          className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm text-left"
-          style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-            <Users className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800">My Circle</p>
-            <p className="text-xs text-gray-400">View your connections</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-gray-300" />
-        </button>
       </div>
 
       {/* ── Quick actions ── */}
