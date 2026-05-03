@@ -4,3 +4,4 @@ sayit-schools/
 .env.local
 .env
 .env*.local
+.env.local
