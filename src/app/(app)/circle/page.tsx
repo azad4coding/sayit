@@ -113,7 +113,7 @@ export default function CirclePage() {
   const visible = members.filter(m => !hidden.has(m.phone));
 
   function hideContact(phone: string) {
-    setHidden(prev => new Set([...prev, phone]));
+    setHidden(prev => new Set(Array.from(prev).concat(phone)));
   }
 
   function getInitials(name: string | null, phone: string) {
