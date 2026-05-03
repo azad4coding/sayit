@@ -1,3 +1,6 @@
 .vercel
 node_modules/
 sayit-schools/
+.env.local
+.env
+.env*.local
