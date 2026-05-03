@@ -19,8 +19,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const supabase = createClient();
 
-  const [checking,    setChecking]    = useState(true);
-  const [reactionDot, setReactionDot] = useState(0);
+  const [checking,     setChecking]     = useState(true);
+  const [reactionDot,  setReactionDot]  = useState(0);
+  const [incomingDot,  setIncomingDot]  = useState(0);
   const sentCardIds = useRef<Set<string>>(new Set());
   const userIdRef   = useRef<string | null>(null);
 
@@ -52,6 +53,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .eq("sender_id", user.id);
       sentCardIds.current = new Set((sent ?? []).map((c: { id: string }) => c.id));
 
+      // ── Load unread incoming cards since last Chats visit ───────────────
+      const lastSeen = (() => {
+        try { return localStorage.getItem(`lastSeenChats_${user.id}`) ?? new Date(0).toISOString(); }
+        catch { return new Date(0).toISOString(); }
+      })();
+      const { count: unreadCount } = await supabase
+        .from("sent_cards")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", user.id)
+        .gt("created_at", lastSeen);
+      if ((unreadCount ?? 0) > 0) setIncomingDot(unreadCount ?? 0);
+
       // ── Real-time subscriptions ─────────────────────────────────────────
       const channel = supabase
         .channel("layout-notifications")
@@ -67,6 +80,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }
         )
 
+        // 2. New card sent directly to this user → Chats dot
+        .on("postgres_changes",
+          { event: "INSERT", schema: "public", table: "sent_cards",
+            filter: `recipient_id=eq.${user.id}` },
+          () => {
+            setIncomingDot(prev => prev + 1);
+          }
+        )
+
         .subscribe();
 
       return () => { supabase.removeChannel(channel); };
@@ -74,9 +96,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     check();
   }, [pathname]);
 
-  // Clear dot when user visits Chats
+  // Clear dots and persist last-seen timestamp when user visits Chats
   useEffect(() => {
-    if (pathname === "/history") setReactionDot(0);
+    if (pathname === "/history") {
+      setReactionDot(0);
+      setIncomingDot(0);
+      try {
+        if (userIdRef.current) {
+          localStorage.setItem(`lastSeenChats_${userIdRef.current}`, new Date().toISOString());
+        }
+      } catch { /* ignore */ }
+    }
   }, [pathname]);
 
   if (checking) {
@@ -96,8 +126,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center px-4">
           {NAV.map(({ href, label, Icon }) => {
             const active    = pathname === href;
-            const showDot  = href === "/history" && reactionDot > 0;
-            const dotCount = reactionDot;
+            const totalDot  = href === "/history" ? (reactionDot + incomingDot) : 0;
+            const showDot   = totalDot > 0;
             return (
               <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 relative">
                 {/* Active pill indicator */}
@@ -111,11 +141,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     style={{ color: active ? "#9B59B6" : "#c0c0c0" }}
                     strokeWidth={active ? 2.5 : 1.8}
                   />
-                  {/* Notification dot */}
+                  {/* Red notification badge */}
                   {showDot && (
-                    <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1"
-                      style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                      {dotCount > 9 ? "9+" : dotCount}
+                    <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1 shadow-sm"
+                      style={{ background: "#E53935", boxShadow: "0 1px 4px rgba(229,57,53,0.5)" }}>
+                      {totalDot > 99 ? "99+" : totalDot}
                     </span>
                   )}
                 </div>
