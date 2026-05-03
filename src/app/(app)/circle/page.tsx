@@ -72,7 +72,7 @@ export default function CirclePage() {
         .eq("recipient_id", user.id);
 
       // For received cards, look up sender's phone from profiles
-      const senderIds = [...new Set((receivedCards ?? []).map((c: any) => c.sender_id).filter(Boolean))];
+      const senderIds = Array.from(new Set((receivedCards ?? []).map((c: any) => c.sender_id).filter(Boolean)));
       let senderPhones: Record<string, string> = {};
       if (senderIds.length > 0) {
         const { data: profiles } = await supabase
