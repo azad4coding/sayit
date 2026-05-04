@@ -68,10 +68,8 @@ function LoginInner() {
     try { const r = sessionStorage.getItem("sayit_pending_card"); return r ? JSON.parse(r) : null; } catch { return null; }
   }
   function redirectAfterAuth() {
-    const pending = getPendingCard();
-    const code = cardCode || pending?.code;
-    if (code) { try { sessionStorage.removeItem("sayit_pending_card"); } catch {} router.push(`/preview/${code}`); }
-    else router.push("/home");
+    try { sessionStorage.removeItem("sayit_pending_card"); } catch {}
+    router.push("/home");
   }
 
   const fromCard      = !!cardCode || !!getPendingCard()?.code;
@@ -141,37 +139,18 @@ function LoginInner() {
   }
 
   async function handleGoogle() {
-    const pending = getPendingCard();
-    const code = cardCode || pending?.code;
-    const redirectTo = code ? `${location.origin}/preview/${code}` : `${location.origin}/home`;
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}/home` } });
   }
 
   return (
     <div className="min-h-dvh flex flex-col px-6 py-10"
       style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
 
-      {/* Card received banner */}
-      {fromCard && (
-        <div className="mb-5 rounded-2xl overflow-hidden shadow-sm"
-          style={{ background: "linear-gradient(135deg,#FF6B8A15,#9B59B615)", border: "1px solid #FF6B8A30" }}>
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <span className="text-2xl">💌</span>
-            <div>
-              <p className="text-sm font-bold text-gray-800">You received a card!</p>
-              <p className="text-xs text-gray-500">
-                <span className="font-semibold" style={{ color: accent }}>{displaySender}</span> sent you something special
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Logo */}
       <div className="flex flex-col items-center mb-7 gap-2">
         <img src="/Sayit.png" alt="SayIt" className="w-24 h-24 mb-1" style={{ borderRadius: 22 }} />
         <p className="text-gray-400 text-sm text-center">
-          {step === "otp" ? "Enter your OTP" : fromCard ? `Sign in to see your card from ${displaySender.split(" ")[0] || "a friend"}` : "Welcome back"}
+          {step === "otp" ? "Enter your OTP" : "Welcome back"}
         </p>
       </div>
 
