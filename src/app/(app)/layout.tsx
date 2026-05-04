@@ -26,6 +26,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const sentCardIds = useRef<Set<string>>(new Set());
   const userIdRef   = useRef<string | null>(null);
 
+  // ── Register service worker + subscribe to push ─────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+    async function setupPush() {
+      try {
+        // Register SW
+        const reg = await navigator.serviceWorker.register("/sw.js");
+
+        // Ask permission (browser shows native dialog once)
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Subscribe to push
+        const existing = await reg.pushManager.getSubscription();
+        const subscription = existing ?? await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        });
+
+        // Save subscription to DB
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription, userId: user.id }),
+        });
+      } catch { /* push not supported or blocked */ }
+    }
+
+    setupPush();
+  }, []);
+
   useEffect(() => {
     async function check() {
       const { data: { user } } = await supabase.auth.getUser();

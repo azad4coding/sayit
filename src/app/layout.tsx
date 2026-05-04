@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     ],
     apple: "/Sayit.png",
   },
+  manifest: "/manifest.json",
   openGraph: {
     title: "SayIt",
     description: "Send moments that matter",

@@ -299,6 +299,13 @@ function SendPageInner() {
       await supabase.from("circles").upsert(circlePayload,
         { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
 
+      // ── Fire push notification to recipient (fire-and-forget) ──────────
+      fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: foundUser.id, senderName: name, cardCode: code }),
+      }).catch(() => {});
+
       setDailyCount(prev => (prev ?? 0) + 1);
       setSending(false);
       setRecipientOnApp(true);
