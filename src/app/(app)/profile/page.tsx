@@ -127,17 +127,34 @@ export default function ProfilePage() {
   async function clearHistory() {
     setClearing(true);
 
-    // Delete reactions on cards the user sent
-    const { data: myCards } = await supabase
-      .from("sent_cards").select("id").eq("sender_id", userId);
-    const ids = (myCards ?? []).map((c: { id: string }) => c.id);
-    if (ids.length > 0) {
-      await supabase.from("card_reactions").delete().in("card_id", ids);
+    // Gather all card IDs the user is involved in (sent or received)
+    const { data: allCards } = await supabase
+      .from("sent_cards")
+      .select("id")
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
+    const ids = (allCards ?? []).map((c: { id: string }) => c.id);
+
+    // Also fetch by phone in case recipient_id was null
+    const myPhone = phone.startsWith("+") ? phone : `+${phone}`;
+    const { data: phoneCards } = myPhone ? await supabase
+      .from("sent_cards")
+      .select("id")
+      .eq("recipient_phone", myPhone) : { data: [] };
+    const phoneIds = (phoneCards ?? []).map((c: { id: string }) => c.id);
+
+    const allIds = Array.from(new Set([...ids, ...phoneIds]));
+
+    // Delete reactions first
+    if (allIds.length > 0) {
+      await supabase.from("card_reactions").delete().in("card_id", allIds);
     }
 
-    // Delete cards the user sent AND cards the user received
+    // Delete all cards where user is sender, recipient_id, or recipient_phone
     await supabase.from("sent_cards").delete().eq("sender_id", userId);
     await supabase.from("sent_cards").delete().eq("recipient_id", userId);
+    if (myPhone) {
+      await supabase.from("sent_cards").delete().eq("recipient_phone", myPhone);
+    }
 
     setSentCount(0); setReceivedCount(0);
     setClearing(false); setConfirmClear(false);
