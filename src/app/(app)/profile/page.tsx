@@ -126,13 +126,19 @@ export default function ProfilePage() {
 
   async function clearHistory() {
     setClearing(true);
+
+    // Delete reactions on cards the user sent
     const { data: myCards } = await supabase
       .from("sent_cards").select("id").eq("sender_id", userId);
     const ids = (myCards ?? []).map((c: { id: string }) => c.id);
     if (ids.length > 0) {
       await supabase.from("card_reactions").delete().in("card_id", ids);
     }
+
+    // Delete cards the user sent AND cards the user received
     await supabase.from("sent_cards").delete().eq("sender_id", userId);
+    await supabase.from("sent_cards").delete().eq("recipient_id", userId);
+
     setSentCount(0); setReceivedCount(0);
     setClearing(false); setConfirmClear(false);
   }
