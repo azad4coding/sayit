@@ -558,19 +558,32 @@ function ChatsPageInner() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-      {/* Header */}
-      <div style={{ background: "white", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}
-        className="px-5 pt-12 pb-4">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageCircle size={20} className="text-purple-500" />
-          <h1 className="text-xl font-black text-gray-900">Chats</h1>
+      {/* Premium gradient header */}
+      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "52px 20px 20px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+        <div style={{ position: "absolute", bottom: 0, right: 50, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ position: "absolute", top: 35, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+        {/* Back button */}
+        <button onClick={() => router.push("/home")}
+          style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <MessageCircle style={{ width: 22, height: 22, color: "white" }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: "white", margin: 0, letterSpacing: -0.5 }}>Chats</h1>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Your cards & conversations</p>
+          </div>
         </div>
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        {/* Search bar inside header */}
+        <div style={{ marginTop: 16, position: "relative" }}>
+          <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.6)" }} />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search contacts..."
-            className="w-full rounded-xl pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200"
-            style={{ background: "rgba(0,0,0,0.04)" }} />
+            style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "11px 16px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          />
         </div>
       </div>
 

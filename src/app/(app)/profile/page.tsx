@@ -167,6 +167,11 @@ export default function ProfilePage() {
         {/* Gradient banner */}
         <div className="h-44 w-full"
           style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)" }}>
+          {/* Back button */}
+          <button onClick={() => router.push("/home")}
+            style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
           {/* Decorative bubbles */}
           <div className="absolute top-6 left-8 w-16 h-16 rounded-full opacity-20 bg-white" />
           <div className="absolute top-3 right-12 w-10 h-10 rounded-full opacity-15 bg-white" />

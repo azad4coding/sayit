@@ -166,41 +166,43 @@ export default function GiftCardsPage() {
   // ─────────────────────────────────────────────────────────────────
   if (step === "browse") {
     return (
-      <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FFF5F7 0%,#f9f9f9 40%)" }}>
+      <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
-        {/* Header */}
-        <div className="px-5 pt-14 pb-4">
-          <p className="text-xs text-gray-400 font-medium mb-1">✨ A new way to celebrate</p>
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-            SayIt with a{" "}
-            <span style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              GIFT CARD.
-            </span>
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">Pick a brand, choose an amount, and send love 💌</p>
-        </div>
-
-        {/* Search bar */}
-        <div className="px-5 mb-5">
-          <div className="flex items-center gap-2.5 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100">
-            <Search className="w-4 h-4 text-gray-300 flex-shrink-0" />
+        {/* Premium gradient header */}
+        <div style={{ background: "linear-gradient(135deg,#FF9900 0%,#FF6B8A 50%,#9B59B6 100%)", padding: "52px 20px 28px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: -25, right: -25, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+          <div style={{ position: "absolute", bottom: -15, right: 50, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+          <div style={{ position: "absolute", top: 25, left: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+          {/* Back button */}
+          <button onClick={() => router.push("/home")}
+            style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div style={{ marginTop: 4 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, margin: 0 }}>✨ A new way to celebrate</p>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: "white", margin: "4px 0 2px", letterSpacing: -0.5, lineHeight: 1.2 }}>SayIt with a<br/>GIFT CARD 🎁</h1>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Pick a brand, choose an amount, send love</p>
+          </div>
+          {/* Search bar inside header */}
+          <div style={{ marginTop: 16, position: "relative" }}>
+            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.6)" }} />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search Starbucks, Amazon…"
-              className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder-gray-300"
+              style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "11px 40px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")}>
-                <X className="w-4 h-4 text-gray-300" />
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                <X style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />
               </button>
             )}
           </div>
         </div>
 
         {/* Vendor grid */}
-        <div className="px-5">
+        <div className="px-4 pt-4">
           {!searchQuery && (
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Popular Brands</p>
           )}
@@ -209,19 +211,14 @@ export default function GiftCardsPage() {
               <button
                 key={vendor.id}
                 onClick={() => { setSelectedVendor(vendor); setStep("amount"); }}
-                className="rounded-2xl p-4 text-left shadow-sm border border-transparent active:scale-95 transition-transform"
-                style={{ background: vendor.bg, borderColor: `${vendor.color}22` }}
+                className="text-left active:scale-95 transition-transform"
+                style={{ background: "white", borderRadius: 20, padding: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.07)", border: `1px solid ${vendor.color}20` }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0"
-                    style={{ background: "white" }}>
-                    {vendor.emoji}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm text-gray-800 truncate">{vendor.name}</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: vendor.color }}>Gift Card</p>
-                  </div>
+                <div style={{ width: 52, height: 52, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, marginBottom: 10, background: `linear-gradient(135deg,${vendor.color}22,${vendor.color}11)`, boxShadow: `0 3px 10px ${vendor.color}30` }}>
+                  {vendor.emoji}
                 </div>
+                <p style={{ fontWeight: 700, fontSize: 14, color: "#111827", margin: "0 0 2px" }}>{vendor.name}</p>
+                <p style={{ fontSize: 11, color: vendor.color, fontWeight: 600, margin: 0 }}>Gift Card</p>
               </button>
             ))}
           </div>

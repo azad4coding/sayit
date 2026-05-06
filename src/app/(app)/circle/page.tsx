@@ -130,36 +130,59 @@ export default function CirclePage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(160deg,#FFF5F7,#F8F0FF)" }}>
+    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
-      {/* ── Header ── */}
-      <div className="px-5 pt-14 pb-5">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm"
-            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-            <Users className="w-5 h-5 text-white" />
+      {/* ── Premium gradient header ── */}
+      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "52px 20px 28px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -25, right: -25, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+        <div style={{ position: "absolute", bottom: -10, right: 60, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ position: "absolute", top: 30, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+        {/* Back button */}
+        <button onClick={() => router.push("/home")}
+          style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Users style={{ width: 22, height: 22, color: "white" }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">My Circle</h1>
-            <p className="text-xs text-gray-400">{visible.length} connected</p>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: "white", margin: 0, letterSpacing: -0.5 }}>My Circle</h1>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>{visible.length} {visible.length === 1 ? "person" : "people"} connected</p>
           </div>
         </div>
+        {/* Stats strip */}
+        {visible.length > 0 && (
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <p style={{ color: "white", fontWeight: 900, fontSize: 22, margin: 0 }}>{visible.length}</p>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Contacts</p>
+            </div>
+            <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <p style={{ color: "white", fontWeight: 900, fontSize: 22, margin: 0 }}>{visible.filter(m => m.onSayIt).length}</p>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>On SayIt</p>
+            </div>
+            <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.2)" }}>
+              <p style={{ color: "white", fontWeight: 900, fontSize: 22, margin: 0 }}>{visible.reduce((s, m) => s + m.cardCount, 0)}</p>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Cards Sent</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Members list ── */}
-      <div className="mx-5 mb-5">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+      <div className="mx-4 mt-4 mb-4">
+        <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.04)" }}>
           {visible.length === 0 ? (
-            <div className="flex flex-col items-center py-12 gap-3 px-8">
-              <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
-                style={{ background: "linear-gradient(135deg,#FFF5F7,#F8F0FF)" }}>💫</div>
-              <p className="text-sm font-semibold text-gray-500 text-center">Your Circle is empty</p>
-              <p className="text-xs text-gray-400 text-center">
+            <div className="flex flex-col items-center py-14 gap-3 px-8">
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl mb-2"
+                style={{ background: "linear-gradient(135deg,#FF6B8A15,#9B59B615)" }}>💫</div>
+              <p className="text-base font-bold text-gray-700 text-center">Your Circle is empty</p>
+              <p className="text-sm text-gray-400 text-center leading-relaxed">
                 Your Circle grows every time you send a card. Start sending!
               </p>
-              <button
-                onClick={() => router.push("/home")}
-                className="mt-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white shadow-md"
+              <button onClick={() => router.push("/home")}
+                className="mt-2 px-8 py-3 rounded-full text-sm font-bold text-white shadow-lg"
                 style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
                 Send a Card
               </button>
@@ -167,49 +190,36 @@ export default function CirclePage() {
           ) : (
             visible.map((m, i) => (
               <div key={m.phone}
-                className={`flex items-center gap-3 px-4 py-4 ${i < visible.length - 1 ? "border-b border-gray-50" : ""}`}>
-
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < visible.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
                 {/* Avatar */}
-                <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 relative"
-                  style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)", color: purple }}>
+                <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, background: m.onSayIt ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "linear-gradient(135deg,#e5e7eb,#d1d5db)", color: m.onSayIt ? "white" : "#9ca3af", boxShadow: m.onSayIt ? "0 3px 10px rgba(255,107,138,0.3)" : "none" }}>
                   {getInitials(m.name, m.phone)}
-                  {/* Green dot if on SayIt */}
                   {m.onSayIt && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 border-2 border-white" />
+                    <span style={{ position: "absolute", bottom: 1, right: 1, width: 12, height: 12, borderRadius: "50%", background: "#22c55e", border: "2px solid white" }} />
                   )}
                 </div>
-
-                {/* Name + status */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">
-                    {m.name ?? m.phone}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name ?? m.phone}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                     {m.onSayIt ? (
-                      <p className="text-[11px] text-green-500 font-semibold">✓ On SayIt</p>
+                      <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, background: "#dcfce7", padding: "1px 7px", borderRadius: 20 }}>✓ On SayIt</span>
                     ) : (
-                      <p className="text-[11px] text-gray-400 font-medium">Not on SayIt yet</p>
+                      <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600 }}>Not on SayIt yet</span>
                     )}
-                    <span className="text-[10px] text-gray-300">·</span>
-                    <p className="text-[11px] text-gray-400">
-                      {m.cardCount} {m.cardCount === 1 ? "card" : "cards"}
-                    </p>
+                    <span style={{ fontSize: 10, color: "#d1d5db" }}>·</span>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{m.cardCount} {m.cardCount === 1 ? "card" : "cards"}</span>
                   </div>
                 </div>
-
-                {/* Send card */}
-                <button
-                  onClick={() => router.push("/home")}
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${accent}15` }}>
-                  <Send className="w-3.5 h-3.5" style={{ color: accent }} />
+                {/* Send */}
+                <button onClick={() => router.push("/home")}
+                  style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#FF6B8A18,#9B59B618)", border: "none", cursor: "pointer" }}>
+                  <Send style={{ width: 14, height: 14, color: accent }} />
                 </button>
-
                 {/* Hide */}
-                <button
-                  onClick={() => hideContact(m.phone)}
-                  className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                  <span className="text-gray-300 text-sm font-medium">✕</span>
+                <button onClick={() => hideContact(m.phone)}
+                  style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 12 }}>
+                  ✕
                 </button>
               </div>
             ))
@@ -219,13 +229,11 @@ export default function CirclePage() {
 
       {/* ── Info card ── */}
       {visible.length > 0 && (
-        <div className="mx-5">
-          <div className="rounded-2xl px-4 py-4"
-            style={{ background: "linear-gradient(135deg,#FF6B8A0D,#9B59B60D)", border: "1px solid #FF6B8A20" }}>
-            <p className="text-xs font-semibold text-gray-500 mb-1">What is My Circle?</p>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Everyone you've sent cards to or received cards from on SayIt.
-              Green dot means they're on SayIt — cards deliver instantly, no link needed.
+        <div className="mx-4 mb-4">
+          <div style={{ borderRadius: 16, padding: "14px 16px", background: "linear-gradient(135deg,rgba(255,107,138,0.06),rgba(155,89,182,0.06))", border: "1px solid rgba(255,107,138,0.15)" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9B59B6", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>💡 About My Circle</p>
+            <p style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+              Everyone you've sent or received cards from. Green dot = on SayIt — cards deliver instantly, no link needed.
             </p>
           </div>
         </div>

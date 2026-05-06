@@ -352,16 +352,24 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-      {/* Header */}
-      <div className="bg-white px-5 pt-14 pb-4 flex items-center gap-3"
-        style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 12px rgba(0,0,0,0.04)" }}>
-        <div className="w-9 h-9 rounded-full flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)" }}>
-          <Bell className="w-5 h-5 text-pink-400" />
-        </div>
-        <div>
-          <h1 className="text-xl font-black text-gray-900">Activity</h1>
-          <p className="text-xs text-gray-400">Cards, reactions & occasions</p>
+      {/* Premium gradient header */}
+      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "52px 20px 28px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+        <div style={{ position: "absolute", bottom: -10, right: 40, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ position: "absolute", top: 30, left: -15, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+        {/* Back button */}
+        <button onClick={() => router.push("/home")}
+          style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Bell style={{ width: 22, height: 22, color: "white" }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: "white", margin: 0, letterSpacing: -0.5 }}>Activity</h1>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Cards, reactions & occasions</p>
+          </div>
         </div>
       </div>
 
