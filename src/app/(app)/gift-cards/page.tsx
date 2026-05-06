@@ -167,6 +167,7 @@ export default function GiftCardsPage() {
   if (step === "browse") {
     return (
       <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
+        <style>{`#gc-search::placeholder { color: rgba(255,255,255,0.8); opacity: 1; }`}</style>
 
         {/* Premium gradient header */}
         <div style={{ background: "linear-gradient(135deg,#FF9900 0%,#FF6B8A 50%,#9B59B6 100%)", padding: "100px 20px 28px", position: "relative", overflow: "hidden" }}>
@@ -187,11 +188,12 @@ export default function GiftCardsPage() {
           <div style={{ marginTop: 16, position: "relative" }}>
             <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.6)" }} />
             <input
+              id="gc-search"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search Starbucks, Amazon…"
-              style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "11px 40px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", background: "rgba(255,255,255,0.22)", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 14, padding: "11px 40px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box", WebkitTextFillColor: "white" }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
