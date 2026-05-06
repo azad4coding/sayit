@@ -169,7 +169,7 @@ export default function GiftCardsPage() {
       <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
         {/* Premium gradient header */}
-        <div style={{ background: "linear-gradient(135deg,#FF9900 0%,#FF6B8A 50%,#9B59B6 100%)", padding: "52px 20px 28px", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: "linear-gradient(135deg,#FF9900 0%,#FF6B8A 50%,#9B59B6 100%)", padding: "100px 20px 28px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: -25, right: -25, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
           <div style={{ position: "absolute", bottom: -15, right: 50, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
           <div style={{ position: "absolute", top: 25, left: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
