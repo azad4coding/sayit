@@ -23,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [checking,     setChecking]     = useState(true);
   const [reactionDot,  setReactionDot]  = useState(0);
   const [incomingDot,  setIncomingDot]  = useState(0);
+  const [wishesDot,    setWishesDot]    = useState(0);
   const sentCardIds = useRef<Set<string>>(new Set());
   const userIdRef   = useRef<string | null>(null);
 
@@ -90,7 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       sentCardIds.current = new Set((sent ?? []).map((c: { id: string }) => c.id));
 
       // ── Load unread incoming cards since last Chats visit ───────────────
-      const lastSeen = (() => {
+      const lastSeenChats = (() => {
         try { return localStorage.getItem(`lastSeenChats_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
       })();
@@ -98,30 +99,58 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .from("sent_cards")
         .select("id", { count: "exact", head: true })
         .eq("recipient_id", user.id)
-        .gt("created_at", lastSeen);
+        .gt("created_at", lastSeenChats);
       if ((unreadCount ?? 0) > 0) setIncomingDot(unreadCount ?? 0);
+
+      // ── Load unread wishes activity since last Wishes visit ─────────────
+      const lastSeenWishes = (() => {
+        try { return localStorage.getItem(`lastSeenWishes_${user.id}`) ?? new Date(0).toISOString(); }
+        catch { return new Date(0).toISOString(); }
+      })();
+      // Count new received cards + new reactions on sent cards
+      const authPhone2 = user.phone ?? null;
+      const { data: profData2 } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
+      const myPhone2 = profData2?.phone ?? authPhone2;
+      let newRecvQ = supabase.from("sent_cards").select("id", { count: "exact", head: true })
+        .gt("created_at", lastSeenWishes).neq("sender_id", user.id);
+      if (myPhone2) {
+        const wp = myPhone2.startsWith("+") ? myPhone2 : `+${myPhone2}`;
+        const wop = myPhone2.startsWith("+") ? myPhone2.slice(1) : myPhone2;
+        newRecvQ = newRecvQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wp},recipient_phone.eq.${wop}`);
+      } else {
+        newRecvQ = newRecvQ.eq("recipient_id", user.id);
+      }
+      const { count: newRecvCount } = await newRecvQ;
+      const { count: newRxCount } = await supabase.from("card_reactions")
+        .select("id", { count: "exact", head: true })
+        .in("card_id", Array.from(sentCardIds.current))
+        .gt("created_at", lastSeenWishes);
+      const wishesTotal = (newRecvCount ?? 0) + (newRxCount ?? 0);
+      if (wishesTotal > 0) setWishesDot(wishesTotal);
 
       // ── Real-time subscriptions ─────────────────────────────────────────
       const channel = supabase
         .channel("layout-notifications")
 
-        // 1. New reaction on a card the user sent → Chats dot
+        // 1. New reaction on a card the user sent → Chats + Wishes dot
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "card_reactions" },
           (payload) => {
             const cardId = (payload.new as { card_id: string }).card_id;
             if (sentCardIds.current.has(cardId)) {
               setReactionDot(prev => prev + 1);
+              setWishesDot(prev => prev + 1);
             }
           }
         )
 
-        // 2. New card sent directly to this user → Chats dot
+        // 2. New card sent directly to this user → Chats + Wishes dot
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "sent_cards",
             filter: `recipient_id=eq.${user.id}` },
           () => {
             setIncomingDot(prev => prev + 1);
+            setWishesDot(prev => prev + 1);
           }
         )
 
@@ -132,7 +161,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     check();
   }, [pathname]);
 
-  // Clear dots and persist last-seen timestamp when user visits Chats
+  // Clear dots and persist last-seen timestamps
   useEffect(() => {
     if (pathname === "/history") {
       setReactionDot(0);
@@ -140,6 +169,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       try {
         if (userIdRef.current) {
           localStorage.setItem(`lastSeenChats_${userIdRef.current}`, new Date().toISOString());
+        }
+      } catch { /* ignore */ }
+    }
+    if (pathname === "/wishes") {
+      setWishesDot(0);
+      try {
+        if (userIdRef.current) {
+          localStorage.setItem(`lastSeenWishes_${userIdRef.current}`, new Date().toISOString());
         }
       } catch { /* ignore */ }
     }
@@ -162,7 +199,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center px-4">
           {NAV.map(({ href, label, Icon }) => {
             const active    = pathname === href;
-            const totalDot  = href === "/history" ? (reactionDot + incomingDot) : 0;
+            const totalDot  = href === "/history" ? (reactionDot + incomingDot)
+                            : href === "/wishes"  ? wishesDot
+                            : 0;
             const showDot   = totalDot > 0;
             return (
               <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 relative">
