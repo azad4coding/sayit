@@ -33,6 +33,7 @@ export type DBTemplate = {
   id: string;
   category_id: string;
   subcategory_id: string | null;
+  subcategory_name: string | null;   // joined from subcategories table
   title: string;
   front_image_url: string;
   inside_image_url: string | null;
@@ -92,17 +93,18 @@ export async function getTemplatesByCategory(categoryId: string): Promise<DBTemp
   return data ?? [];
 }
 
-// ── Fetch a single template by ID ────────────────────────────────────────────
+// ── Fetch a single template by ID (with subcategory name) ────────────────────
 export async function getTemplateById(id: string): Promise<DBTemplate | null> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("templates")
-    .select("*")
+    .select("*, subcategories(name)")
     .eq("id", id)
     .single();
 
   if (error) { console.error("getTemplateById:", error.message); return null; }
-  return data;
+  const { subcategories, ...rest } = data as DBTemplate & { subcategories?: { name: string } | null };
+  return { ...rest, subcategory_name: subcategories?.name ?? null };
 }
 
 // ── Fetch a single category by ID (with subcategories) ─────────────────────

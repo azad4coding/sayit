@@ -174,6 +174,118 @@ function pickRandom(arr: string[], n = 3): string[] {
   return shuffled.slice(0, n);
 }
 
+// ── Default starter messages per subcategory — pre-fill compose mode ──────────
+const SUBCATEGORY_STARTERS: Record<string, string[]> = {
+  "miss you": [
+    "Every moment without you feels a little longer than it should. Missing you more than words can say. 💌",
+    "The distance between us doesn't change how much I think of you. Counting the days. 🌙",
+    "I keep reaching for my phone to tell you something, then remember you're far away. Miss you.",
+  ],
+  "thinking of you": [
+    "Just wanted you to know — you crossed my mind today, and it made me smile. Thinking of you. 💭",
+    "No special reason, just thinking about you and hoping your day is as wonderful as you are. 🌸",
+    "You've been on my mind all day. Hope you're doing well and feeling loved. 💌",
+  ],
+  "good night": [
+    "Wishing you the softest sleep and the sweetest dreams tonight. Good night! 🌙✨",
+    "Hope your night is as peaceful and beautiful as you are. Sleep well, dream big. 🌟",
+    "As the day closes, I hope you feel nothing but calm and warmth. Good night! 🌙",
+  ],
+  "good morning": [
+    "Rise and shine! Wishing you a morning as bright and beautiful as your smile. ☀️",
+    "Good morning! Today is full of possibility — make it yours. Hope it's a great one. 🌅",
+    "Sending you sunshine and good vibes to start your day right. Good morning! ☀️🌸",
+  ],
+  "flowers": [
+    "Sending you these flowers because you deserve to be celebrated, just as you are. 🌹",
+    "Like flowers in bloom, you bring colour and beauty to every room you walk into. 🌸",
+    "A little bouquet to brighten your day, from someone who thinks you're pretty wonderful. 💐",
+  ],
+  "birthday": [
+    "Wishing you a birthday as wonderful and bright as the light you bring to everyone around you. 🎂✨",
+    "Another year of being absolutely you — and the world is better for it. Happy Birthday! 🎉",
+    "Today is all about you. Hope it's filled with everything that makes you smile. Happy Birthday! 🎂",
+  ],
+  "baby shower": [
+    "A brand new little person is on their way — and they're already so loved. Wishing you all the joy! 🍼💕",
+    "The greatest adventure is about to begin. So excited for you and your growing family! 👶🌸",
+    "Get ready for the most magical chapter of your life. Sending you all the love! 💕",
+  ],
+  "friend": [
+    "Just wanted to remind you that you're one of the good ones — and I'm really lucky to have you. 💛",
+    "Friends like you are rare. Thanks for being exactly who you are, always. 🌟",
+    "No reason, just wanted you to know you make life better simply by being in it. 💛",
+  ],
+  "general": [
+    "Thinking of you and sending a little love your way. Hope your day is going beautifully. 💌",
+    "Just a little note to say you matter and you're appreciated — more than you know. 🌸",
+    "Sending warm thoughts your way. Hope this puts a smile on your face! ✨",
+  ],
+  "graduation": [
+    "You worked so hard for this moment — now go out there and show the world what you've got. Congratulations! 🎓✨",
+    "This is just the beginning. The best chapters of your story are still ahead. Congratulations, graduate! 🎓",
+    "All those late nights, all that effort — and now here you are. So incredibly proud of you. 🌟",
+  ],
+  "it's giving": [
+    "Okay but you're literally everything right now. This card is giving exactly what it needs to give. ✨💅",
+    "You are the moment, the vibe, the whole aesthetic. Just needed you to know that. 💫",
+    "It's giving superstar energy and you deserve every bit of it. Period. ✨",
+  ],
+  "lowkey": [
+    "Not making a big deal out of it but… you're kind of amazing and I just wanted to say that. 🤍",
+    "Lowkey this is one of those moments where I just want you to know I appreciate you. 💛",
+    "No big speech, just a quiet reminder that you mean a lot to me. That's all. 🤍",
+  ],
+  "main character": [
+    "Reminder: you are the main character and this is your moment. Own it. 🌟👑",
+    "The plot is yours, the spotlight is yours, and honestly? You're killing it. 💫",
+    "Main character energy, always. Don't let anyone make you feel like a background character. 👑✨",
+  ],
+  "motivation": [
+    "You're closer than you think. Keep going — the breakthrough is just ahead. 💪✨",
+    "Hard days don't last, but strong people do. You've got this, I believe in you completely. 🌟",
+    "On the days it feels impossible, remember how far you've already come. Keep pushing. 💪",
+  ],
+  "no cap": [
+    "No cap, you're genuinely one of the best people I know and I just had to tell you. 💯",
+    "For real though, no cap — you've been showing up and it's not going unnoticed. 🔥",
+    "Not even being dramatic, you really do make everything better. No cap. 💯",
+  ],
+  "professional": [
+    "Wishing you every success in this next chapter. Your dedication and talent speak for themselves. 🌟",
+    "It's been a pleasure. Wishing you continued growth and great things ahead. 🤝",
+    "Your work ethic and character are genuinely inspiring. Wishing you all the best. ✨",
+  ],
+  "teacher": [
+    "The impact you've had goes far beyond the classroom. Thank you for everything you do. 🍎✨",
+    "You don't just teach — you inspire, encourage, and change lives. Thank you for being that person. 🌟",
+    "A great teacher stays with you forever. You are absolutely one of those. Thank you. 🍎",
+  ],
+  "teacher's week": [
+    "This week is for you — a small thank you for the enormous difference you make every single day. 🍎🌟",
+    "Teacher Appreciation Week feels too short to capture how much you mean to your students. Thank you! ✨",
+    "You pour so much into every lesson and every student. This week we celebrate you. 🍎💛",
+  ],
+  "wedding": [
+    "Two incredible people, one beautiful beginning. Wishing you a lifetime of love and laughter. 💍🥂",
+    "Today you choose each other — and that's everything. Congratulations and all the happiness! 💕",
+    "Here's to love that grows deeper with every passing year. Congratulations on your wedding! 💍",
+  ],
+  "weekend vibes": [
+    "Hope your weekend is full of good food, good laughs, and absolutely zero stress. Enjoy! 🌅✌️",
+    "Permission granted to do absolutely nothing this weekend. You've earned it. Enjoy! ☀️",
+    "Weekend mode: on. Sending you all the good vibes for a great one! 🌟✌️",
+  ],
+};
+
+function getStarterMessage(subcategoryName: string | null): string {
+  if (!subcategoryName) return "";
+  const key = subcategoryName.toLowerCase();
+  const starters = SUBCATEGORY_STARTERS[key];
+  if (!starters) return "";
+  return starters[Math.floor(Math.random() * starters.length)];
+}
+
 const CARD_W = 340;
 const CARD_H = 476;
 const OPEN_W = 340;   // same as CARD_W — stays portrait, no horizontal stretch
@@ -379,6 +491,11 @@ function CardPageInner() {
     getTemplateById(id).then(async tmpl => {
       if (tmpl) {
         setTemplate(tmpl);
+        // Pre-fill message with a mood-appropriate starter in compose mode
+        if (!isViewMode && !browseMode) {
+          const starter = getStarterMessage(tmpl.subcategory_name);
+          if (starter) setMessage(starter);
+        }
         getCategoryById(tmpl.category_id).then(cat => {
           setCategory(cat);
           setTemplateLoading(false);
@@ -398,6 +515,7 @@ function CardPageInner() {
               id,
               category_id: '',
               subcategory_id: null,
+              subcategory_name: null,
               title: 'Card',
               front_image_url: cardRow.front_image_url,
               inside_image_url: null,
