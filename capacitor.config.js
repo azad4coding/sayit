@@ -1,6 +1,5 @@
-import { CapacitorConfig } from "@capacitor/cli";
-
-const config: CapacitorConfig = {
+/** @type {import('@capacitor/cli').CapacitorConfig} */
+const config = {
   appId: "com.azad.sayit",
   appName: "SayIt",
   webDir: "out",
@@ -30,4 +29,4 @@ const config: CapacitorConfig = {
   },
 };
 
-export default config;
+module.exports = config;
