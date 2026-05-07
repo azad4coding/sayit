@@ -278,11 +278,6 @@ const LEFT_PANEL_QUOTES: Record<string, string[]> = {
   ],
 
   // ── Category-level fallbacks (cards with no subcategory) ─────────────────
-  "birthday": [
-    "Another year\nof being wonderful. 🎂",
-    "Today belongs\nentirely to you. 🎉",
-    "Celebrating you,\nnow and always. ✨",
-  ],
   "romance": [
     "Some feelings\ndefy all words. 💕",
     "You are\nmy favourite thought. ❤️",
