@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { getTemplateById, getCategoryById, type DBTemplate, type DBCategory } from "@/lib/supabase-data";
+import { ensurePlus } from "@/lib/phone";
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -222,7 +223,7 @@ function SendPageInner() {
       await supabase.from("profiles").upsert({
         id:        user.id,
         full_name: name,
-        phone:     user.phone ?? null,
+        phone:     ensurePlus(user.phone),   // always store with + prefix
       }, { onConflict: "id" });
     }
 
@@ -259,7 +260,7 @@ function SendPageInner() {
     }
 
     const recipientName = foundUser?.name ?? null;
-    const senderPhone   = user.phone ?? (profile as any)?.phone ?? null;
+    const senderPhone   = ensurePlus(user.phone ?? (profile as any)?.phone);
 
     const cardPayload: Record<string, unknown> = {
       sender_id:       user.id,

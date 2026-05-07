@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { ChevronDown } from "lucide-react";
+import { normalizePhone } from "@/lib/phone";
 
 // ── Country codes ─────────────────────────────────────────────────────────────
 const COUNTRY_CODES = [
@@ -119,10 +120,9 @@ function RegisterInner() {
   // ── Phone: send OTP ───────────────────────────────────────────
   async function sendOtp() {
     if (!name.trim()) { setError("Please enter your name"); return; }
-    const digits = phoneNumber.replace(/\D/g, "");
-    if (!digits || digits.length < 6) { setError("Please enter a valid phone number"); return; }
+    const fullPhone = normalizePhone(countryCode, phoneNumber);
+    if (!fullPhone) { setError("Please enter a valid phone number"); return; }
     setLoading(true); setError("");
-    const fullPhone = `${countryCode}${digits}`;
     const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
     setLoading(false);
     if (error) { setError(error.message); return; }
@@ -134,8 +134,9 @@ function RegisterInner() {
   async function verifyOtp() {
     const token = otp.join("");
     if (token.length !== 6) { setError("Please enter the 6-digit code"); return; }
+    const fullPhone = normalizePhone(countryCode, phoneNumber);
+    if (!fullPhone) { setError("Invalid phone number — please go back and re-enter"); return; }
     setLoading(true); setError("");
-    const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, "")}`;
     const { data, error } = await supabase.auth.verifyOtp({ phone: fullPhone, token, type: "sms" });
     if (error) { setError(error.message); setLoading(false); return; }
 

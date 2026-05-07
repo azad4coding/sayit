@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { ChevronDown } from "lucide-react";
+import { normalizePhone } from "@/lib/phone";
 
 const COUNTRY_CODES = [
   { code: "+91",  flag: "🇮🇳", name: "India" },
@@ -71,8 +72,6 @@ function AddPhoneInner() {
   const [error,          setError]          = useState("");
   const [userName,       setUserName]       = useState("");
 
-  const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, "")}`;
-
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -89,8 +88,8 @@ function AddPhoneInner() {
   }, [resendSecs]);
 
   async function sendOtp() {
-    const digits = phoneNumber.replace(/\D/g, "");
-    if (!digits || digits.length < 6) { setError("Please enter a valid phone number"); return; }
+    const fullPhone = normalizePhone(countryCode, phoneNumber);
+    if (!fullPhone) { setError("Please enter a valid phone number"); return; }
     setLoading(true); setError("");
 
     // updateUser sends OTP to link phone to existing account
@@ -103,6 +102,8 @@ function AddPhoneInner() {
   async function verifyOtp() {
     const token = otp.join("");
     if (token.length !== 6) { setError("Enter the 6-digit code"); return; }
+    const fullPhone = normalizePhone(countryCode, phoneNumber);
+    if (!fullPhone) { setError("Invalid phone number — please go back and re-enter"); return; }
     setLoading(true); setError("");
 
     // Verify with type "phone_change" — links phone to Google account
