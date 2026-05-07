@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import {
   LogOut, Edit2, Check, X, Trash2, Camera,
-  Phone, Mail, ChevronRight, Share2, ShieldCheck,
-  HelpCircle, Bell, Star,
+  Phone, Mail, ChevronRight, ShieldCheck,
+  HelpCircle, Star,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -249,40 +249,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ── App ── */}
-      <div className="mt-5 mx-4">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">App</p>
-        <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-
-          <button
-            className="w-full flex items-center gap-4 px-4 py-4 border-b border-gray-50 text-left active:bg-gray-50"
-            onClick={() => router.push("/wishes")}
-          >
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "#F39C1218" }}>
-              <Bell className="w-4 h-4 text-amber-400" />
-            </div>
-            <span className="flex-1 text-sm font-semibold text-gray-800">Notifications</span>
-            <ChevronRight className="w-4 h-4 text-gray-300" />
-          </button>
-
-          <button
-            className="w-full flex items-center gap-4 px-4 py-4 text-left active:bg-gray-50"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: "SayIt", text: "Send heartfelt greeting cards with SayIt 💌", url: "https://sayit-gamma.vercel.app" });
-              }
-            }}
-          >
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "#27AE6018" }}>
-              <Share2 className="w-4 h-4 text-green-500" />
-            </div>
-            <span className="flex-1 text-sm font-semibold text-gray-800">Invite Friends</span>
-            <ChevronRight className="w-4 h-4 text-gray-300" />
-          </button>
-        </div>
-      </div>
 
       {/* ── Support ── */}
       <div className="mt-5 mx-4">
