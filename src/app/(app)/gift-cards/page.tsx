@@ -181,7 +181,7 @@ export default function GiftCardsPage() {
           </button>
           <div style={{ marginTop: 4 }}>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, margin: 0 }}>✨ A new way to celebrate</p>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: "white", margin: "4px 0 2px", letterSpacing: -0.5, lineHeight: 1.2 }}>SayIt with a<br/>GIFT CARD 🎁</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: "white", margin: "4px 0 2px", letterSpacing: -0.5, lineHeight: 1.2, whiteSpace: "nowrap" }}>SayIt with a GIFT CARD 🎁</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Pick a brand, choose an amount, send love</p>
           </div>
           {/* Search bar inside header */}

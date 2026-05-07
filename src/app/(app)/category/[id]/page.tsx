@@ -100,16 +100,16 @@ export default function CategoryPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-gray-50">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="relative flex flex-col px-5 pt-14 pb-5 overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})` }}>
+      <div className="relative flex flex-col px-5 pb-5 overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})`, paddingTop: 100 }}>
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
         <div className="absolute top-10 right-10 w-24 h-24 rounded-full bg-white/10" />
 
-        {/* Back button — in flow, not absolute */}
+        {/* Back button — absolute, matching Wishes/Chat style */}
         <button onClick={() => router.back()}
-          className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center mb-4 z-10 self-start">
-          <ArrowLeft className="w-5 h-5 text-white" />
+          style={{ position: "absolute", top: 16, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
 
         <div className="z-10">
@@ -485,10 +485,11 @@ function PawMomentsPage({ gradient_from, gradient_to }: { gradient_from: string;
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#F5EDE0,#EDD9C0)" }}>
       {/* Header */}
-      <div className="relative flex flex-col px-5 pt-14 pb-5 overflow-hidden" style={{ background: `linear-gradient(135deg,${gradient_from},${gradient_to})` }}>
+      <div className="relative flex flex-col px-5 pb-5 overflow-hidden" style={{ background: `linear-gradient(135deg,${gradient_from},${gradient_to})`, paddingTop: 100 }}>
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
-        <button onClick={() => router.back()} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center mb-4 z-10 self-start">
-          <ArrowLeft className="w-5 h-5 text-white" />
+        <button onClick={() => router.back()}
+          style={{ position: "absolute", top: 16, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
         <div className="z-10">
           <p className="text-white/70 text-xs font-medium">🐾 Special category</p>
@@ -553,12 +554,17 @@ function PawMomentsPage({ gradient_from, gradient_to }: { gradient_from: string;
             {/* Message */}
             <div className="rounded-3xl p-5 shadow-sm" style={{ background: "#FAF3E8", border: "1px solid #D4B896" }}>
               <label className="text-xs font-semibold mb-2 block" style={{ color: "#8B6347", letterSpacing: 1 }}>A LITTLE NOTE</label>
-              <textarea value={message} onChange={e => setMessage(e.target.value)}
+              <textarea value={message} onChange={e => setMessage(e.target.value.slice(0, 200))}
                 placeholder="Meet my best friend! 🐶"
                 rows={3}
+                maxLength={200}
                 className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none resize-none"
                 style={{ background: "#FBF5EC", border: "1px solid #D4B896", fontFamily: "Georgia,serif", color: "#5C3317" }}
               />
+              <p className="text-right text-[10px] font-medium mt-1 pr-1"
+                style={{ color: message.length > 180 ? "#C07A3A" : "#C9A98A" }}>
+                {message.length}/200
+              </p>
             </div>
 
             {photos.length > 0 && (
