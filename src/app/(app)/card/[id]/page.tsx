@@ -627,12 +627,12 @@ function CardPageInner() {
                     </p>
                   </div>
                 ) : (
-                  <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={isPawMoments ? 'Write something sweet...' : 'Write your heartfelt message here...'} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontFamily: 'Georgia,serif', fontSize: view === 'open' ? 14 : 11, lineHeight: view === 'open' ? '28px' : '24px', color: '#5C3D2E', padding: '4px 14px', transition: 'font-size 0.3s, line-height 0.3s' }} />
+                  <textarea value={message} onChange={e => setMessage(e.target.value.slice(0, 300))} maxLength={300} placeholder={isPawMoments ? 'Write something sweet...' : 'Write your heartfelt message here...'} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontFamily: 'Georgia,serif', fontSize: view === 'open' ? 14 : 11, lineHeight: view === 'open' ? '28px' : '24px', color: '#5C3D2E', padding: '4px 14px', transition: 'font-size 0.3s, line-height 0.3s' }} />
                 )}
                 <div style={{ borderTop: `1px solid ${isPawMoments ? pawAccentLight : goldAccent}`, paddingTop: 8, opacity: 0.7, margin: '0 14px', flexShrink: 0 }}>
                   {isViewMode
                     ? <p style={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: view === 'open' ? 13 : 11, color: '#7A5240', margin: 0, transition: 'font-size 0.3s' }}>— {viewSender || 'With love'}</p>
-                    : <input value={sender} onChange={e => setSender(e.target.value)} placeholder="— Your Name" style={{ background: 'transparent', border: 'none', outline: 'none', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: view === 'open' ? 13 : 11, color: '#7A5240', width: '100%', transition: 'font-size 0.3s' }} />
+                    : <input value={sender} onChange={e => setSender(e.target.value.slice(0, 50))} maxLength={50} placeholder="— Your Name" style={{ background: 'transparent', border: 'none', outline: 'none', fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: view === 'open' ? 13 : 11, color: '#7A5240', width: '100%', transition: 'font-size 0.3s' }} />
                   }
                 </div>
               </div>
