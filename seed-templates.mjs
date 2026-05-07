@@ -80,6 +80,23 @@ const SUBCATEGORIES = [
   { slug: "its-giving",      category_slug: "vibes",          name: "It's Giving",      icon: "💅", display_order: 2 },
   { slug: "lowkey",          category_slug: "vibes",          name: "Lowkey",           icon: "🤫", display_order: 3 },
   { slug: "main-character",  category_slug: "vibes",          name: "Main Character",   icon: "🌟", display_order: 4 },
+
+  // ── Holidays ──────────────────────────────────────────────────────────────
+  { slug: "christmas",       category_slug: "holidays",       name: "Christmas",        icon: "🎄", display_order: 1 },
+  { slug: "new-year",        category_slug: "holidays",       name: "New Year",         icon: "🎆", display_order: 2 },
+  { slug: "diwali",          category_slug: "holidays",       name: "Diwali",           icon: "🪔", display_order: 3 },
+  { slug: "hanukkah",        category_slug: "holidays",       name: "Hanukkah",         icon: "🕎", display_order: 4 },
+  { slug: "holi",            category_slug: "holidays",       name: "Holi",             icon: "🌈", display_order: 5 },
+  { slug: "eid",             category_slug: "holidays",       name: "Eid",              icon: "🌙", display_order: 6 },
+  { slug: "halloween",       category_slug: "holidays",       name: "Halloween",        icon: "🎃", display_order: 7 },
+  { slug: "thanksgiving",    category_slug: "holidays",       name: "Thanksgiving",     icon: "🍂", display_order: 8 },
+
+  // ── Occasions ─────────────────────────────────────────────────────────────
+  { slug: "mothers-day",              category_slug: "occasions", name: "Mother's Day",             icon: "🌸", display_order: 1 },
+  { slug: "fathers-day",              category_slug: "occasions", name: "Father's Day",             icon: "👔", display_order: 2 },
+  { slug: "friendship-day",           category_slug: "occasions", name: "Friendship Day",           icon: "💛", display_order: 3 },
+  { slug: "raksha-bandhan",           category_slug: "occasions", name: "Raksha Bandhan",           icon: "🪢", display_order: 4 },
+  { slug: "international-womens-day", category_slug: "occasions", name: "International Women's Day",icon: "💜", display_order: 5 },
 ];
 
 // ── Templates with DALL-E prompts ────────────────────────────────────────────
@@ -201,6 +218,84 @@ const TEMPLATES = [
     prompt: "Cinematic golden-hour scene — long lens flare, dramatic sky, open road, protagonist energy, warm gold and amber tones, portrait movie still aesthetic." },
   { slug: "t-v-8", category_slug: "vibes", subcategory_slug: "main-character", title: "That Girl / That Guy", color_accent: "#FF1493", display_order: 2,
     prompt: "Aesthetic morning routine flat lay — matcha latte, journal, flowers, crystals, soft morning light, pastel tones, portrait still-life photography, aspirational lifestyle." },
+
+  // ── Holidays › Christmas ──────────────────────────────────────────────────
+  { slug: "t-h-xmas-1", category_slug: "holidays", subcategory_slug: "christmas", title: "Christmas Magic", color_accent: "#C0392B", display_order: 1,
+    prompt: "Warm cinematic close-up of a snow-dusted pine wreath with red berries, golden fairy lights glowing softly, burgundy ribbon, rich jewel tones, cosy magical atmosphere, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-xmas-2", category_slug: "holidays", subcategory_slug: "christmas", title: "Cosy Christmas", color_accent: "#27AE60", display_order: 2,
+    prompt: "Elegant Christmas fireplace scene with glowing embers, stockings hung, snow falling outside a frosted window, warm amber candlelight, cosy and magical, painterly fine art style, portrait orientation, no text." },
+
+  // ── Holidays › New Year ───────────────────────────────────────────────────
+  { slug: "t-h-ny-1", category_slug: "holidays", subcategory_slug: "new-year", title: "New Year Fireworks", color_accent: "#1A1A4E", display_order: 1,
+    prompt: "Breathtaking aerial view of fireworks exploding over a dark city skyline at midnight, gold and silver sparks cascading, deep navy background, cinematic and dramatic, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-ny-2", category_slug: "holidays", subcategory_slug: "new-year", title: "Fresh Start", color_accent: "#C9A84C", display_order: 2,
+    prompt: "Two champagne glasses clinking with golden bubbles rising against a bokeh backdrop of warm lights and confetti, celebratory and elegant, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Holidays › Diwali ─────────────────────────────────────────────────────
+  { slug: "t-h-diwali-1", category_slug: "holidays", subcategory_slug: "diwali", title: "Festival of Light", color_accent: "#E67E22", display_order: 1,
+    prompt: "Beautiful arrangement of lit diyas glowing amber and gold on a dark surface, surrounded by marigold petals and intricate rangoli patterns in pink, orange and red, warm festive atmosphere, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-diwali-2", category_slug: "holidays", subcategory_slug: "diwali", title: "Diwali Glow", color_accent: "#F39C12", display_order: 2,
+    prompt: "Overhead flat lay of dozens of clay diyas glowing golden in a dark setting, surrounded by flower petals and sparkle, rich warm tones, painterly fine art style, portrait orientation, no text." },
+
+  // ── Holidays › Hanukkah ───────────────────────────────────────────────────
+  { slug: "t-h-hanukkah-1", category_slug: "holidays", subcategory_slug: "hanukkah", title: "Eight Nights", color_accent: "#1A3A6B", display_order: 1,
+    prompt: "Silver menorah with all eight candles lit, warm golden flames glowing against a deep blue background with soft bokeh stars, elegant and serene, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-hanukkah-2", category_slug: "holidays", subcategory_slug: "hanukkah", title: "Festival of Lights", color_accent: "#C9A84C", display_order: 2,
+    prompt: "Close-up of a golden menorah candle flame glowing against a dark indigo background with Star of David bokeh lights, warm and sacred, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Holidays › Holi ───────────────────────────────────────────────────────
+  { slug: "t-h-holi-1", category_slug: "holidays", subcategory_slug: "holi", title: "Colours of Joy", color_accent: "#E91E8C", display_order: 1,
+    prompt: "Explosion of vibrant coloured powder — magenta, turquoise, saffron and lime — suspended in the air against a bright white background, joyful, energetic, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-holi-2", category_slug: "holidays", subcategory_slug: "holi", title: "Holi Celebration", color_accent: "#9B59B6", display_order: 2,
+    prompt: "Hands tossing rainbow gulal powder into a bright blue sky, vivid pinks purples and yellows filling the frame, celebration and joy, vibrant portrait photography, greeting card aesthetic, no text." },
+
+  // ── Holidays › Eid ────────────────────────────────────────────────────────
+  { slug: "t-h-eid-1", category_slug: "holidays", subcategory_slug: "eid", title: "Eid Mubarak", color_accent: "#1B4332", display_order: 1,
+    prompt: "Crescent moon and single star glowing in a deep indigo sky, intricate Islamic geometric lanterns hanging below casting warm golden light, elegant and serene, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-eid-2", category_slug: "holidays", subcategory_slug: "eid", title: "Eid Blessings", color_accent: "#C9A84C", display_order: 2,
+    prompt: "Ornate golden Islamic lanterns glowing warmly against a deep teal and gold Moroccan backdrop, intricate geometric patterns, festive and sacred atmosphere, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Holidays › Halloween ──────────────────────────────────────────────────
+  { slug: "t-h-halloween-1", category_slug: "holidays", subcategory_slug: "halloween", title: "Spooky Night", color_accent: "#E67E22", display_order: 1,
+    prompt: "Carved jack-o-lantern glowing orange on a dark doorstep surrounded by autumn leaves, candles and wisps of mist, moody and atmospheric, deep purples and burnt oranges, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-halloween-2", category_slug: "holidays", subcategory_slug: "halloween", title: "Witch's Night", color_accent: "#6C3483", display_order: 2,
+    prompt: "Full moon rising behind bare autumn trees with bats silhouetted in the night sky, haunted house in the distance, deep purple and black tones, cinematic horror art style, greeting card aesthetic, portrait orientation, no text." },
+
+  // ── Holidays › Thanksgiving ───────────────────────────────────────────────
+  { slug: "t-h-thanks-1", category_slug: "holidays", subcategory_slug: "thanksgiving", title: "Harvest Table", color_accent: "#C0392B", display_order: 1,
+    prompt: "Warm rustic flatlay of autumn harvest — golden pumpkins, maple leaves, wheat stalks and candles on a wooden table, rich amber and burnt sienna tones, cosy and abundant, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-h-thanks-2", category_slug: "holidays", subcategory_slug: "thanksgiving", title: "Grateful Heart", color_accent: "#E67E22", display_order: 2,
+    prompt: "Beautiful autumn forest path with golden and red fallen leaves, warm afternoon sunlight filtering through bare trees, peaceful and grateful mood, cinematic portrait photography, greeting card aesthetic, no text." },
+
+  // ── Occasions › Mother's Day ──────────────────────────────────────────────
+  { slug: "t-occ-mom-1", category_slug: "occasions", subcategory_slug: "mothers-day", title: "For Mum", color_accent: "#FF6B8A", display_order: 1,
+    prompt: "Soft close-up of gentle hands holding a bouquet of pale pink peonies and white roses, warm afternoon light falling across them, tender and romantic, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-occ-mom-2", category_slug: "occasions", subcategory_slug: "mothers-day", title: "Unconditional Love", color_accent: "#C9A84C", display_order: 2,
+    prompt: "Silhouette of a mother and child holding hands walking through a golden field at sunset, warm amber glow, emotional and cinematic, painterly fine art style, greeting card aesthetic, portrait orientation, no text." },
+
+  // ── Occasions › Father's Day ──────────────────────────────────────────────
+  { slug: "t-occ-dad-1", category_slug: "occasions", subcategory_slug: "fathers-day", title: "For Dad", color_accent: "#2C3E50", display_order: 1,
+    prompt: "Heartwarming silhouette of a father and child walking hand in hand along a golden sunset beach, waves softly lapping, warm amber and coral tones, cinematic and emotional, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-occ-dad-2", category_slug: "occasions", subcategory_slug: "fathers-day", title: "My Hero", color_accent: "#1A3A6B", display_order: 2,
+    prompt: "Close-up of a strong father's hand gently holding a tiny child's hand, warm natural light, dark bokeh background, emotional and intimate, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Occasions › Friendship Day ────────────────────────────────────────────
+  { slug: "t-occ-friend-1", category_slug: "occasions", subcategory_slug: "friendship-day", title: "Best Friends", color_accent: "#F39C12", display_order: 1,
+    prompt: "Warm candid moment of two hands clinking coffee cups together at a sunlit café table, golden light streaming through the window, soft bokeh background, joyful and intimate, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-occ-friend-2", category_slug: "occasions", subcategory_slug: "friendship-day", title: "Forever Friends", color_accent: "#27AE60", display_order: 2,
+    prompt: "Two friendship bracelets on wrists side by side in warm afternoon sunlight, vibrant colours, golden bokeh background, intimate and joyful, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Occasions › Raksha Bandhan ────────────────────────────────────────────
+  { slug: "t-occ-raksha-1", category_slug: "occasions", subcategory_slug: "raksha-bandhan", title: "Sacred Bond", color_accent: "#E74C3C", display_order: 1,
+    prompt: "Close-up of a delicate rakhi thread — red, gold and intricate — being tied around a wrist, marigold petals scattered softly around, warm golden tones, intimate and ceremonial, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-occ-raksha-2", category_slug: "occasions", subcategory_slug: "raksha-bandhan", title: "Sibling Love", color_accent: "#C9A84C", display_order: 2,
+    prompt: "Beautiful flat lay of colourful rakhis, marigold flowers, red kumkum and sweets on a golden silk cloth, festive and warm, fine art portrait photography, greeting card aesthetic, no text." },
+
+  // ── Occasions › International Women's Day ────────────────────────────────
+  { slug: "t-occ-iwd-1", category_slug: "occasions", subcategory_slug: "international-womens-day", title: "She Leads", color_accent: "#8E44AD", display_order: 1,
+    prompt: "Powerful close-up of diverse women's hands raised together, each holding a different wildflower — roses, sunflowers, lavender — against a soft purple sky, bold and uplifting, painterly illustration style, greeting card aesthetic, portrait orientation, no text." },
+  { slug: "t-occ-iwd-2", category_slug: "occasions", subcategory_slug: "international-womens-day", title: "Women Rise", color_accent: "#E91E8C", display_order: 2,
+    prompt: "Single woman silhouette standing on a mountain peak at golden sunrise, arms open wide, dramatic sky with soft pinks and purples, empowering and cinematic, fine art portrait photography, greeting card aesthetic, no text." },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -326,13 +421,9 @@ async function main() {
       };
 
       const { error: tErr } = await supabase.from("templates")
-        .upsert(record, { onConflict: "front_image_url" });
+        .upsert(record, { onConflict: "title,category_id" });
 
-      if (tErr) {
-        // If upsert conflict fails, just insert
-        const { error: insErr } = await supabase.from("templates").insert(record);
-        if (insErr) throw new Error(`DB insert: ${insErr.message}`);
-      }
+      if (tErr) throw new Error(`DB insert: ${tErr.message}`);
 
       console.log(`    ✅ Done → ${imageUrl.split("?")[0].split("/").pop()}\n`);
       successCount++;
