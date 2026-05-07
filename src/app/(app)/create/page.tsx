@@ -809,9 +809,10 @@ export default function CreateAiCardPage() {
 
               <textarea
                 value={message}
-                onChange={e => setMessage(e.target.value)}
+                onChange={e => setMessage(e.target.value.slice(0, 200))}
                 placeholder={`Write something romantic for ${location?.name}…`}
                 rows={2}
+                maxLength={200}
                 className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none resize-none"
                 style={{
                   background: "rgba(255,255,255,0.07)",
@@ -819,6 +820,10 @@ export default function CreateAiCardPage() {
                   caretColor: "#FFD700",
                 }}
               />
+              <p className="text-right text-[10px] font-medium pr-1"
+                style={{ color: message.length > 180 ? "#FFD700" : "rgba(255,255,255,0.25)" }}>
+                {message.length}/200
+              </p>
 
               {/* AI suggestions */}
               <AnimatePresence>
