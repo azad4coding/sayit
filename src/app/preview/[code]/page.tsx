@@ -687,65 +687,62 @@ function PreviewInner() {
       {/* ── Paw Moments card — framed collage ────────────────────── */}
       {isPaw && card?.paw_photos && card.paw_photos.length > 0 && (
         <div className="px-4 mb-6">
-          {/* Collage */}
-          <PawCollage
-            photos={card.paw_photos}
-            message={message}
-            frame={(card.paw_frame ?? "wooden") as PawFrameType}
-            showLabel={false}
-            showMessage={false}
-            height={460}
-          />
-
-          {/* Reaction badge — below collage */}
-          <AnimatePresence>
-            {/* Sender sees all reactions left by others */}
-            {isLoggedIn && isSender && reactionLoaded && Object.keys(reactionCounts).length > 0 && (
-              <motion.div
-                key="paw-sender-reactions"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 24 }}
-                style={{ display: "flex", justifyContent: "flex-end", marginTop: 8, gap: 6 }}
-              >
-                {Object.entries(reactionCounts).filter(([, count]) => count > 0).map(([emoji, count]) => (
-                  <div key={emoji}
-                    style={{
-                      background: "white", borderRadius: 20,
-                      padding: "5px 10px 5px 7px",
-                      border: "1.5px solid rgba(255,107,138,0.25)",
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.14)",
-                      display: "flex", alignItems: "center", gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 20, lineHeight: 1 }}>{emoji}</span>
-                    {count > 0 && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#FF6B8A", lineHeight: 1 }}>{count}</span>
-                    )}
-                  </div>
-                ))}
-              </motion.div>
-            )}
-            {/* Recipient sees their own reaction badge */}
-            {isLoggedIn && !isSender && reactionLoaded && myCardReaction && !reactionTrayOpen && (
-              <motion.div
-                key="paw-badge"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 24 }}
-                style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}
-              >
-                <button
+          {/* Collage + reaction badge anchored to bottom-right corner */}
+          <div style={{ position: "relative" }}>
+            <PawCollage
+              photos={card.paw_photos}
+              message={message}
+              frame={(card.paw_frame ?? "wooden") as PawFrameType}
+              showLabel={false}
+              showMessage={false}
+              height={460}
+            />
+            <AnimatePresence>
+              {/* Sender sees all reactions left by others */}
+              {isLoggedIn && isSender && reactionLoaded && Object.keys(reactionCounts).length > 0 && (
+                <motion.div
+                  key="paw-sender-reactions"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                  style={{ position: "absolute", bottom: -14, right: -6, display: "flex", gap: 6, zIndex: 10 }}
+                >
+                  {Object.entries(reactionCounts).filter(([, count]) => count > 0).map(([emoji, count]) => (
+                    <div key={emoji}
+                      style={{
+                        background: "white", borderRadius: 20,
+                        padding: "5px 10px 5px 7px",
+                        border: "1.5px solid rgba(255,107,138,0.25)",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.14)",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}
+                    >
+                      <span style={{ fontSize: 20, lineHeight: 1 }}>{emoji}</span>
+                      {count > 0 && (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#FF6B8A", lineHeight: 1 }}>{count}</span>
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+              {/* Recipient sees their own reaction badge */}
+              {isLoggedIn && !isSender && reactionLoaded && myCardReaction && !reactionTrayOpen && (
+                <motion.button
+                  key="paw-badge"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 24 }}
                   onClick={() => setReactionTrayOpen(true)}
                   style={{
+                    position: "absolute", bottom: -14, right: -6,
                     background: "white", borderRadius: 20,
                     padding: "5px 10px 5px 7px",
                     border: "1.5px solid rgba(0,0,0,0.07)",
                     boxShadow: "0 2px 10px rgba(0,0,0,0.14)",
                     display: "flex", alignItems: "center", gap: 4,
-                    cursor: "pointer", WebkitTapHighlightColor: "transparent",
+                    cursor: "pointer", WebkitTapHighlightColor: "transparent", zIndex: 10,
                   }}
                 >
                   <span style={{ fontSize: 20, lineHeight: 1 }}>{myCardReaction}</span>
@@ -754,10 +751,10 @@ function PreviewInner() {
                       {reactionCounts[myCardReaction]}
                     </span>
                   )}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Message — plain text, no box */}
           {message && (
