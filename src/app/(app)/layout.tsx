@@ -194,6 +194,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Covers the iOS status bar area so scrolling content doesn't bleed through */}
+      <div className="safe-area-top" />
       <main className="page-content">{children}</main>
 
       {/* ── Bottom Navigation ── */}

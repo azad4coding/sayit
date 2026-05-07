@@ -19,6 +19,20 @@ body {
   min-height: 100dvh;
 }
 
+/* ── Safe area top cover — prevents content bleeding into status bar ── */
+.safe-area-top {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-max-width);
+  height: env(safe-area-inset-top, 44px);
+  background: #FFF5F7;
+  z-index: 60;
+  pointer-events: none;
+}
+
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
 .app-shell {
   max-width: var(--app-max-width);
