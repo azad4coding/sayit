@@ -174,116 +174,116 @@ function pickRandom(arr: string[], n = 3): string[] {
   return shuffled.slice(0, n);
 }
 
-// ── Default starter messages per subcategory — pre-fill compose mode ──────────
-const SUBCATEGORY_STARTERS: Record<string, string[]> = {
+// ── Short mood quotes shown on the LEFT panel above the image ─────────────────
+const LEFT_PANEL_QUOTES: Record<string, string[]> = {
   "miss you": [
-    "Every moment without you feels a little longer than it should. Missing you more than words can say. 💌",
-    "The distance between us doesn't change how much I think of you. Counting the days. 🌙",
-    "I keep reaching for my phone to tell you something, then remember you're far away. Miss you.",
+    "Some distances feel\nlonger than miles. 🌙",
+    "Far away,\nbut never forgotten. 💌",
+    "Missing you\nin the quiet moments.",
   ],
   "thinking of you": [
-    "Just wanted you to know — you crossed my mind today, and it made me smile. Thinking of you. 💭",
-    "No special reason, just thinking about you and hoping your day is as wonderful as you are. 🌸",
-    "You've been on my mind all day. Hope you're doing well and feeling loved. 💌",
+    "You crossed my mind\nand made me smile. 💭",
+    "Quietly thinking of you\ntoday and always. 🌸",
+    "A little thought,\nsent with love. 💌",
   ],
   "good night": [
-    "Wishing you the softest sleep and the sweetest dreams tonight. Good night! 🌙✨",
-    "Hope your night is as peaceful and beautiful as you are. Sleep well, dream big. 🌟",
-    "As the day closes, I hope you feel nothing but calm and warmth. Good night! 🌙",
+    "Rest well.\nYou deserve it. 🌙",
+    "Sweet dreams\nand softer mornings. ✨",
+    "Let the night\nhold you gently. 🌙",
   ],
   "good morning": [
-    "Rise and shine! Wishing you a morning as bright and beautiful as your smile. ☀️",
-    "Good morning! Today is full of possibility — make it yours. Hope it's a great one. 🌅",
-    "Sending you sunshine and good vibes to start your day right. Good morning! ☀️🌸",
+    "A new day,\njust for you. ☀️",
+    "Rise softly.\nThis day is yours. 🌅",
+    "Morning sunshine,\nsent with love. ☀️",
   ],
   "flowers": [
-    "Sending you these flowers because you deserve to be celebrated, just as you are. 🌹",
-    "Like flowers in bloom, you bring colour and beauty to every room you walk into. 🌸",
-    "A little bouquet to brighten your day, from someone who thinks you're pretty wonderful. 💐",
+    "Blooming,\njust like you. 🌸",
+    "Some beauty deserves\nto be shared. 💐",
+    "A little colour\nfor your day. 🌹",
   ],
   "birthday": [
-    "Wishing you a birthday as wonderful and bright as the light you bring to everyone around you. 🎂✨",
-    "Another year of being absolutely you — and the world is better for it. Happy Birthday! 🎉",
-    "Today is all about you. Hope it's filled with everything that makes you smile. Happy Birthday! 🎂",
+    "Another year\nof being wonderful. 🎂",
+    "Today belongs\nentirely to you. 🎉",
+    "Celebrating you,\nnow and always. ✨",
   ],
   "baby shower": [
-    "A brand new little person is on their way — and they're already so loved. Wishing you all the joy! 🍼💕",
-    "The greatest adventure is about to begin. So excited for you and your growing family! 👶🌸",
-    "Get ready for the most magical chapter of your life. Sending you all the love! 💕",
+    "A tiny miracle\nis on their way. 🍼",
+    "The sweetest chapter\nis just beginning. 💕",
+    "New love,\nabout to arrive. 👶",
   ],
   "friend": [
-    "Just wanted to remind you that you're one of the good ones — and I'm really lucky to have you. 💛",
-    "Friends like you are rare. Thanks for being exactly who you are, always. 🌟",
-    "No reason, just wanted you to know you make life better simply by being in it. 💛",
+    "Good friends\nare everything. 💛",
+    "Lucky to have\nsomeone like you. 🌟",
+    "You make life\nso much better. 💛",
   ],
   "general": [
-    "Thinking of you and sending a little love your way. Hope your day is going beautifully. 💌",
-    "Just a little note to say you matter and you're appreciated — more than you know. 🌸",
-    "Sending warm thoughts your way. Hope this puts a smile on your face! ✨",
+    "Thinking of you,\nwith warmth. 💌",
+    "Just a little love,\nsent your way. 🌸",
+    "Because you matter\nmore than you know. ✨",
   ],
   "graduation": [
-    "You worked so hard for this moment — now go out there and show the world what you've got. Congratulations! 🎓✨",
-    "This is just the beginning. The best chapters of your story are still ahead. Congratulations, graduate! 🎓",
-    "All those late nights, all that effort — and now here you are. So incredibly proud of you. 🌟",
+    "The world is ready\nfor you. 🎓",
+    "All that work.\nAll worth it. 🌟",
+    "The best chapter\nstarts now. 🎓",
   ],
   "it's giving": [
-    "Okay but you're literally everything right now. This card is giving exactly what it needs to give. ✨💅",
-    "You are the moment, the vibe, the whole aesthetic. Just needed you to know that. 💫",
-    "It's giving superstar energy and you deserve every bit of it. Period. ✨",
+    "The vibe.\nThe moment.\nYou. ✨",
+    "Serving looks\nand living it. 💅",
+    "It's giving\nexactly that. 💫",
   ],
   "lowkey": [
-    "Not making a big deal out of it but… you're kind of amazing and I just wanted to say that. 🤍",
-    "Lowkey this is one of those moments where I just want you to know I appreciate you. 💛",
-    "No big speech, just a quiet reminder that you mean a lot to me. That's all. 🤍",
+    "Quietly,\nbut sincerely. 🤍",
+    "No fuss.\nJust love. 💛",
+    "A little note,\nfrom the heart. 🤍",
   ],
   "main character": [
-    "Reminder: you are the main character and this is your moment. Own it. 🌟👑",
-    "The plot is yours, the spotlight is yours, and honestly? You're killing it. 💫",
-    "Main character energy, always. Don't let anyone make you feel like a background character. 👑✨",
+    "This is your story.\nOwn it. 👑",
+    "The spotlight\nbelongs to you. 🌟",
+    "Main character.\nAlways. 💫",
   ],
   "motivation": [
-    "You're closer than you think. Keep going — the breakthrough is just ahead. 💪✨",
-    "Hard days don't last, but strong people do. You've got this, I believe in you completely. 🌟",
-    "On the days it feels impossible, remember how far you've already come. Keep pushing. 💪",
+    "You are closer\nthan you think. 💪",
+    "Keep going.\nIt's worth it. ✨",
+    "Stronger than\nyou know. 🌟",
   ],
   "no cap": [
-    "No cap, you're genuinely one of the best people I know and I just had to tell you. 💯",
-    "For real though, no cap — you've been showing up and it's not going unnoticed. 🔥",
-    "Not even being dramatic, you really do make everything better. No cap. 💯",
+    "Real talk —\nyou're amazing. 💯",
+    "No cap,\nyou showed up. 🔥",
+    "Genuinely,\ntruly, you. 💯",
   ],
   "professional": [
-    "Wishing you every success in this next chapter. Your dedication and talent speak for themselves. 🌟",
-    "It's been a pleasure. Wishing you continued growth and great things ahead. 🤝",
-    "Your work ethic and character are genuinely inspiring. Wishing you all the best. ✨",
+    "With respect\nand admiration. 🌟",
+    "Your work speaks\nfor itself. ✨",
+    "Wishing you\neverything ahead. 🤝",
   ],
   "teacher": [
-    "The impact you've had goes far beyond the classroom. Thank you for everything you do. 🍎✨",
-    "You don't just teach — you inspire, encourage, and change lives. Thank you for being that person. 🌟",
-    "A great teacher stays with you forever. You are absolutely one of those. Thank you. 🍎",
+    "The best ones\nstay with you forever. 🍎",
+    "More than lessons —\nyou gave us belief. ✨",
+    "Thank you\nfor everything. 🍎",
   ],
   "teacher's week": [
-    "This week is for you — a small thank you for the enormous difference you make every single day. 🍎🌟",
-    "Teacher Appreciation Week feels too short to capture how much you mean to your students. Thank you! ✨",
-    "You pour so much into every lesson and every student. This week we celebrate you. 🍎💛",
+    "This week\nis all yours. 🍎",
+    "Celebrated,\napreciated, loved. 🌟",
+    "For every lesson\ngiven with heart. 🍎",
   ],
   "wedding": [
-    "Two incredible people, one beautiful beginning. Wishing you a lifetime of love and laughter. 💍🥂",
-    "Today you choose each other — and that's everything. Congratulations and all the happiness! 💕",
-    "Here's to love that grows deeper with every passing year. Congratulations on your wedding! 💍",
+    "Two hearts.\nOne beautiful yes. 💍",
+    "Here's to love\nthat only grows. 🥂",
+    "Today, forever\nbegins. 💕",
   ],
   "weekend vibes": [
-    "Hope your weekend is full of good food, good laughs, and absolutely zero stress. Enjoy! 🌅✌️",
-    "Permission granted to do absolutely nothing this weekend. You've earned it. Enjoy! ☀️",
-    "Weekend mode: on. Sending you all the good vibes for a great one! 🌟✌️",
+    "Unplug.\nBreathe.\nEnjoy. ✌️",
+    "Good vibes,\ngood times. 🌅",
+    "The weekend\nis yours. ☀️",
   ],
 };
 
-function getStarterMessage(subcategoryName: string | null): string {
+function getLeftPanelQuote(subcategoryName: string | null): string {
   if (!subcategoryName) return "";
   const key = subcategoryName.toLowerCase();
-  const starters = SUBCATEGORY_STARTERS[key];
-  if (!starters) return "";
-  return starters[Math.floor(Math.random() * starters.length)];
+  const quotes = LEFT_PANEL_QUOTES[key];
+  if (!quotes) return "";
+  return quotes[Math.floor(Math.random() * quotes.length)];
 }
 
 const CARD_W = 340;
@@ -491,11 +491,8 @@ function CardPageInner() {
     getTemplateById(id).then(async tmpl => {
       if (tmpl) {
         setTemplate(tmpl);
-        // Pre-fill message with a mood-appropriate starter in compose mode
-        if (!isViewMode && !browseMode) {
-          const starter = getStarterMessage(tmpl.subcategory_name);
-          if (starter) setMessage(starter);
-        }
+        // Set the left-panel mood quote (shown on art side, not in user's message)
+        setMoodQuote(getLeftPanelQuote(tmpl.subcategory_name));
         getCategoryById(tmpl.category_id).then(cat => {
           setCategory(cat);
           setTemplateLoading(false);
@@ -549,6 +546,7 @@ function CardPageInner() {
 
   const [message, setMessage] = useState('');
   const [sender, setSender] = useState('');
+  const [moodQuote, setMoodQuote] = useState('');
   const [petPhotos, setPetPhotos] = useState<(string | null)[]>([null, null, null, null]);
 
   const handlePhotoUpload = (index: number, file: File) => {
@@ -717,6 +715,23 @@ function CardPageInner() {
               ) : (
                 <>
                   <p style={{ fontSize: view === 'open' ? 11 : 8, letterSpacing: 2.5, color: goldAccent, opacity: 0.7, textTransform: 'uppercase', textAlign: 'center', transition: 'font-size 0.3s' }}>{category?.name ?? 'With Love'}</p>
+                  {/* Mood quote — shown above the image when a subcategory match exists */}
+                  {moodQuote && (
+                    <p style={{
+                      fontFamily: "'Georgia', 'Times New Roman', serif",
+                      fontStyle: 'italic',
+                      fontSize: view === 'open' ? 10 : 8,
+                      lineHeight: 1.65,
+                      color: '#8B6347',
+                      textAlign: 'center',
+                      whiteSpace: 'pre-line',
+                      opacity: 0.82,
+                      margin: '2px 4px',
+                      transition: 'font-size 0.3s',
+                    }}>
+                      {moodQuote}
+                    </p>
+                  )}
                   <OrnamentLine color={goldAccent} />
                   <div style={{ width: view === 'open' ? 152 : 110, height: view === 'open' ? 152 : 110, borderRadius: '50%', overflow: 'hidden', border: `3px solid ${goldAccent}`, boxShadow: `0 0 0 5px rgba(201,168,76,0.12),0 6px 20px rgba(0,0,0,0.14)`, transition: 'width 0.3s, height 0.3s', flexShrink: 0, background: template.color_accent ?? '#c9a87c' }}>
                     <img src={template.front_image_url ?? `https://picsum.photos/seed/${template.id}/220/220`} alt={template.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
