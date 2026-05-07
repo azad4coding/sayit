@@ -118,8 +118,7 @@ export default function NotificationsPage() {
     for (const card of (receivedData ?? []) as SentCard[]) {
       // Prefer full_name from profiles, then sender_name from card, then fallback
       const from = (card.sender_id ? senderNameMap[card.sender_id] : null)
-        ?? card.sender_name?.trim()
-        || "Your friend";
+        ?? (card.sender_name?.trim() || "Your friend");
       const isPaw  = card.card_type === "paw-moments";
       const isGift = card.card_type === "gift-card";
       let gcVendor = "";
