@@ -103,18 +103,23 @@ export default function NotificationsPage() {
     receivedQuery = receivedQuery.neq("sender_id", userId);
     const { data: receivedData } = await receivedQuery;
 
-    // Batch-fetch sender photos
+    // Batch-fetch sender profiles (name + photo)
     const senderIds = Array.from(new Set((receivedData ?? []).map((c: any) => c.sender_id).filter(Boolean)));
     const { data: senderProfiles } = senderIds.length > 0
-      ? await supabase.from("profiles").select("id, avatar_url").in("id", senderIds)
+      ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", senderIds)
       : { data: [] };
     const senderPhotoMap: Record<string, string> = {};
+    const senderNameMap: Record<string, string>  = {};
     for (const p of (senderProfiles ?? [])) {
       if (p.avatar_url) senderPhotoMap[p.id] = p.avatar_url;
+      if (p.full_name)  senderNameMap[p.id]  = p.full_name;
     }
 
     for (const card of (receivedData ?? []) as SentCard[]) {
-      const from = card.sender_name?.trim() || "Someone";
+      // Prefer full_name from profiles, then sender_name from card, then fallback
+      const from = (card.sender_id ? senderNameMap[card.sender_id] : null)
+        ?? card.sender_name?.trim()
+        || "Your friend";
       const isPaw  = card.card_type === "paw-moments";
       const isGift = card.card_type === "gift-card";
       let gcVendor = "";
@@ -359,7 +364,7 @@ export default function NotificationsPage() {
         <div style={{ position: "absolute", top: 30, left: -15, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
         {/* Back button */}
         <button onClick={() => router.push("/home")}
-          style={{ position: "absolute", top: 52, left: 20, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "absolute", top: 16, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>

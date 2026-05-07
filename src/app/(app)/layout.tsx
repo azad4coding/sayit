@@ -100,7 +100,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .select("id", { count: "exact", head: true })
         .eq("recipient_id", user.id)
         .gt("created_at", lastSeenChats);
-      if ((unreadCount ?? 0) > 0) setIncomingDot(unreadCount ?? 0);
+      // Don't set dot if user is already on the history/chats page
+      if ((unreadCount ?? 0) > 0 && pathname !== "/history") setIncomingDot(unreadCount ?? 0);
 
       // ── Load unread wishes activity since last Wishes visit ─────────────
       const lastSeenWishes = (() => {
@@ -126,7 +127,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .in("card_id", Array.from(sentCardIds.current))
         .gt("created_at", lastSeenWishes);
       const wishesTotal = (newRecvCount ?? 0) + (newRxCount ?? 0);
-      if (wishesTotal > 0) setWishesDot(wishesTotal);
+      // Don't set dot if user is already on the wishes page
+      if (wishesTotal > 0 && pathname !== "/wishes") setWishesDot(wishesTotal);
 
       // ── Real-time subscriptions ─────────────────────────────────────────
       const channel = supabase
