@@ -1048,6 +1048,43 @@ function CardPageInner() {
           )}
         </AnimatePresence>
 
+        {/* ── Read-only reaction display — sender viewing their sent card ── */}
+        <AnimatePresence>
+          {isViewMode && !isReceived && reactionLoaded && view === 'front' && Object.values(reactionCounts).some(c => c > 0) && (
+            <motion.div
+              key="card-rx-sent-display"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
+            >
+              <p style={{ fontSize: 11, color: '#9ca3af', letterSpacing: 0.5, margin: 0, fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>
+                They reacted
+              </p>
+              <div style={{
+                background: 'white',
+                borderRadius: 40,
+                padding: '6px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: '0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)',
+                border: '1px solid rgba(0,0,0,0.06)',
+              }}>
+                {REACTION_EMOJIS.filter(e => (reactionCounts[e] ?? 0) > 0).map(emoji => (
+                  <div key={emoji} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>{emoji}</span>
+                    {(reactionCounts[emoji] ?? 0) > 1 && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#FF6B8A' }}>{reactionCounts[emoji]}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* ── WhatsApp-style floating emoji picker pill ── */}
         <AnimatePresence>
           {isViewMode && isReceived && reactionLoaded && view === 'front' && (reactionTrayOpen || !myCardReaction) && (
