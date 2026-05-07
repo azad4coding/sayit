@@ -1048,41 +1048,39 @@ function CardPageInner() {
           )}
         </AnimatePresence>
 
-        {/* ── Read-only reaction display — sender viewing their sent card ── */}
+        {/* ── Reaction badge — sender viewing sent card (read-only, same style as received badge) ── */}
         <AnimatePresence>
-          {isViewMode && !isReceived && reactionLoaded && view === 'front' && Object.values(reactionCounts).some(c => c > 0) && (
-            <motion.div
-              key="card-rx-sent-display"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-            >
-              <p style={{ fontSize: 11, color: '#9ca3af', letterSpacing: 0.5, margin: 0, fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>
-                They reacted
-              </p>
-              <div style={{
-                background: 'white',
-                borderRadius: 40,
-                padding: '6px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)',
-                border: '1px solid rgba(0,0,0,0.06)',
-              }}>
-                {REACTION_EMOJIS.filter(e => (reactionCounts[e] ?? 0) > 0).map(emoji => (
-                  <div key={emoji} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 24, lineHeight: 1 }}>{emoji}</span>
-                    {(reactionCounts[emoji] ?? 0) > 1 && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#FF6B8A' }}>{reactionCounts[emoji]}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
+          {isViewMode && !isReceived && reactionLoaded && view === 'front' && Object.values(reactionCounts).some(c => c > 0) && (() => {
+            // Pick the most-reacted emoji to show in the badge
+            const topEmoji = REACTION_EMOJIS.find(e => (reactionCounts[e] ?? 0) > 0) ?? '';
+            const totalCount = Object.values(reactionCounts).reduce((s, c) => s + c, 0);
+            return (
+              <motion.div
+                key="card-rx-sent-badge"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                style={{ width: CARD_W, display: 'flex', justifyContent: 'flex-end', marginTop: -18, paddingRight: 16, zIndex: 20, position: 'relative' }}
+              >
+                <div style={{
+                  background: 'white',
+                  borderRadius: 20,
+                  padding: '5px 10px 5px 7px',
+                  border: '1.5px solid rgba(0,0,0,0.07)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.16)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}>
+                  <span style={{ fontSize: 20, lineHeight: 1 }}>{topEmoji}</span>
+                  {totalCount > 1 && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#FF6B8A', lineHeight: 1 }}>
+                      {totalCount}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* ── WhatsApp-style floating emoji picker pill ── */}

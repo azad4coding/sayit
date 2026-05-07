@@ -76,6 +76,20 @@ export default function NotificationsPage() {
   const lastSeenRef = useRef<string>(new Date(0).toISOString());
   const userIdRef   = useRef<string | null>(null);
 
+  async function fetchCategoryMap(templateIds: string[]): Promise<Record<string, string>> {
+    if (!templateIds.length) return {};
+    const { data } = await supabase
+      .from("templates")
+      .select("id, categories(name)")
+      .in("id", templateIds);
+    const map: Record<string, string> = {};
+    for (const t of (data ?? []) as any[]) {
+      const catName = t.categories?.name;
+      if (catName) map[t.id] = catName;
+    }
+    return map;
+  }
+
   async function loadNotifications(userId: string, lastSeen: string) {
     const notifs: Notification[] = [];
 
@@ -101,7 +115,24 @@ export default function NotificationsPage() {
       receivedQuery = receivedQuery.eq("recipient_id", userId);
     }
     receivedQuery = receivedQuery.neq("sender_id", userId);
-    const { data: receivedData } = await receivedQuery;
+
+    // Fetch received + sent in parallel
+    const [{ data: receivedData }, { data: sentData }] = await Promise.all([
+      receivedQuery,
+      supabase
+        .from("sent_cards")
+        .select("id, short_code, recipient_name, recipient_phone, message, card_type, template_id, created_at, viewed_at, sender_name")
+        .eq("sender_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
+
+    // ── Batch-fetch category names for all template IDs (both sent + received) ─
+    const allTemplateIds = Array.from(new Set([
+      ...(receivedData ?? []).map((c: any) => c.template_id),
+      ...(sentData ?? []).map((c: any) => c.template_id),
+    ].filter(Boolean)));
+    const categoryMap = await fetchCategoryMap(allTemplateIds);
 
     // Batch-fetch sender profiles (name + photo)
     const senderIds = Array.from(new Set((receivedData ?? []).map((c: any) => c.sender_id).filter(Boolean)));
@@ -121,13 +152,14 @@ export default function NotificationsPage() {
         ?? (card.sender_name?.trim() || "Your friend");
       const isPaw  = card.card_type === "paw-moments";
       const isGift = card.card_type === "gift-card";
+      const receivedCategoryName = card.template_id ? categoryMap[card.template_id] : null;
       let gcVendor = "";
       if (isGift) { try { gcVendor = JSON.parse(card.message ?? "{}").vendorName ?? ""; } catch {} }
       notifs.push({
         id: `received-${card.id}`,
         type: "received",
         title: isGift ? `${from} sent you a gift card 🎁` : `${from} sent you a card`,
-        subtitle: isGift ? (gcVendor ? `${gcVendor} Gift Card — Tap to redeem` : "Tap to open") : isPaw ? "Paw Moments 🐾" : "Tap to open",
+        subtitle: isGift ? (gcVendor ? `${gcVendor} Gift Card — Tap to redeem` : "Tap to open") : isPaw ? "Paw Moments 🐾" : receivedCategoryName ? `${receivedCategoryName} card — Tap to open` : "Tap to open",
         time: timeAgo(card.created_at),
         rawTime: card.created_at,
         icon: isPaw ? "🐾" : isGift ? "🎁" : "💌",
@@ -143,23 +175,17 @@ export default function NotificationsPage() {
     }
 
     // ── Sent cards + viewed ──────────────────────────────────────────────
-    const { data: sentData } = await supabase
-      .from("sent_cards")
-      .select("id, short_code, recipient_name, recipient_phone, message, card_type, template_id, created_at, viewed_at, sender_name")
-      .eq("sender_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
     for (const card of (sentData ?? []) as SentCard[]) {
       const name = card.recipient_name?.trim() || card.recipient_phone;
       const isPaw = card.card_type === "paw-moments";
+      const categoryName = card.template_id ? categoryMap[card.template_id] : null;
 
       if (card.viewed_at) {
         notifs.push({
           id: `viewed-${card.id}`,
           type: "viewed",
           title: `${name} opened your card`,
-          subtitle: isPaw ? "They saw your Paw Moments 🐾" : "They viewed your greeting",
+          subtitle: isPaw ? "They saw your Paw Moments 🐾" : categoryName ? `They opened your ${categoryName} card` : "They viewed your greeting",
           time: timeAgo(card.viewed_at),
           rawTime: card.viewed_at,
           icon: "👁️",
@@ -177,7 +203,7 @@ export default function NotificationsPage() {
         id: `sent-${card.id}`,
         type: "sent",
         title: `You sent ${name} a card`,
-        subtitle: isPaw ? "Paw Moments collage" : "Tap to view",
+        subtitle: isPaw ? "Paw Moments collage" : categoryName ? `${categoryName} card` : "Tap to view",
         time: timeAgo(card.created_at),
         rawTime: card.created_at,
         icon: isPaw ? "🐾" : "💌",
@@ -216,11 +242,12 @@ export default function NotificationsPage() {
         for (const r of rxData as any[]) {
           const reactorName = nameMap[r.user_id] ?? "Someone";
           const card = r.sent_cards;
+          const rxCategory = card?.template_id ? categoryMap[card.template_id] : null;
           notifs.push({
             id: `reacted-${r.card_id}-${r.user_id}-${r.emoji}`,
             type: "reacted",
             title: `${reactorName} reacted ${r.emoji} to your card`,
-            subtitle: "Tap to see the card",
+            subtitle: rxCategory ? `Tap to see your ${rxCategory} card` : "Tap to see the card",
             time: timeAgo(r.created_at),
             rawTime: r.created_at,
             icon: r.emoji,
