@@ -276,11 +276,157 @@ const LEFT_PANEL_QUOTES: Record<string, string[]> = {
     "Good vibes,\ngood times. 🌅",
     "The weekend\nis yours. ☀️",
   ],
+
+  // ── Global Holidays ───────────────────────────────────────────────────────
+
+  "christmas": [
+    "Joy to you\nand all you love. 🎄",
+    "The warmest season\nis here. ✨",
+    "Peace, love,\nand a little magic. 🎁",
+  ],
+  "new year": [
+    "A fresh page.\nMake it beautiful. 🥂",
+    "New chapter.\nNew light.\nNew you. ✨",
+    "Here's to everything\nyou're becoming. 🎆",
+  ],
+  "valentine's day": [
+    "Love, simply\nand completely. ❤️",
+    "Some feelings\ndefy all words. 💕",
+    "For the one\nwho makes it all worthwhile. 🌹",
+  ],
+  "easter": [
+    "New beginnings\nin every season. 🌸",
+    "Hope blooms\nagain. 🐣",
+    "Light, renewal,\nand warmth. ✨",
+  ],
+  "halloween": [
+    "A little spooky.\nA lot of fun. 🎃",
+    "Boo!\nHope you smiled. 👻",
+    "The most spirited\nnight of the year. 🕯️",
+  ],
+  "thanksgiving": [
+    "Grateful for you,\ntoday and always. 🍂",
+    "The best things\naren't things. 🌾",
+    "Thankful for\nthis moment. 🍁",
+  ],
+  "diwali": [
+    "Light over darkness,\nalways. 🪔",
+    "May this festival\nfill your home with joy. ✨",
+    "Wishing you\nthe brightest Diwali. 🪔",
+  ],
+  "holi": [
+    "Colour, joy,\nand new beginnings. 🌈",
+    "May your life be\nas vivid as today. 🎨",
+    "Celebrate every colour\nof this beautiful life. 🌸",
+  ],
+  "eid": [
+    "Warmth, peace,\nand Eid blessings. 🌙",
+    "May this Eid bring\njoy to your heart. ✨",
+    "Eid Mubarak —\nwith love. 🌙",
+  ],
+  "eid al-fitr": [
+    "A month of patience,\nnow a day of joy. 🌙",
+    "Eid Mubarak.\nMay your blessings\nbe plenty. ✨",
+    "Peace and happiness\nthis Eid. 🌙",
+  ],
+  "eid al-adha": [
+    "In the spirit\nof sacrifice and gratitude. 🌙",
+    "Eid Mubarak —\nwishing you peace\nand blessings. ✨",
+    "May this day bring\nyou closer to all you love. 🌙",
+  ],
+  "ramadan": [
+    "A blessed month\nof reflection. 🌙",
+    "Ramadan Mubarak —\nwishing you peace. ✨",
+    "May this month\nbring light within. 🌙",
+  ],
+  "hanukkah": [
+    "Eight nights\nof light and love. 🕎",
+    "May the light\nnever dim. ✨",
+    "Happy Hanukkah —\nwarm and bright. 🕎",
+  ],
+  "lunar new year": [
+    "Prosperity, joy,\nand new beginnings. 🧧",
+    "May this year bring\neverything you deserve. 🌸",
+    "New year.\nNew luck.\nNew blessings. 🧧",
+  ],
+  "chinese new year": [
+    "Wishing you\nluck and prosperity. 🧧",
+    "A new year full\nof golden moments. ✨",
+    "May fortune follow\nyou all year. 🌸",
+  ],
+  "mother's day": [
+    "For the one\nwho gave you everything. 🌸",
+    "No words are\nenough. Thank you, Mum. 💕",
+    "The original\nsuperpower. 🌺",
+  ],
+  "mothers day": [
+    "For the one\nwho gave you everything. 🌸",
+    "No words are\nenough. Thank you, Mum. 💕",
+    "The original\nsuperpower. 🌺",
+  ],
+  "father's day": [
+    "The quiet strength\nbehind everything. 💙",
+    "For the one\nwho showed up, always. 👔",
+    "Hero. Guide.\nDad. 💙",
+  ],
+  "fathers day": [
+    "The quiet strength\nbehind everything. 💙",
+    "For the one\nwho showed up, always. 👔",
+    "Hero. Guide.\nDad. 💙",
+  ],
+  "international women's day": [
+    "Here's to the women\nwho lead the way. 🌸",
+    "Strength, grace,\nand everything in between. 💜",
+    "Celebrating you\ntoday and every day. 🌺",
+  ],
+  "international womens day": [
+    "Here's to the women\nwho lead the way. 🌸",
+    "Strength, grace,\nand everything in between. 💜",
+    "Celebrating you\ntoday and every day. 🌺",
+  ],
+  "raksha bandhan": [
+    "The bond that\nnever breaks. 🪢",
+    "A thread of love\nbetween forever friends. ✨",
+    "Brothers and sisters —\na bond unlike any other. 🪢",
+  ],
+  "navratri": [
+    "Nine nights\nof devotion and joy. 🪔",
+    "Dance, celebrate,\nand shine. ✨",
+    "Navratri blessings\nto you and yours. 🌸",
+  ],
+  "dussehra": [
+    "Good always\nfinds its way. ✨",
+    "Victory of light\nover darkness. 🪔",
+    "May good always\nwin in your story. ✨",
+  ],
+  "rosh hashanah": [
+    "A sweet new year\nawaits. 🍎",
+    "Shana Tova —\nwishing you a year of joy. ✨",
+    "New year,\nnew blessings. 🍯",
+  ],
+  "passover": [
+    "Freedom, gratitude,\nand togetherness. 🌿",
+    "Chag Sameach —\nwishing you peace. ✨",
+    "From darkness\nto light. 🕯️",
+  ],
+  "independence day": [
+    "Freedom is worth\ncelebrating. 🎆",
+    "Here's to the land\nyou call home. 🌟",
+    "Pride, gratitude,\nand joy today. 🎇",
+  ],
+  "friendship day": [
+    "The best people\nbecame family. 💛",
+    "Here's to you,\nmy favourite human. 🌟",
+    "Friends like you\nare rare. 💛",
+  ],
 };
 
 function getLeftPanelQuote(subcategoryName: string | null): string {
   if (!subcategoryName) return "";
-  const key = subcategoryName.toLowerCase();
+  // Normalise: lowercase, strip special apostrophes, collapse spaces
+  const key = subcategoryName.toLowerCase()
+    .replace(/[‘’']/g, "'")  // smart quotes → straight
+    .trim();
   const quotes = LEFT_PANEL_QUOTES[key];
   if (!quotes) return "";
   return quotes[Math.floor(Math.random() * quotes.length)];
