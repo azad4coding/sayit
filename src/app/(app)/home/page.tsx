@@ -45,7 +45,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg, #FFF5F7 0%, #ffffff 40%)" }}>
       {/* ── Header ────────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-5 pt-14 pb-4">
+      <header className="flex items-center justify-between px-5 pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 44px) + 16px)" }}>
         <div>
           <p className="text-xs text-gray-400 font-medium">{greeting} 👋</p>
           <h2 className="text-xl font-bold text-gray-800">{firstName}</h2>
