@@ -255,23 +255,23 @@ export default function ProfilePage() {
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">Support</p>
         <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
 
-          <button className="w-full flex items-center gap-4 px-4 py-4 border-b border-gray-50 text-left active:bg-gray-50">
+          <a href="/privacy" className="w-full flex items-center gap-4 px-4 py-4 border-b border-gray-50 text-left active:bg-gray-50" style={{ textDecoration: "none" }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: "#3498DB18" }}>
               <ShieldCheck className="w-4 h-4 text-blue-400" />
             </div>
             <span className="flex-1 text-sm font-semibold text-gray-800">Privacy Policy</span>
             <ChevronRight className="w-4 h-4 text-gray-300" />
-          </button>
+          </a>
 
-          <button className="w-full flex items-center gap-4 px-4 py-4 border-b border-gray-50 text-left active:bg-gray-50">
+          <a href="/help" className="w-full flex items-center gap-4 px-4 py-4 border-b border-gray-50 text-left active:bg-gray-50" style={{ textDecoration: "none" }}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: "#F39C1218" }}>
               <HelpCircle className="w-4 h-4 text-amber-400" />
             </div>
             <span className="flex-1 text-sm font-semibold text-gray-800">Help & Support</span>
             <ChevronRight className="w-4 h-4 text-gray-300" />
-          </button>
+          </a>
 
           <button className="w-full flex items-center gap-4 px-4 py-4 text-left active:bg-gray-50">
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
