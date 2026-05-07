@@ -12,8 +12,12 @@ export async function POST(req: NextRequest) {
   try {
     const { circleId, action, recipientId, recipientName, recipientPhone } = await req.json();
 
+    const VALID_ACTIONS = ["accepted", "blocked"];
     if (!circleId || !action) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+    if (!VALID_ACTIONS.includes(action)) {
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
     // Fetch the original circle so we have sender info for the reverse entry

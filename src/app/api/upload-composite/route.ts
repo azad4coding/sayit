@@ -1,23 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// ── Supabase admin client (server-side only) ────────────────────────────────
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-// ── Upload composited card image to Supabase Storage ────────────────────────
-// Called by the client after it has composited the user's photo onto the
-// DALL-E 3 background locally. Accepts a JPEG blob and returns a permanent URL.
+// Anon client used only to verify the caller's JWT
+const anonClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB limit
+
 export async function POST(req: NextRequest) {
   try {
+    // ── Auth guard ────────────────────────────────────────────────────────────
+    const authHeader = req.headers.get("authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
+    if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const formData = await req.formData();
     const userId = formData.get("userId") as string;
     const image  = formData.get("image")  as File | null;
 
     if (!userId || !image) {
       return NextResponse.json({ error: "Missing userId or image" }, { status: 400 });
+    }
+
+    // Ensure authenticated user matches the userId in the request
+    if (user.id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // File size guard
+    if (image.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "File too large (max 10 MB)" }, { status: 413 });
     }
 
     const buffer = await image.arrayBuffer();

@@ -987,7 +987,7 @@ function CardPageInner() {
         </div>
         <p style={{ fontSize: 16, color: isPawMoments ? '#6B3F1F' : '#8B6040', letterSpacing: 1 }}>SayIt</p>
         <p style={{ fontSize: 9, color: isPawMoments ? '#A07850' : '#B09070', letterSpacing: 2, opacity: 0.7 }}>{isPawMoments ? 'PAW MOMENTS' : 'GREETING CARDS'}</p>
-        <p style={{ fontSize: 9, color: '#B09070', opacity: 0.6, textAlign: 'center', padding: '0 20px', lineHeight: 1.6 }}>Made with love at sayit-gamma.vercel.app</p>
+        <p style={{ fontSize: 9, color: '#B09070', opacity: 0.6, textAlign: 'center', padding: '0 20px', lineHeight: 1.6 }}>Made with love at {(process.env.NEXT_PUBLIC_BASE_URL ?? "https://sayit-gamma.vercel.app").replace(/https?:\/\//, "")}</p>
       </motion.div>
       <button onClick={() => setStage('card')} style={{ background: 'none', border: 'none', color: isPawMoments ? '#8B6347' : '#9B7A5A', fontSize: 12, cursor: 'pointer', opacity: 0.6 }}>← Back to card</button>
     </div>

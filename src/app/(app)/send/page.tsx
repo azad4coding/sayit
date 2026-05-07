@@ -8,7 +8,7 @@ import { getTemplateById, getCategoryById, type DBTemplate, type DBCategory } fr
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-const FREE_DAILY_LIMIT = 100; // TODO: set back to 3 before launch
+const FREE_DAILY_LIMIT = 10;
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://sayit-gamma.vercel.app";
 
@@ -300,11 +300,16 @@ function SendPageInner() {
         { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
 
       // ── Fire push notification to recipient (fire-and-forget) ──────────
-      fetch("/api/push/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientId: foundUser.id, senderName: name, cardCode: code }),
-      }).catch(() => {});
+      supabase.auth.getSession().then(({ data: { session: pushSession } }) => {
+        fetch("/api/push/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${pushSession?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({ recipientId: foundUser.id, senderName: name, cardCode: code }),
+        }).catch(() => {});
+      });
 
       setDailyCount(prev => (prev ?? 0) + 1);
       setSending(false);

@@ -492,7 +492,12 @@ export default function CreateAiCardPage() {
             upForm.append("userId", user.id);
             upForm.append("image",  new File([blob], "composite.jpg", { type: "image/jpeg" }));
 
-            const upRes  = await fetch("/api/upload-composite", { method: "POST", body: upForm });
+            const { data: { session: upSession } } = await supabase.auth.getSession();
+            const upRes  = await fetch("/api/upload-composite", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${upSession?.access_token ?? ""}` },
+              body: upForm,
+            });
             const upData = await upRes.json();
             finalUrl = upData.url ?? compositeDataUrl;
           } catch (uploadErr) {
