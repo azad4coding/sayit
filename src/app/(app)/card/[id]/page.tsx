@@ -277,6 +277,48 @@ const LEFT_PANEL_QUOTES: Record<string, string[]> = {
     "The weekend\nis yours. ☀️",
   ],
 
+  // ── Category-level fallbacks (cards with no subcategory) ─────────────────
+  "birthday": [
+    "Another year\nof being wonderful. 🎂",
+    "Today belongs\nentirely to you. 🎉",
+    "Celebrating you,\nnow and always. ✨",
+  ],
+  "romance": [
+    "Some feelings\ndefy all words. 💕",
+    "You are\nmy favourite thought. ❤️",
+    "Love, quietly\nand completely. 🌹",
+  ],
+  "occasions": [
+    "Thinking of you,\nwith warmth. 💌",
+    "A little love,\nsent your way. 🌸",
+    "Because you matter\nmore than you know. ✨",
+  ],
+  "holidays": [
+    "Wishing you warmth\nand wonder. ✨",
+    "The best moments\nare shared ones. 🌟",
+    "Joy to you\nand all you love. 💌",
+  ],
+  "thank you": [
+    "Gratitude is\nthe warmest feeling. 🙏",
+    "Thank you,\nfrom the heart. 💛",
+    "What you did\nmeant everything. 🌸",
+  ],
+  "vibes": [
+    "Good energy,\nalways. ✨",
+    "This one's\nfor you. 💫",
+    "You are\nthe vibe. 🌟",
+  ],
+  "morning wishes": [
+    "A new day,\njust for you. ☀️",
+    "Rise softly.\nThis day is yours. 🌅",
+    "Morning sunshine,\nsent with love. ☀️",
+  ],
+  "invitations": [
+    "Something special\nis happening. 🎉",
+    "You're invited\nto a moment. ✨",
+    "Come celebrate\nwith us. 💌",
+  ],
+
   // ── Global Holidays ───────────────────────────────────────────────────────
 
   "christmas": [
@@ -421,15 +463,18 @@ const LEFT_PANEL_QUOTES: Record<string, string[]> = {
   ],
 };
 
-function getLeftPanelQuote(subcategoryName: string | null): string {
-  if (!subcategoryName) return "";
-  // Normalise: lowercase, strip special apostrophes, collapse spaces
-  const key = subcategoryName.toLowerCase()
-    .replace(/[‘’']/g, "'")  // smart quotes → straight
-    .trim();
-  const quotes = LEFT_PANEL_QUOTES[key];
-  if (!quotes) return "";
-  return quotes[Math.floor(Math.random() * quotes.length)];
+function normaliseKey(s: string): string {
+  return s.toLowerCase().replace(/[‘’’]/g, "’").trim();
+}
+
+function getLeftPanelQuote(subcategoryName: string | null, categoryName?: string | null): string {
+  // Try subcategory first, fall back to category name
+  for (const name of [subcategoryName, categoryName]) {
+    if (!name) continue;
+    const quotes = LEFT_PANEL_QUOTES[normaliseKey(name)];
+    if (quotes) return quotes[Math.floor(Math.random() * quotes.length)];
+  }
+  return "";
 }
 
 const CARD_W = 340;
@@ -637,10 +682,10 @@ function CardPageInner() {
     getTemplateById(id).then(async tmpl => {
       if (tmpl) {
         setTemplate(tmpl);
-        // Set the left-panel mood quote (shown on art side, not in user's message)
-        setMoodQuote(getLeftPanelQuote(tmpl.subcategory_name));
         getCategoryById(tmpl.category_id).then(cat => {
           setCategory(cat);
+          // Set the left-panel mood quote — subcategory first, category name as fallback
+          setMoodQuote(getLeftPanelQuote(tmpl.subcategory_name, cat?.name));
           setTemplateLoading(false);
         });
       } else {
