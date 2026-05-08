@@ -456,7 +456,7 @@ export default function NotificationsPage() {
           {/* Empty state */}
           {activityNotifs.length === 0 && (
             <div className="bg-white rounded-3xl p-8 flex flex-col items-center gap-3 text-center shadow-sm mt-4">
-              <Bell className="w-10 h-10 text-gray-200" />
+              <span style={{ fontSize: 40 }}>💫</span>
               <p className="text-sm font-semibold text-gray-400">No activity yet</p>
               <p className="text-xs text-gray-300">Send your first card to get started</p>
               <button onClick={() => router.push("/home")}
