@@ -202,7 +202,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="page-content">{children}</main>
 
       {/* ── Bottom Navigation ── */}
-      <nav className="bottom-nav" style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 -8px 32px rgba(0,0,0,0.08)" }}>
+      <nav className="bottom-nav" style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
         <div className="flex items-center px-4">
           {NAV.map(({ href, label, Icon }) => {
             const active    = pathname === href;

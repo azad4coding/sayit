@@ -98,7 +98,12 @@ body {
 
 /* ── Custom scrollbar — visible right-side indicator ──────────────── */
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 2px; }
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.04);
+  border-radius: 2px;
+  /* Stop above the bottom nav so the track never bleeds into it */
+  margin-bottom: calc(80px + var(--safe-bottom));
+}
 ::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.45); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.7); }
 * { -ms-overflow-style: thin; scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.45) rgba(0,0,0,0.04); }

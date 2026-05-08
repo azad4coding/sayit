@@ -583,6 +583,10 @@ function ChatsPageInner() {
         <div style={{ position: "absolute", bottom: -10, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 20, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+          <button onClick={() => router.push("/home")}
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>Chats</h1>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Your Conversations</p>
