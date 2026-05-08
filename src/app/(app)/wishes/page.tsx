@@ -10,6 +10,7 @@ type SentCard = {
   short_code: string;
   recipient_name: string | null;
   recipient_phone: string;
+  recipient_id: string | null;
   message: string | null;
   card_type: string | null;
   template_id: string | null;
@@ -121,7 +122,7 @@ export default function NotificationsPage() {
       receivedQuery,
       supabase
         .from("sent_cards")
-        .select("id, short_code, recipient_name, recipient_phone, message, card_type, template_id, created_at, viewed_at, sender_name")
+        .select("id, short_code, recipient_name, recipient_phone, recipient_id, message, card_type, template_id, created_at, viewed_at, sender_name")
         .eq("sender_id", userId)
         .order("created_at", { ascending: false })
         .limit(30),
@@ -174,9 +175,25 @@ export default function NotificationsPage() {
       });
     }
 
+    // ── Batch-fetch recipient profiles (so sent notifications show names not numbers) ──
+    const recipientIds = Array.from(new Set((sentData ?? []).map((c: any) => c.recipient_id).filter(Boolean)));
+    const { data: recipientProfiles } = recipientIds.length > 0
+      ? await supabase.from("profiles").select("id, full_name").in("id", recipientIds)
+      : { data: [] };
+    const recipientNameMap: Record<string, string> = {};
+    for (const p of (recipientProfiles ?? [])) {
+      if (p.full_name) recipientNameMap[p.id] = p.full_name;
+    }
+
     // ── Sent cards + viewed ──────────────────────────────────────────────
     for (const card of (sentData ?? []) as SentCard[]) {
-      const name = card.recipient_name?.trim() || card.recipient_phone;
+      // Priority: SayIt profile name → saved recipient_name → friendly phone
+      const profileName = card.recipient_id ? recipientNameMap[card.recipient_id] : null;
+      const rawName = card.recipient_name?.trim() || null;
+      const friendlyPhone = card.recipient_phone
+        ? (card.recipient_phone.startsWith("+") ? card.recipient_phone : `+${card.recipient_phone}`)
+        : null;
+      const name = profileName ?? rawName ?? friendlyPhone ?? "a friend";
       const isPaw = card.card_type === "paw-moments";
       const categoryName = card.template_id ? categoryMap[card.template_id] : null;
 
@@ -285,8 +302,10 @@ export default function NotificationsPage() {
       setNotifications(notifs);
       setLoading(false);
 
-      // Mark as seen now
-      try { localStorage.setItem(`lastSeenWishes_${user.id}`, new Date().toISOString()); } catch {}
+      // Mark as seen AFTER a short delay so the "New" badges render before they disappear
+      setTimeout(() => {
+        try { localStorage.setItem(`lastSeenWishes_${user.id}`, new Date().toISOString()); } catch {}
+      }, 3000);
 
       // ── Real-time: refresh feed on new card or reaction ─────────────────
       const channel = supabase.channel("wishes-realtime")
