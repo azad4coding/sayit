@@ -21,7 +21,8 @@ const config = {
     },
   },
   ios: {
-    contentInset: "always",
+    // contentInset removed — viewportFit:cover in the web meta tag handles safe-area via CSS
+    // The WKWebView now extends full-screen; env(safe-area-inset-top) works correctly
   },
   android: {
     allowMixedContent: false,

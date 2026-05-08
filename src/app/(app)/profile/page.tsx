@@ -147,7 +147,7 @@ export default function ProfilePage() {
         <div style={{ position: "absolute", top: 10, right: 30, width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
 
         {/* Avatar + name stacked in the hero */}
-        <div className="flex flex-col items-center pt-14 pb-8 px-6 relative z-10">
+        <div className="flex flex-col items-center pb-8 px-6 relative z-10" style={{ paddingTop: "calc(env(safe-area-inset-top, 44px) + 16px)" }}>
 
           {/* Avatar */}
           <div className="relative mb-4">

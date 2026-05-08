@@ -384,7 +384,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "100px 20px 28px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 72px) 20px 28px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -10, right: 40, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 30, left: -15, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
