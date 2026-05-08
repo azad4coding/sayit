@@ -557,36 +557,34 @@ function ChatsPageInner() {
   );
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col min-h-dvh below-title-bar" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+
+      {/* ── Fixed compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Chats</span>
+      </div>
+
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
         {/* Decorative blobs */}
         <div style={{ position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -10, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 20, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14, position: "relative", zIndex: 1 }}>
-          <button onClick={() => router.push("/home")}
-            style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+          <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>Chats</h1>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Your Conversations</p>
           </div>
         </div>
-        {/* Search bar — frosted glass style */}
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)" }} />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search contacts..."
-            style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "10px 16px 10px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-          />
-        </div>
       </div>
 
-      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
-      <div className="sticky-title-bar">
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Chats</span>
+      {/* Search bar — outside gradient, scrolls with content */}
+      <div style={{ background: "white", borderBottom: "1px solid rgba(0,0,0,0.06)", padding: "10px 16px", position: "relative" }}>
+        <Search size={15} style={{ position: "absolute", left: 30, top: "50%", transform: "translateY(-50%)", color: "#aaa" }} />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search contacts..."
+          style={{ width: "100%", background: "#f5f5f7", border: "none", borderRadius: 12, padding: "9px 16px 9px 36px", color: "#111", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+        />
       </div>
 
       {loading ? (

@@ -138,7 +138,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "#f5f6f7" }}>
+    <div className="min-h-dvh flex flex-col pb-28 below-title-bar" style={{ background: "#f5f6f7" }}>
+
+      {/* ── Fixed compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Profile</span>
+      </div>
 
       {/* ── Hero ── */}
       <div className="relative" style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)" }}>
@@ -147,7 +152,7 @@ export default function ProfilePage() {
         <div style={{ position: "absolute", top: 10, right: 30, width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
 
         {/* Avatar + name stacked in the hero */}
-        <div className="flex flex-col items-center pb-8 px-6 relative z-10" style={{ paddingTop: "calc(env(safe-area-inset-top, 44px) + 16px)" }}>
+        <div className="flex flex-col items-center pb-8 px-6 relative z-10" style={{ paddingTop: 16 }}>
 
           {/* Avatar */}
           <div className="relative mb-4">
@@ -211,11 +216,6 @@ export default function ProfilePage() {
           )}
 
         </div>
-      </div>
-
-      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
-      <div className="sticky-title-bar">
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Profile</span>
       </div>
 
       {/* ── Account ── */}
