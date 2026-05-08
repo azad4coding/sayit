@@ -785,7 +785,7 @@ function CardPageInner() {
         {/* Back arrow — all modes */}
         <button
           onClick={() => backUrl ? router.push(backUrl) : router.back()}
-          style={{ position: 'absolute', top: 48, left: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', zIndex: 30 }}
+          style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', zIndex: 30 }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#6b7280' }}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         </button>
@@ -823,7 +823,7 @@ function CardPageInner() {
             backUrl ? router.push(backUrl) : router.back();
           }}
           style={{
-            position: 'absolute', top: 48, left: 16,
+            position: 'absolute', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16,
             width: 36, height: 36, borderRadius: '50%',
             background: 'rgba(255,255,255,0.8)',
             backdropFilter: 'blur(8px)',
