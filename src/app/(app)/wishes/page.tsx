@@ -76,6 +76,7 @@ export default function NotificationsPage() {
   const [loading,       setLoading]       = useState(true);
   const lastSeenRef = useRef<string>(new Date(0).toISOString());
   const userIdRef   = useRef<string | null>(null);
+  const titleBarRef = useRef<HTMLDivElement>(null);
 
   async function fetchCategoryMap(templateIds: string[]): Promise<Record<string, string>> {
     if (!templateIds.length) return {};
@@ -331,6 +332,17 @@ export default function NotificationsPage() {
     load();
   }, [router]);
 
+  // Scroll listener for sticky title bar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (titleBarRef.current) {
+        titleBarRef.current.classList.toggle("bar-visible", window.scrollY > 80);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   function handleTap(n: Notification) {
     if (n.href) { router.push(n.href); return; }
     if (n.templateId && n.cardId) {
@@ -404,15 +416,15 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh below-title-bar" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
 
-      {/* ── Fixed compact title bar (WhatsApp-style) ── */}
-      <div className="sticky-title-bar">
+      {/* ── Fixed compact title bar (WhatsApp-style) — hidden until scroll > 80px ── */}
+      <div className="sticky-title-bar" ref={titleBarRef}>
         <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Wishes</span>
       </div>
 
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: 16, paddingBottom: 24, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 24, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
         {/* Decorative blobs */}
         <div style={{ position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -15, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
