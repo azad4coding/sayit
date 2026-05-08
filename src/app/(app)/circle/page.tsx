@@ -133,7 +133,7 @@ export default function CirclePage() {
     <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
       {/* ── Premium gradient header ── */}
-      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 72px) 20px 28px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 28px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -25, right: -25, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -10, right: 60, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 30, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />

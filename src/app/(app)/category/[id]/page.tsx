@@ -101,7 +101,7 @@ export default function CategoryPage() {
     <div className="flex flex-col min-h-dvh bg-gray-50">
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="relative flex flex-col px-5 pb-5 overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 72px)" }}>
+        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 54px)" }}>
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
         <div className="absolute top-10 right-10 w-24 h-24 rounded-full bg-white/10" />
@@ -485,7 +485,7 @@ function PawMomentsPage({ gradient_from, gradient_to }: { gradient_from: string;
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#F5EDE0,#EDD9C0)" }}>
       {/* Header */}
-      <div className="relative flex flex-col px-5 pb-5 overflow-hidden" style={{ background: `linear-gradient(135deg,${gradient_from},${gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 72px)" }}>
+      <div className="relative flex flex-col px-5 pb-5 overflow-hidden" style={{ background: `linear-gradient(135deg,${gradient_from},${gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 54px)" }}>
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
         <button onClick={() => router.back()}
           style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 44px) + 10px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>

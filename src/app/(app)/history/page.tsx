@@ -559,7 +559,7 @@ function ChatsPageInner() {
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 72px) 20px 20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 20px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: 0, right: 50, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 35, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
