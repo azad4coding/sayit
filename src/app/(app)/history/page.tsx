@@ -558,24 +558,24 @@ function ChatsPageInner() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-      {/* Clean white header */}
-      <div style={{ background: "white", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 12, borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
+      {/* Premium gradient header */}
+      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 55%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14 }}>
           <button onClick={() => router.push("/home")}
-            style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           </button>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Chats</h1>
-            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Your Conversations</p>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>Chats</h1>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Your Conversations</p>
           </div>
         </div>
-        {/* Search bar — light style */}
-        <div style={{ position: "relative", paddingLeft: 16, paddingRight: 16 }}>
-          <Search size={15} style={{ position: "absolute", left: 30, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
+        {/* Search bar — frosted glass style */}
+        <div style={{ position: "relative" }}>
+          <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)" }} />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search contacts..."
-            style={{ width: "100%", background: "#f3f4f6", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14, padding: "10px 16px 10px 38px", color: "#111827", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "10px 16px 10px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
           />
         </div>
       </div>
