@@ -100,20 +100,20 @@ export default function CategoryPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-gray-50">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="relative flex flex-col px-5 pb-5 overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 54px)" }}>
+      <div className="relative overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${category.gradient_from}, ${category.gradient_to})`, paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16 }}>
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -translate-y-1/2 translate-x-1/2" />
         <div className="absolute top-10 right-10 w-24 h-24 rounded-full bg-white/10" />
 
-        {/* Back button — sits below the safe area */}
-        <button onClick={() => router.back()}
-          style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 44px) + 10px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-
-        <div className="z-10">
-          <h1 className="text-white text-3xl font-bold">{category.name}</h1>
+        {/* Back button | Centered title | Spacer (equal width to back button) */}
+        <div className="relative z-10 flex items-center gap-3">
+          <button onClick={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <h1 style={{ flex: 1, textAlign: "center", fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>{category.name}</h1>
+          <div style={{ width: 36, flexShrink: 0 }} />{/* Spacer — balances the back button */}
         </div>
       </div>
 

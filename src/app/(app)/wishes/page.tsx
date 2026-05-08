@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { Bell, Send, Eye, User } from "lucide-react";
+import { Send, Eye, User } from "lucide-react";
 
 type SentCard = {
   id: string;
@@ -405,23 +405,16 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-      {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 28px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-        <div style={{ position: "absolute", bottom: -10, right: 40, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ position: "absolute", top: 30, left: -15, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-        {/* Back button */}
-        <button onClick={() => router.push("/home")}
-          style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 44px) + 10px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Bell style={{ width: 22, height: 22, color: "white" }} />
-          </div>
+      {/* Clean white header */}
+      <div style={{ background: "white", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 16 }}>
+          <button onClick={() => router.push("/home")}
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: "white", margin: 0, letterSpacing: -0.5 }}>Activity</h1>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Cards, reactions & occasions</p>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Wishes</h1>
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>wishes, reactions & occasions</p>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { type DBTemplate, type DBCategory } from "@/lib/supabase-data";
-import { Search, MessageCircle } from "lucide-react";
+import { Search } from "lucide-react";
 
 // Lightweight maps built from Supabase batch-fetches at load time
 type TemplateMap = Record<string, Pick<DBTemplate, "id" | "category_id" | "front_image_url" | "color_accent">>;
@@ -558,31 +558,24 @@ function ChatsPageInner() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-      {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 20px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -20, right: -20, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-        <div style={{ position: "absolute", bottom: 0, right: 50, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ position: "absolute", top: 35, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-        {/* Back button */}
-        <button onClick={() => router.push("/home")}
-          style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 44px) + 10px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <MessageCircle style={{ width: 22, height: 22, color: "white" }} />
-          </div>
+      {/* Clean white header */}
+      <div style={{ background: "white", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 12, borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
+          <button onClick={() => router.push("/home")}
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 900, color: "white", margin: 0, letterSpacing: -0.5 }}>Chats</h1>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Your cards & conversations</p>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Chats</h1>
+            <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Your Conversations</p>
           </div>
         </div>
-        {/* Search bar inside header */}
-        <div style={{ marginTop: 16, position: "relative" }}>
-          <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.6)" }} />
+        {/* Search bar — light style */}
+        <div style={{ position: "relative", paddingLeft: 16, paddingRight: 16 }}>
+          <Search size={15} style={{ position: "absolute", left: 30, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search contacts..."
-            style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "11px 16px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", background: "#f3f4f6", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14, padding: "10px 16px 10px 38px", color: "#111827", fontSize: 14, outline: "none", boxSizing: "border-box" }}
           />
         </div>
       </div>

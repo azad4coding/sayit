@@ -194,16 +194,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Covers the iOS status bar area with each page's top gradient colour so
-          scrolling header text is masked and never bleeds into the status bar clock. */}
+      {/* Covers the iOS status bar area so scrolling content never bleeds into the clock.
+          White pages get a white mask; gradient pages get their matching top colour. */}
       <div className="safe-area-top" style={{ background:
-        pathname === "/home"        ? "#FFF5F7"  // home — soft pink
-        : pathname === "/history"   ? "#9B59B6"  // chats — purple
-        : pathname === "/circle"    ? "#FF6B8A"  // circle — pink
-        : pathname === "/wishes"    ? "#FF6B8A"  // wishes — pink
-        : pathname === "/gift-cards"? "#FF9900"  // gift cards — amber
-        : pathname === "/profile"   ? "#D05090"  // profile — magenta-pink
-        : "transparent"                          // other pages (cards, category…)
+        pathname === "/home"        ? "#FFF5F7"  // home — soft pink (gradient header)
+        : pathname === "/history"   ? "white"    // chats — white header
+        : pathname === "/circle"    ? "white"    // circle — white header
+        : pathname === "/wishes"    ? "white"    // wishes — white header
+        : pathname === "/gift-cards"? "white"    // gift cards — white header
+        : pathname === "/profile"   ? "#D05090"  // profile — still gradient header
+        : "transparent"                          // category, card pages etc.
       }} />
       <main className="page-content">{children}</main>
 

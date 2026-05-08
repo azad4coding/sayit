@@ -167,37 +167,33 @@ export default function GiftCardsPage() {
   if (step === "browse") {
     return (
       <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
-        <style>{`#gc-search::placeholder { color: rgba(255,255,255,0.8); opacity: 1; }`}</style>
 
-        {/* Premium gradient header */}
-        <div style={{ background: "linear-gradient(135deg,#FF9900 0%,#FF6B8A 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 28px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -25, right: -25, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-          <div style={{ position: "absolute", bottom: -15, right: 50, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-          <div style={{ position: "absolute", top: 25, left: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-          {/* Back button */}
-          <button onClick={() => router.push("/home")}
-            style={{ position: "absolute", top: "calc(env(safe-area-inset-top, 44px) + 10px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <div style={{ marginTop: 4 }}>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, margin: 0 }}>✨ A new way to celebrate</p>
-            <h1 style={{ fontSize: 22, fontWeight: 900, color: "white", margin: "4px 0 2px", letterSpacing: -0.5, lineHeight: 1.2, whiteSpace: "nowrap" }}>SayIt with a GIFT CARD 🎁</h1>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", margin: 0 }}>Pick a brand, choose an amount, send love</p>
+        {/* Clean white header */}
+        <div style={{ background: "white", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 12, borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
+            <button onClick={() => router.push("/home")}
+              style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Gift Cards 🎁</h1>
+              <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Pick a brand, choose an amount, send love</p>
+            </div>
           </div>
-          {/* Search bar inside header */}
-          <div style={{ marginTop: 16, position: "relative" }}>
-            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.6)" }} />
+          {/* Search bar — light style */}
+          <div style={{ position: "relative", paddingLeft: 16, paddingRight: 16 }}>
+            <Search size={15} style={{ position: "absolute", left: 30, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
             <input
               id="gc-search"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search Starbucks, Amazon…"
-              style={{ width: "100%", background: "rgba(255,255,255,0.22)", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 14, padding: "11px 40px 11px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box", WebkitTextFillColor: "white" }}
+              style={{ width: "100%", background: "#f3f4f6", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14, padding: "10px 36px 10px 38px", color: "#111827", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
-                <X style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 28, top: "50%", transform: "translateY(-50%)" }}>
+                <X style={{ width: 14, height: 14, color: "#9ca3af" }} />
               </button>
             )}
           </div>
