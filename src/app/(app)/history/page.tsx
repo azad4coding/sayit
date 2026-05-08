@@ -216,9 +216,9 @@ function ThreadView({
   }
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col h-dvh overflow-hidden" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
       {/* Header */}
-      <div style={{ background: "white", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 12px rgba(0,0,0,0.04)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)" }}
+      <div style={{ background: "white", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 12px rgba(0,0,0,0.04)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", flexShrink: 0 }}
         className="flex items-center gap-3 px-4 pb-4">
         <button onClick={onBack}
           className="w-9 h-9 flex items-center justify-center rounded-full flex-shrink-0"
@@ -557,9 +557,9 @@ function ChatsPageInner() {
   );
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col h-dvh overflow-hidden" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 20px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg,#9B59B6 0%,#C050A0 50%,#FF6B8A 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 20px", position: "relative", overflow: "hidden", flexShrink: 0 }}>
         <div style={{ position: "absolute", top: -20, right: -20, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: 0, right: 50, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 35, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
