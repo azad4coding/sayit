@@ -19,7 +19,6 @@ export default function CirclePage() {
 
   const [loading,       setLoading]       = useState(true);
   const [members,       setMembers]       = useState<CircleMember[]>([]);
-  const [hidden,        setHidden]        = useState<Set<string>>(new Set());
 
   const purple = "#9B59B6";
   const accent = "#FF6B8A";
@@ -110,10 +109,17 @@ export default function CirclePage() {
     load();
   }, []);
 
-  const visible = members.filter(m => !hidden.has(m.phone));
+  const visible = members;
 
-  function hideContact(phone: string) {
-    setHidden(prev => new Set(Array.from(prev).concat(phone)));
+  function sendToContact(m: CircleMember) {
+    try {
+      sessionStorage.setItem("circle_contact", JSON.stringify({
+        id:    m.userId,
+        name:  m.name ?? m.phone,
+        phone: m.phone,
+      }));
+    } catch { /* ignore */ }
+    router.push("/home");
   }
 
   function getInitials(name: string | null, phone: string) {
@@ -209,14 +215,9 @@ export default function CirclePage() {
                   </div>
                 </div>
                 {/* Send */}
-                <button onClick={() => router.push("/home")}
-                  style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#FF6B8A18,#9B59B618)", border: "none", cursor: "pointer" }}>
-                  <Send style={{ width: 14, height: 14, color: accent }} />
-                </button>
-                {/* Hide */}
-                <button onClick={() => hideContact(m.phone)}
-                  style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 12 }}>
-                  ✕
+                <button onClick={() => sendToContact(m)}
+                  style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", border: "none", cursor: "pointer", boxShadow: "0 3px 10px rgba(255,107,138,0.35)" }}>
+                  <Send style={{ width: 14, height: 14, color: "white" }} />
                 </button>
               </div>
             ))

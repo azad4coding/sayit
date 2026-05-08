@@ -84,6 +84,18 @@ function SendPageInner() {
     fetch("/api/geo").then(r => r.json()).then(d => setCountry(d.country ?? "US")).catch(() => {});
   }, []);
 
+  // Pre-fill recipient if coming from Circle page
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("circle_contact");
+      if (!raw) return;
+      sessionStorage.removeItem("circle_contact");
+      const contact: FoundUser = JSON.parse(raw);
+      if (!contact?.phone) return;
+      selectContact(contact);
+    } catch { /* ignore */ }
+  }, []);
+
   // Unified search: name OR phone
   useEffect(() => {
     const q = searchQuery.trim();
