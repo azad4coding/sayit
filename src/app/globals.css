@@ -19,7 +19,7 @@ body {
   min-height: 100dvh;
 }
 
-/* ── Safe area top cover — prevents content bleeding into status bar ── */
+/* ── Safe area top spacer — transparent so each page's header colour shows through ── */
 .safe-area-top {
   position: fixed;
   top: 0;
@@ -28,7 +28,7 @@ body {
   width: 100%;
   max-width: var(--app-max-width);
   height: env(safe-area-inset-top, 44px);
-  background: #FFF5F7;
+  background: transparent;
   z-index: 60;
   pointer-events: none;
 }
