@@ -141,7 +141,7 @@ export default function ProfilePage() {
     <div className="min-h-dvh flex flex-col pb-28" style={{ background: "#f5f6f7" }}>
 
       {/* ── Hero ── */}
-      <div className="relative" style={{ background: "linear-gradient(160deg,#FF6B8A 0%,#C050A0 45%,#9B59B6 100%)" }}>
+      <div className="relative" style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)" }}>
         {/* Subtle decorative orbs */}
         <div style={{ position: "absolute", top: 24, left: 20, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", top: 10, right: 30, width: 50, height: 50, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />

@@ -133,8 +133,12 @@ export default function CirclePage() {
     <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
       {/* ── Premium gradient header ── */}
-      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: visible.length > 0 ? 16 : 0 }}>
+      <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
+        {/* Decorative blobs */}
+        <div style={{ position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -15, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: 20, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: visible.length > 0 ? 16 : 0, position: "relative", zIndex: 1 }}>
           <button onClick={() => router.push("/home")}
             style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
@@ -146,7 +150,7 @@ export default function CirclePage() {
         </div>
         {/* Stats strip */}
         {visible.length > 0 && (
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, position: "relative", zIndex: 1 }}>
             <div style={{ flex: 1, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 12, padding: "8px 10px", textAlign: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
               <p style={{ color: "white", fontWeight: 800, fontSize: 18, margin: 0 }}>{visible.length}</p>
               <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 9, margin: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Contacts</p>

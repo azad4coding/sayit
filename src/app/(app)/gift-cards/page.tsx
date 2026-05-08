@@ -168,32 +168,36 @@ export default function GiftCardsPage() {
     return (
       <div className="flex flex-col min-h-dvh pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
-        {/* Clean white header */}
-        <div style={{ background: "white", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 12, borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
+        {/* Premium gradient header */}
+        <div style={{ background: "linear-gradient(to bottom,#FF9900 0%,#FF6B8A 55%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
+          {/* Decorative blobs */}
+          <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.08)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -10, right: 55, width: 85, height: 85, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: 20, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 14, position: "relative", zIndex: 1 }}>
             <button onClick={() => router.push("/home")}
-              style={{ width: 36, height: 36, borderRadius: "50%", background: "#f3f4f6", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </button>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 800, color: "#111827", margin: 0 }}>Gift Cards 🎁</h1>
-              <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Pick a brand, choose an amount, send love</p>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>Gift Cards 🎁</h1>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>Pick a brand, choose an amount, send love</p>
             </div>
           </div>
-          {/* Search bar — light style */}
-          <div style={{ position: "relative", paddingLeft: 16, paddingRight: 16 }}>
-            <Search size={15} style={{ position: "absolute", left: 30, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
+          {/* Search bar — frosted glass style */}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)" }} />
             <input
               id="gc-search"
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search Starbucks, Amazon…"
-              style={{ width: "100%", background: "#f3f4f6", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14, padding: "10px 36px 10px 38px", color: "#111827", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 14, padding: "10px 36px 10px 38px", color: "white", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 28, top: "50%", transform: "translateY(-50%)" }}>
-                <X style={{ width: 14, height: 14, color: "#9ca3af" }} />
+              <button onClick={() => setSearchQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>
+                <X style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />
               </button>
             )}
           </div>
