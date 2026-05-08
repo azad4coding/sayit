@@ -130,10 +130,10 @@ export default function CirclePage() {
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
+    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
       {/* ── Premium gradient header ── */}
-      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 28px", position: "relative", overflow: "hidden", flexShrink: 0 }}>
+      <div style={{ background: "linear-gradient(135deg,#FF6B8A 0%,#C050A0 50%,#9B59B6 100%)", padding: "calc(env(safe-area-inset-top, 44px) + 54px) 20px 28px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -25, right: -25, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -10, right: 60, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ position: "absolute", top: 30, left: -20, width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
@@ -170,79 +170,74 @@ export default function CirclePage() {
         )}
       </div>
 
-      {/* ── Scrollable content ── */}
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: "7rem" }}>
-
-        {/* ── Members list ── */}
-        <div className="mx-4 mt-4 mb-4">
-          <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.04)" }}>
-            {visible.length === 0 ? (
-              <div className="flex flex-col items-center py-14 gap-3 px-8">
-                <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl mb-2"
-                  style={{ background: "linear-gradient(135deg,#FF6B8A15,#9B59B615)" }}>💫</div>
-                <p className="text-base font-bold text-gray-700 text-center">Your Circle is empty</p>
-                <p className="text-sm text-gray-400 text-center leading-relaxed">
-                  Your Circle grows every time you send a card. Start sending!
-                </p>
+      {/* ── Members list ── */}
+      <div className="mx-4 mt-4 mb-4">
+        <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.04)" }}>
+          {visible.length === 0 ? (
+            <div className="flex flex-col items-center py-14 gap-3 px-8">
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl mb-2"
+                style={{ background: "linear-gradient(135deg,#FF6B8A15,#9B59B615)" }}>💫</div>
+              <p className="text-base font-bold text-gray-700 text-center">Your Circle is empty</p>
+              <p className="text-sm text-gray-400 text-center leading-relaxed">
+                Your Circle grows every time you send a card. Start sending!
+              </p>
+              <button onClick={() => router.push("/home")}
+                className="mt-2 px-8 py-3 rounded-full text-sm font-bold text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
+                Send a Card
+              </button>
+            </div>
+          ) : (
+            visible.map((m, i) => (
+              <div key={m.phone}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < visible.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
+                {/* Avatar */}
+                <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, background: m.onSayIt ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "linear-gradient(135deg,#e5e7eb,#d1d5db)", color: m.onSayIt ? "white" : "#9ca3af", boxShadow: m.onSayIt ? "0 3px 10px rgba(255,107,138,0.3)" : "none" }}>
+                  {getInitials(m.name, m.phone)}
+                  {m.onSayIt && (
+                    <span style={{ position: "absolute", bottom: 1, right: 1, width: 12, height: 12, borderRadius: "50%", background: "#22c55e", border: "2px solid white" }} />
+                  )}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name ?? m.phone}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    {m.onSayIt ? (
+                      <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, background: "#dcfce7", padding: "1px 7px", borderRadius: 20 }}>✓ On SayIt</span>
+                    ) : (
+                      <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600 }}>Not on SayIt yet</span>
+                    )}
+                    <span style={{ fontSize: 10, color: "#d1d5db" }}>·</span>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{m.cardCount} {m.cardCount === 1 ? "card" : "cards"}</span>
+                  </div>
+                </div>
+                {/* Send */}
                 <button onClick={() => router.push("/home")}
-                  className="mt-2 px-8 py-3 rounded-full text-sm font-bold text-white shadow-lg"
-                  style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                  Send a Card
+                  style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#FF6B8A18,#9B59B618)", border: "none", cursor: "pointer" }}>
+                  <Send style={{ width: 14, height: 14, color: accent }} />
+                </button>
+                {/* Hide */}
+                <button onClick={() => hideContact(m.phone)}
+                  style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 12 }}>
+                  ✕
                 </button>
               </div>
-            ) : (
-              visible.map((m, i) => (
-                <div key={m.phone}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < visible.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
-                  {/* Avatar */}
-                  <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, background: m.onSayIt ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "linear-gradient(135deg,#e5e7eb,#d1d5db)", color: m.onSayIt ? "white" : "#9ca3af", boxShadow: m.onSayIt ? "0 3px 10px rgba(255,107,138,0.3)" : "none" }}>
-                    {getInitials(m.name, m.phone)}
-                    {m.onSayIt && (
-                      <span style={{ position: "absolute", bottom: 1, right: 1, width: 12, height: 12, borderRadius: "50%", background: "#22c55e", border: "2px solid white" }} />
-                    )}
-                  </div>
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: 14, color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name ?? m.phone}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                      {m.onSayIt ? (
-                        <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 700, background: "#dcfce7", padding: "1px 7px", borderRadius: 20 }}>✓ On SayIt</span>
-                      ) : (
-                        <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 600 }}>Not on SayIt yet</span>
-                      )}
-                      <span style={{ fontSize: 10, color: "#d1d5db" }}>·</span>
-                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{m.cardCount} {m.cardCount === 1 ? "card" : "cards"}</span>
-                    </div>
-                  </div>
-                  {/* Send */}
-                  <button onClick={() => router.push("/home")}
-                    style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#FF6B8A18,#9B59B618)", border: "none", cursor: "pointer" }}>
-                    <Send style={{ width: 14, height: 14, color: accent }} />
-                  </button>
-                  {/* Hide */}
-                  <button onClick={() => hideContact(m.phone)}
-                    style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 12 }}>
-                    ✕
-                  </button>
-                </div>
-              ))
-            )}
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ── Info card ── */}
+      {visible.length > 0 && (
+        <div className="mx-4 mb-4">
+          <div style={{ borderRadius: 16, padding: "14px 16px", background: "linear-gradient(135deg,rgba(255,107,138,0.06),rgba(155,89,182,0.06))", border: "1px solid rgba(255,107,138,0.15)" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9B59B6", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>💡 About My Circle</p>
+            <p style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+              Everyone you've sent or received cards from. Green dot = on SayIt — cards deliver instantly, no link needed.
+            </p>
           </div>
         </div>
-
-        {/* ── Info card ── */}
-        {visible.length > 0 && (
-          <div className="mx-4 mb-4">
-            <div style={{ borderRadius: 16, padding: "14px 16px", background: "linear-gradient(135deg,rgba(255,107,138,0.06),rgba(155,89,182,0.06))", border: "1px solid rgba(255,107,138,0.15)" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#9B59B6", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>💡 About My Circle</p>
-              <p style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
-                Everyone you've sent or received cards from. Green dot = on SayIt — cards deliver instantly, no link needed.
-              </p>
-            </div>
-          </div>
-        )}
-
-      </div>
+      )}
 
     </div>
   );
