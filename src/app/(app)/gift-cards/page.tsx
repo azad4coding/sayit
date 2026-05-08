@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { Search, ArrowLeft, ChevronDown, CheckCircle2, X, Share2 } from "lucide-react";
+import { Search, ArrowLeft, ChevronDown, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://sayit-gamma.vercel.app";
@@ -38,7 +38,7 @@ const VENDORS = [
   { id: "gamestop",   name: "GameStop",   emoji: "🎮", color: "#E31837", bg: "#FFEBEE", website: "https://www.gamestop.com/gift-cards" },
 ];
 
-type Step = "browse" | "amount" | "send" | "done";
+type Step = "browse" | "amount" | "send" | "share" | "done";
 type Vendor = typeof VENDORS[0];
 type FoundUser = { id: string; name: string; phone: string };
 
@@ -61,6 +61,10 @@ export default function GiftCardsPage() {
   const [shortCode,       setShortCode]       = useState("");
   const [senderName,      setSenderName]      = useState("");
   const [error,           setError]           = useState("");
+  const [recipientOnApp,  setRecipientOnApp]  = useState(false);
+  const [pendingPayload,  setPendingPayload]  = useState<Record<string, unknown> | null>(null);
+  const [pendingCircle,   setPendingCircle]   = useState<Record<string, unknown> | null>(null);
+  const [cardSaved,       setCardSaved]       = useState(false);
 
   const accent = "#FF6B8A";
 
@@ -121,7 +125,7 @@ export default function GiftCardsPage() {
     if (!user) { router.push("/login"); return; }
 
     const { data: profile } = await supabase
-      .from("profiles").select("full_name").eq("id", user.id).single();
+      .from("profiles").select("full_name, phone").eq("id", user.id).single();
     const name = profile?.full_name ?? user.user_metadata?.full_name ?? "Someone";
     setSenderName(name);
 
@@ -139,7 +143,7 @@ export default function GiftCardsPage() {
       note:          note.trim(),
     });
 
-    const { error: dbErr } = await supabase.from("sent_cards").insert({
+    const cardPayload: Record<string, unknown> = {
       sender_id:       user.id,
       recipient_phone: fullPhone,
       recipient_id:    selectedContact?.id ?? null,
@@ -150,13 +154,73 @@ export default function GiftCardsPage() {
       sender_name:     name,
       card_type:       "gift-card",
       front_image_url: null,
-    });
+    };
 
-    if (dbErr) { setError("Failed to send: " + dbErr.message); setSending(false); return; }
+    const circlePayload: Record<string, unknown> = {
+      sender_id:       user.id,
+      sender_phone:    user.phone ?? profile?.phone ?? null,
+      sender_name:     name,
+      recipient_phone: fullPhone,
+      recipient_id:    selectedContact?.id ?? null,
+      status:          "accepted",
+      updated_at:      new Date().toISOString(),
+    };
 
+    // ── Registered recipient: save immediately + push notification ────
+    if (selectedContact) {
+      const { error: dbErr } = await supabase.from("sent_cards").insert(cardPayload);
+      if (dbErr) { setError("Failed to send: " + dbErr.message); setSending(false); return; }
+
+      await supabase.from("circles").upsert(circlePayload,
+        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+
+      // Fire push notification (fire-and-forget)
+      supabase.auth.getSession().then(({ data: { session: pushSession } }) => {
+        fetch("/api/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pushSession?.access_token ?? ""}` },
+          body: JSON.stringify({ recipientId: selectedContact.id, senderName: name, cardCode: code }),
+        }).catch(() => {});
+      });
+
+      setSending(false);
+      setShortCode(code);
+      setRecipientOnApp(true);
+      setStep("done");
+      return;
+    }
+
+    // ── Unregistered recipient: defer save until user taps WA/SMS ─────
+    setPendingPayload(cardPayload);
+    setPendingCircle(circlePayload);
+    setCardSaved(false);
     setSending(false);
     setShortCode(code);
-    setStep("done");
+    setStep("share");
+  }
+
+  // Called when user taps WhatsApp or SMS — this is when we actually persist
+  async function saveCardNow() {
+    if (cardSaved || !pendingPayload) return;
+    setCardSaved(true);
+    const supabase = createClient();
+    let { error } = await supabase.from("sent_cards").insert(pendingPayload);
+    if (error) {
+      const { front_image_url: _, ...slim } = pendingPayload;
+      ({ error } = await supabase.from("sent_cards").insert(slim));
+    }
+    if (!error && pendingCircle) {
+      await supabase.from("circles").upsert(pendingCircle,
+        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+    }
+  }
+
+  function cancelShare() {
+    setPendingPayload(null);
+    setPendingCircle(null);
+    setCardSaved(false);
+    setShortCode("");
+    setStep("send");
   }
 
   const cardUrl = shortCode ? `${BASE_URL}/preview/${shortCode}` : "";
@@ -485,6 +549,75 @@ export default function GiftCardsPage() {
   // ─────────────────────────────────────────────────────────────────
   // STEP: DONE
   // ─────────────────────────────────────────────────────────────────
+  // ── Share step (unregistered recipient) ──────────────────────────
+  if (step === "share" && shortCode && selectedVendor && selectedAmount) {
+    const cardUrl2 = `${BASE_URL}/preview/${shortCode}`;
+    const shareText = `${senderName} sent you a $${selectedAmount} ${selectedVendor.name} gift card 🎁 Open it here: ${cardUrl2}`;
+    let rawPhone = phone.replace(/\D/g, "");
+    if (rawPhone.length === 10) rawPhone = "91" + rawPhone;
+    const smsHref = `sms:${countryCode}${phone.trim()}&body=${encodeURIComponent(shareText)}`;
+    const waHref  = `https://wa.me/${rawPhone}?text=${encodeURIComponent(shareText)}`;
+
+    return (
+      <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
+        <div className="px-5 pt-14 pb-2 flex items-center gap-3">
+          <button onClick={cancelShare}
+            className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm"
+            style={{ background: "rgba(0,0,0,0.06)" }}>
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center px-6 pt-4 pb-10 gap-6 flex-1">
+          {/* Vendor badge */}
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl shadow-xl"
+            style={{ background: `linear-gradient(135deg,${selectedVendor.color}CC,${selectedVendor.color})` }}>
+            {selectedVendor.emoji}
+          </div>
+
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800">Card Ready! 🎉</h2>
+            <p className="text-gray-400 text-sm mt-1">Now choose how to deliver it</p>
+            <p className="text-xs text-gray-300 mt-1">👋 Not on SayIt yet — invite them via WhatsApp or SMS</p>
+          </div>
+
+          <div className="w-full flex flex-col gap-3">
+            {/* iMessage / SMS */}
+            <a href={smsHref}
+              onClick={() => { saveCardNow(); setTimeout(() => setStep("done"), 600); }}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+              style={{ background: "linear-gradient(135deg,#34C759,#30D158)", textDecoration: "none" }}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold">iMessage / SMS</p>
+                <p className="text-xs text-white/75">Opens Messages app</p>
+              </div>
+              <span className="text-white/60 text-lg">›</span>
+            </a>
+
+            {/* WhatsApp */}
+            <a href={waHref} target="_blank" rel="noopener noreferrer"
+              onClick={() => { saveCardNow(); setTimeout(() => setStep("done"), 600); }}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", textDecoration: "none" }}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
+              <div className="flex-1">
+                <p className="text-sm font-bold">WhatsApp</p>
+                <p className="text-xs text-white/75">Opens WhatsApp chat</p>
+              </div>
+              <span className="text-white/60 text-lg">›</span>
+            </a>
+
+            <button onClick={cancelShare}
+              className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "done" && selectedVendor && selectedAmount) {
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center px-6 pb-28"
@@ -498,35 +631,21 @@ export default function GiftCardsPage() {
 
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Gift Card Sent! 🎉</h2>
         <p className="text-sm text-gray-400 text-center mb-6 leading-relaxed">
-          Your <span className="font-semibold text-gray-700">${selectedAmount} {selectedVendor.name}</span> gift card<br />is on its way
+          Your <span className="font-semibold text-gray-700">${selectedAmount} {selectedVendor.name}</span> gift card<br />
+          {recipientOnApp
+            ? `is delivered to ${selectedContact?.name?.split(" ")[0] ?? "them"} on SayIt 💌`
+            : "is on its way ✨"}
         </p>
-
-        {/* Share */}
-        {cardUrl && (
-          <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: `${selectedVendor.name} Gift Card from ${senderName}`, text: `I sent you a $${selectedAmount} ${selectedVendor.name} gift card! Open it here:`, url: cardUrl });
-              } else {
-                navigator.clipboard.writeText(cardUrl);
-              }
-            }}
-            className="w-full py-4 rounded-2xl text-white font-bold text-base shadow-lg flex items-center justify-center gap-2 mb-3"
-            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-            <Share2 className="w-4 h-4" />
-            Share Gift Card Link
-          </button>
-        )}
 
         <button
           onClick={() => router.push("/history")}
-          className="w-full py-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm text-sm font-semibold text-gray-600">
+          className="w-full py-3.5 rounded-2xl bg-white border border-gray-100 shadow-sm text-sm font-semibold text-gray-600 mb-3">
           View in Chat History
         </button>
 
         <button
-          onClick={() => { setStep("browse"); setSelectedVendor(null); setSelectedAmount(null); setNote(""); setPhone(""); setPhoneSearch(""); setSelectedContact(null); setShortCode(""); }}
-          className="mt-3 text-sm font-semibold" style={{ color: accent }}>
+          onClick={() => { setStep("browse"); setSelectedVendor(null); setSelectedAmount(null); setNote(""); setPhone(""); setPhoneSearch(""); setSelectedContact(null); setShortCode(""); setRecipientOnApp(false); setPendingPayload(null); setPendingCircle(null); setCardSaved(false); }}
+          className="mt-1 text-sm font-semibold" style={{ color: accent }}>
           Send Another Gift Card
         </button>
       </div>

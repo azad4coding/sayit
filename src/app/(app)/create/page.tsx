@@ -301,7 +301,7 @@ const COUNTRY_CODES = [
 ];
 
 type Category = "couple";
-type Step = "location" | "photo" | "generating" | "preview" | "send" | "done";
+type Step = "location" | "photo" | "generating" | "preview" | "send" | "share" | "done";
 
 // Messages shown when user uploaded a photo (background replacement path)
 const GENERATING_MESSAGES_PHOTO = [
@@ -383,12 +383,19 @@ export default function CreateAiCardPage() {
   }
 
   // ── Send step state ────────────────────────────────────────────────────────
-  const [phone,        setPhone]        = useState("");
-  const [countryCode,  setCountryCode]  = useState("+1");
-  const [showCC,       setShowCC]       = useState(false);
-  const [sending,      setSending]      = useState(false);
-  const [sendError,    setSendError]    = useState<string | null>(null);
-  const [shortCode,    setShortCode]    = useState<string | null>(null);
+  const [phone,          setPhone]          = useState("");
+  const [countryCode,    setCountryCode]    = useState("+1");
+  const [showCC,         setShowCC]         = useState(false);
+  const [sending,        setSending]        = useState(false);
+  const [sendError,      setSendError]      = useState<string | null>(null);
+  const [shortCode,      setShortCode]      = useState<string | null>(null);
+  const [senderNameState, setSenderNameState] = useState<string>("");
+  const [recipientOnApp, setRecipientOnApp] = useState(false);
+  // Deferred save: store the pending insert payload until user taps WA/SMS
+  const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null);
+  const [pendingCircle,  setPendingCircle]  = useState<Record<string, unknown> | null>(null);
+  const [cardSaved,      setCardSaved]      = useState(false);
+  const [shared,         setShared]         = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -529,8 +536,9 @@ export default function CreateAiCardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("full_name, phone").eq("id", user.id).single();
       const senderName = profile?.full_name ?? user.email ?? "Someone";
+      setSenderNameState(senderName);
       const fullPhone  = countryCode + phone.trim().replace(/\D/g, "");
       const code       = uuidv4().replace(/-/g, "").slice(0, 12);
 
@@ -541,7 +549,7 @@ export default function CreateAiCardPage() {
         .eq("phone", fullPhone)
         .maybeSingle();
 
-      const { error } = await supabase.from("sent_cards").insert({
+      const cardPayload: Record<string, unknown> = {
         sender_id:       user.id,
         recipient_phone: fullPhone,
         recipient_id:    recipientProfile?.id ?? null,
@@ -552,29 +560,83 @@ export default function CreateAiCardPage() {
         sender_name:     senderName,
         card_type:       "ai-card",
         front_image_url: generatedUrl,
-      });
+      };
 
-      if (error) throw new Error(error.message);
-
-      // ── Create/upsert a My Circle request for this recipient ──────────
-      const { data: myProfile } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
-      await supabase.from("circles").upsert({
+      const circlePayload: Record<string, unknown> = {
         sender_id:       user.id,
-        sender_phone:    user.phone ?? myProfile?.phone ?? null,
+        sender_phone:    user.phone ?? profile?.phone ?? null,
         sender_name:     senderName,
         recipient_phone: fullPhone,
         recipient_id:    recipientProfile?.id ?? null,
         status:          "accepted",
         updated_at:      new Date().toISOString(),
-      }, { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+      };
 
+      // ── Registered recipient: save immediately + push notification ────
+      if (recipientProfile) {
+        const { error } = await supabase.from("sent_cards").insert(cardPayload);
+        if (error) throw new Error(error.message);
+
+        await supabase.from("circles").upsert(circlePayload,
+          { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+
+        // Fire push notification (fire-and-forget)
+        supabase.auth.getSession().then(({ data: { session: pushSession } }) => {
+          fetch("/api/push/send", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${pushSession?.access_token ?? ""}`,
+            },
+            body: JSON.stringify({ recipientId: recipientProfile.id, senderName, cardCode: code }),
+          }).catch(() => {});
+        });
+
+        setShortCode(code);
+        setRecipientOnApp(true);
+        setSending(false);
+        setStep("done");
+        return;
+      }
+
+      // ── Unregistered recipient: defer save until user taps WA/SMS ─────
+      setPendingPayload(cardPayload);
+      setPendingCircle(circlePayload);
+      setCardSaved(false);
       setShortCode(code);
-      setStep("done");
+      setSending(false);
+      setStep("share");
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Failed to send");
-    } finally {
       setSending(false);
     }
+  }
+
+  // Called when user taps WhatsApp or SMS — this is when we actually persist
+  async function saveCardNow() {
+    if (cardSaved || !pendingPayload) return;
+    setCardSaved(true); // prevent double-save if both buttons are tapped
+
+    let { error } = await supabase.from("sent_cards").insert(pendingPayload);
+    if (error) {
+      // retry without front_image_url (RLS edge case)
+      const { front_image_url: _, ...slim } = pendingPayload;
+      ({ error } = await supabase.from("sent_cards").insert(slim));
+    }
+
+    if (!error && pendingCircle) {
+      await supabase.from("circles").upsert(pendingCircle,
+        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+    }
+  }
+
+  function cancelShare() {
+    setPendingPayload(null);
+    setPendingCircle(null);
+    setCardSaved(false);
+    setShortCode(null);
+    setShared(false);
+    setStep("send");
   }
 
   const cardLink = shortCode ? `${BASE_URL}/preview/${shortCode}` : "";
@@ -585,6 +647,7 @@ export default function CreateAiCardPage() {
     if (step === "photo")    { setStep("location"); return; }
     if (step === "preview")  { setStep("photo"); return; }
     if (step === "send")     { setStep("preview"); return; }
+    if (step === "share")    { cancelShare(); return; }
   }
 
   const categoryLocations = category ? getLocationsForCategory(category) : [];
@@ -600,7 +663,7 @@ export default function CreateAiCardPage() {
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      {step !== "generating" && step !== "done" && (
+      {step !== "generating" && step !== "done" && step !== "share" && (
         <header className="flex items-center gap-4 px-5 pt-14 pb-4">
           <button
             onClick={goBack}
@@ -1123,7 +1186,92 @@ export default function CreateAiCardPage() {
         )}
 
         {/* ════════════════════════════════════════════════════════════════════
-            STEP 7 — DONE
+            STEP 7 — SHARE (unregistered recipient)
+        ════════════════════════════════════════════════════════════════════ */}
+        {step === "share" && shortCode && (
+          <motion.div
+            key="share"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col min-h-dvh"
+            style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}
+          >
+            {/* Header */}
+            <div className="px-5 pt-14 pb-2 flex items-center gap-3">
+              <button onClick={cancelShare}
+                className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm"
+                style={{ background: "rgba(0,0,0,0.06)" }}>
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center px-6 pt-4 pb-10 gap-6 flex-1">
+              {/* Card thumbnail */}
+              {generatedUrl && (
+                <div className="relative w-44 rounded-3xl overflow-hidden shadow-2xl" style={{ aspectRatio: "9/16", maxHeight: 240 }}>
+                  <img src={generatedUrl} alt="AI card" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-800">Card Ready! 🎉</h2>
+                <p className="text-gray-400 text-sm mt-1">Now choose how to deliver it</p>
+                <p className="text-xs text-gray-300 mt-1">👋 Not on SayIt yet — invite them via WhatsApp or SMS</p>
+              </div>
+
+              {/* Share buttons */}
+              {(() => {
+                const cardLink2 = `${BASE_URL}/preview/${shortCode}`;
+                const shareText = `${senderNameState || "Someone"} sent you a card 💌 Open it here: ${cardLink2}`;
+                let rawPhone = phone.replace(/\D/g, "");
+                if (rawPhone.length === 10) rawPhone = "91" + rawPhone;
+                const smsHref = `sms:${countryCode}${phone.trim()}&body=${encodeURIComponent(shareText)}`;
+                const waHref  = `https://wa.me/${rawPhone}?text=${encodeURIComponent(shareText)}`;
+
+                return (
+                  <div className="w-full flex flex-col gap-3">
+                    {/* iMessage / SMS */}
+                    <a href={smsHref}
+                      onClick={() => { saveCardNow(); setTimeout(() => setStep("done"), 600); }}
+                      className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+                      style={{ background: "linear-gradient(135deg,#34C759,#30D158)", textDecoration: "none" }}>
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold">iMessage / SMS</p>
+                        <p className="text-xs text-white/75">Opens Messages app</p>
+                      </div>
+                      <span className="text-white/60 text-lg">›</span>
+                    </a>
+
+                    {/* WhatsApp */}
+                    <a href={waHref} target="_blank" rel="noopener noreferrer"
+                      onClick={() => { saveCardNow(); setTimeout(() => setStep("done"), 600); }}
+                      className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+                      style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", textDecoration: "none" }}>
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold">WhatsApp</p>
+                        <p className="text-xs text-white/75">Opens WhatsApp chat</p>
+                      </div>
+                      <span className="text-white/60 text-lg">›</span>
+                    </a>
+
+                    {/* Cancel */}
+                    <button
+                      onClick={cancelShare}
+                      className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
+                      Cancel
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════
+            STEP 8 — DONE
         ════════════════════════════════════════════════════════════════════ */}
         {step === "done" && (
           <motion.div
