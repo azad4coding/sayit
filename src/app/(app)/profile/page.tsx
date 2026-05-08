@@ -213,6 +213,11 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Profile</span>
+      </div>
+
       {/* ── Account ── */}
       <div className="mt-6 mx-4">
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">Account</p>

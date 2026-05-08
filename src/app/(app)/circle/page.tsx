@@ -173,6 +173,11 @@ export default function CirclePage() {
         )}
       </div>
 
+      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>My Circle</span>
+      </div>
+
       {/* ── Members list ── */}
       <div className="mx-4 mt-4 mb-4">
         <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.04)" }}>

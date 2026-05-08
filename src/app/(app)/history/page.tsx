@@ -584,6 +584,11 @@ function ChatsPageInner() {
         </div>
       </div>
 
+      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Chats</span>
+      </div>
+
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />

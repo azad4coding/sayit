@@ -405,6 +405,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+
       {/* Premium gradient header */}
       <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 24, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
         {/* Decorative blobs */}
@@ -421,6 +422,11 @@ export default function NotificationsPage() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", margin: 0 }}>wishes, reactions & occasions</p>
           </div>
         </div>
+      </div>
+
+      {/* ── Sticky compact title bar (WhatsApp-style) ── */}
+      <div className="sticky-title-bar">
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Wishes</span>
       </div>
 
       {loading ? (
