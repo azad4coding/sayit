@@ -110,15 +110,17 @@ export default function CirclePage() {
     load();
   }, []);
 
-  // Scroll listener for sticky title bar
+  // Scroll listener — listens on main.page-content (the actual scroll container)
   useEffect(() => {
+    const scroller = document.querySelector("main") as HTMLElement | null;
+    if (!scroller) return;
     const handleScroll = () => {
       if (titleBarRef.current) {
-        titleBarRef.current.classList.toggle("bar-visible", window.scrollY > 80);
+        titleBarRef.current.classList.toggle("bar-visible", scroller.scrollTop > 80);
       }
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    scroller.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", handleScroll);
   }, []);
 
   const visible = members;

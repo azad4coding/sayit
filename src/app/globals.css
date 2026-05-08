@@ -13,10 +13,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  height: 100%;
+  overflow: hidden; /* body is not the scroll container — page-content is */
+}
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: #f0f0f5;
-  min-height: 100dvh;
+  height: 100%;
+  overflow: hidden; /* prevents body scrollbar from showing at all */
 }
 
 /* ── Safe area top spacer — transparent so each page's header colour shows through ── */
@@ -36,18 +42,24 @@ body {
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
 .app-shell {
   max-width: var(--app-max-width);
-  min-height: 100dvh;
+  height: 100%;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
 }
 
-/* ── Scrollable page content (leaves room for bottom nav) ─────────── */
+/* ── Scrollable page content ──────────────────────────────────────── */
+/* This element IS the scroll container — not body.                    */
+/* Its height stops exactly above the bottom nav, so the custom        */
+/* scrollbar track never bleeds into the nav area.                     */
 .page-content {
-  padding-bottom: calc(80px + var(--safe-bottom));
-  min-height: 100dvh;
+  height: calc(100dvh - 80px - var(--safe-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Small breathing room at the bottom of the scroll area */
+  padding-bottom: 16px;
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
@@ -96,17 +108,13 @@ body {
   background-clip: text;
 }
 
-/* ── Custom scrollbar — visible right-side indicator ──────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.04);
-  border-radius: 2px;
-  /* Stop above the bottom nav so the track never bleeds into it */
-  margin-bottom: calc(80px + var(--safe-bottom));
-}
-::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.45); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.7); }
-* { -ms-overflow-style: thin; scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.45) rgba(0,0,0,0.04); }
+/* ── Custom scrollbar — only on the page-content scroll container ──── */
+/* Scoped to main so it never appears on html/body (which are overflow:hidden) */
+main::-webkit-scrollbar { width: 4px; }
+main::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 2px; }
+main::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.45); border-radius: 2px; }
+main::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.7); }
+main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.45) rgba(0,0,0,0.04); }
 
 /* ── Slide-in compact title bar (WhatsApp-style) ──────────────────── */
 /* Appears only after the gradient hero title has scrolled away.        */
