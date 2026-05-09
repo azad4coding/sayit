@@ -36,15 +36,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const sentCardIds = useRef<Set<string>>(new Set());
   const userIdRef   = useRef<string | null>(null);
 
-  // ── Capacitor: transparent status bar overlay ─────────────────────────────
+  // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
     (async () => {
       try {
         const { Capacitor } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;
+
+        // Transparent status bar so gradient fills behind it
         const { StatusBar, Style } = await import("@capacitor/status-bar");
         await StatusBar.setOverlaysWebView({ overlay: true });
         await StatusBar.setStyle({ style: Style.Light });
+
+        // Cache-bust: fetch /api/version (a lightweight endpoint that always
+        // returns the current deployment ID). If localStorage shows we've
+        // already loaded this version, skip. If it's new, reload once to
+        // flush any stale JS bundles the WebView may have cached.
+        try {
+          const res = await fetch("/api/version", { cache: "no-store" });
+          if (res.ok) {
+            const { v } = await res.json();
+            const stored = localStorage.getItem("sayit_v");
+            if (stored && stored !== v) {
+              localStorage.setItem("sayit_v", v);
+              window.location.reload();
+              return;
+            }
+            localStorage.setItem("sayit_v", v);
+          }
+        } catch { /* offline — skip version check */ }
       } catch { /* not in Capacitor context */ }
     })();
   }, []);
