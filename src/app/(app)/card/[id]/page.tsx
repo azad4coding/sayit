@@ -648,7 +648,7 @@ function CardPageInner() {
     if (!userId || !viewCardId) return;
     const sb = createClient();
     if (myCardReaction === emoji) {
-      // un-react
+      // un-react — no notification for removing a reaction
       setMyCardReaction(null);
       setReactionCounts(prev => ({ ...prev, [emoji]: Math.max(0, (prev[emoji] ?? 0) - 1) }));
       setReactionTrayOpen(false);
@@ -664,6 +664,21 @@ function CardPageInner() {
       setReactionTrayOpen(false);
       await sb.from('card_reactions').delete().eq('card_id', viewCardId).eq('user_id', userId);
       await sb.from('card_reactions').insert({ card_id: viewCardId, user_id: userId, emoji });
+
+      // ── Fire push notification to card sender (fire-and-forget) ─────────
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session?.access_token) {
+          fetch("/api/push/react", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ cardId: viewCardId, emoji }),
+          }).catch(() => { /* non-critical */ });
+        }
+      } catch { /* non-critical */ }
     }
   }
 
