@@ -1,0 +1,101 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createBrowserClient } from "@supabase/ssr";
+
+// POST /api/otp/verify
+// Body:    { phone: "+919876543210", code: "123456" }
+// Headers: Authorization: Bearer <supabase_access_token>
+//
+// 1. Checks the code with Twilio Verify.
+// 2. On success, upserts phone into the profiles table for the calling user.
+
+export const dynamic = "force-dynamic";
+
+function twilioAuth(): string {
+  const sid   = process.env.TWILIO_ACCOUNT_SID!;
+  const token = process.env.TWILIO_AUTH_TOKEN!;
+  return "Basic " + Buffer.from(`${sid}:${token}`).toString("base64");
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { phone, code } = await req.json() as { phone?: string; code?: string };
+
+    if (!phone || !phone.startsWith("+")) {
+      return NextResponse.json(
+        { error: "Phone must be an E.164 number (e.g. +919876543210)" },
+        { status: 400 }
+      );
+    }
+    if (!code || code.replace(/\D/g, "").length !== 6) {
+      return NextResponse.json({ error: "Code must be 6 digits" }, { status: 400 });
+    }
+
+    const serviceSid = process.env.TWILIO_VERIFY_SERVICE_SID!;
+    if (!serviceSid) {
+      return NextResponse.json(
+        { error: "Twilio Verify not configured on server" },
+        { status: 500 }
+      );
+    }
+
+    // ── 1: Verify the OTP code with Twilio ───────────────────────────────
+    const body = new URLSearchParams({ To: phone, Code: code.replace(/\D/g, "") });
+
+    const twilioRes = await fetch(
+      `https://verify.twilio.com/v2/Services/${serviceSid}/VerificationCheck`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: twilioAuth(),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+      }
+    );
+
+    const twilioData = await twilioRes.json().catch(() => ({})) as {
+      status?: string;
+      message?: string;
+    };
+
+    if (!twilioRes.ok || twilioData.status !== "approved") {
+      const msg = twilioData.message ?? "Invalid or expired code. Please try again.";
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+
+    // ── 2: Identify the logged-in user via their Supabase access token ───
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "");
+
+    if (!accessToken) {
+      // Phone was verified but we can't persist it — the client should
+      // write the profile directly after receiving { ok: true }.
+      return NextResponse.json({ ok: true, persistedProfile: false });
+    }
+
+    try {
+      // Use the access token to look up the user and upsert the profile
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data: { user } } = await supabase.auth.getUser(accessToken);
+
+      if (user) {
+        await supabase
+          .from("profiles")
+          .upsert({ id: user.id, phone }, { onConflict: "id" });
+      }
+    } catch (e) {
+      console.error("[otp/verify] profile upsert failed:", e);
+      // Non-fatal — client can write the profile itself
+      return NextResponse.json({ ok: true, persistedProfile: false });
+    }
+
+    return NextResponse.json({ ok: true, persistedProfile: true });
+  } catch (e) {
+    console.error("[otp/verify] unexpected error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

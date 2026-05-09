@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { Heart, ChevronDown } from "lucide-react";
+import { Heart, ChevronDown, Search } from "lucide-react";
 
 const COUNTRY_CODES = [
   { code: "+91",  flag: "🇮🇳", name: "India" },
@@ -13,6 +13,47 @@ const COUNTRY_CODES = [
   { code: "+971", flag: "🇦🇪", name: "UAE" },
   { code: "+65",  flag: "🇸🇬", name: "Singapore" },
   { code: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "+39",  flag: "🇮🇹", name: "Italy" },
+  { code: "+34",  flag: "🇪🇸", name: "Spain" },
+  { code: "+55",  flag: "🇧🇷", name: "Brazil" },
+  { code: "+52",  flag: "🇲🇽", name: "Mexico" },
+  { code: "+81",  flag: "🇯🇵", name: "Japan" },
+  { code: "+82",  flag: "🇰🇷", name: "South Korea" },
+  { code: "+86",  flag: "🇨🇳", name: "China" },
+  { code: "+92",  flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+94",  flag: "🇱🇰", name: "Sri Lanka" },
+  { code: "+977", flag: "🇳🇵", name: "Nepal" },
+  { code: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "+63",  flag: "🇵🇭", name: "Philippines" },
+  { code: "+62",  flag: "🇮🇩", name: "Indonesia" },
+  { code: "+66",  flag: "🇹🇭", name: "Thailand" },
+  { code: "+84",  flag: "🇻🇳", name: "Vietnam" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+974", flag: "🇶🇦", name: "Qatar" },
+  { code: "+965", flag: "🇰🇼", name: "Kuwait" },
+  { code: "+973", flag: "🇧🇭", name: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", name: "Oman" },
+  { code: "+20",  flag: "🇪🇬", name: "Egypt" },
+  { code: "+27",  flag: "🇿🇦", name: "South Africa" },
+  { code: "+234", flag: "🇳🇬", name: "Nigeria" },
+  { code: "+254", flag: "🇰🇪", name: "Kenya" },
+  { code: "+7",   flag: "🇷🇺", name: "Russia" },
+  { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
+  { code: "+41",  flag: "🇨🇭", name: "Switzerland" },
+  { code: "+46",  flag: "🇸🇪", name: "Sweden" },
+  { code: "+47",  flag: "🇳🇴", name: "Norway" },
+  { code: "+45",  flag: "🇩🇰", name: "Denmark" },
+  { code: "+358", flag: "🇫🇮", name: "Finland" },
+  { code: "+48",  flag: "🇵🇱", name: "Poland" },
+  { code: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "+54",  flag: "🇦🇷", name: "Argentina" },
+  { code: "+56",  flag: "🇨🇱", name: "Chile" },
+  { code: "+57",  flag: "🇨🇴", name: "Colombia" },
+  { code: "+90",  flag: "🇹🇷", name: "Turkey" },
+  { code: "+93",  flag: "🇦🇫", name: "Afghanistan" },
 ];
 
 function OtpBoxes({ value, onChange, accent = "#FF6B8A" }: {
@@ -78,6 +119,7 @@ function LoginInner() {
   const [step,           setStep]           = useState<"phone" | "otp" | "name">("phone");
   const [countryCode,    setCountryCode]    = useState("+91");
   const [showCCDropdown, setShowCCDropdown] = useState(false);
+  const [ccQuery,        setCcQuery]        = useState("");
   const [phoneNumber,    setPhoneNumber]    = useState("");
   const [otp,            setOtp]            = useState(["", "", "", "", "", ""]);
   const [resendSecs,     setResendSecs]     = useState(0);
@@ -171,25 +213,38 @@ function LoginInner() {
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Phone Number</label>
             <div className="flex gap-2">
               <div className="relative">
-                <button type="button" onClick={() => setShowCCDropdown(v => !v)}
+                <button type="button" onClick={() => { setShowCCDropdown(v => !v); setCcQuery(""); }}
                   className="h-full px-3 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-                  style={{ minWidth: 88 }}>
+                  style={{ minWidth: 90 }}>
                   <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
                   <span className="text-gray-700">{countryCode}</span>
                   <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
                 {showCCDropdown && (
-                  <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50" style={{ minWidth: 180 }}>
-                    {COUNTRY_CODES.map(c => (
-                      <button key={c.code} type="button"
-                        onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 text-left"
-                        style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
-                        <span>{c.flag}</span><span>{c.name}</span>
-                        <span className="ml-auto text-gray-400 text-xs">{c.code}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowCCDropdown(false)} />
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50" style={{ width: 220, maxHeight: 320 }}>
+                      <div className="px-3 py-2 border-b border-gray-50 flex items-center gap-2">
+                        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <input type="text" placeholder="Search country…" value={ccQuery}
+                          onChange={e => setCcQuery(e.target.value)}
+                          className="flex-1 text-sm outline-none text-gray-700" autoFocus />
+                      </div>
+                      <div style={{ overflowY: "auto", maxHeight: 264 }}>
+                        {COUNTRY_CODES
+                          .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
+                          .map((c, idx) => (
+                            <button key={`${c.code}-${idx}`} type="button"
+                              onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); setCcQuery(""); }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 text-left"
+                              style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
+                              <span>{c.flag}</span><span className="flex-1">{c.name}</span>
+                              <span className="text-gray-400 text-xs">{c.code}</span>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
               <input type="tel" inputMode="numeric" placeholder="98765 43210"
