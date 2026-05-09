@@ -20,6 +20,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const supabase = createClient();
 
+  // ── Reset scroll to top on every tab/page switch ─────────────────────────
+  // main.page-content is a persistent DOM node; Next.js SPA nav doesn't reset
+  // its scrollTop, so without this the sticky title bar stays visible when
+  // switching tabs while scrolled down.
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (main) main.scrollTop = 0;
+  }, [pathname]);
+
+  // ── Capacitor: transparent status bar overlay (Android + iOS) ────────────
+  // Sets the status bar to overlay the WebView so env(safe-area-inset-top)
+  // returns the real status bar height and the gradient fills behind it.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;
+        const { StatusBar, Style } = await import("@capacitor/status-bar");
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.setStyle({ style: Style.Light });
+      } catch { /* not in Capacitor context */ }
+    })();
+  }, []);
+
   const [checking,     setChecking]     = useState(true);
   const [reactionDot,  setReactionDot]  = useState(0);
   const [incomingDot,  setIncomingDot]  = useState(0);

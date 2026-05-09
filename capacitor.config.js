@@ -17,7 +17,7 @@ const config = {
     },
     StatusBar: {
       style: "Light",
-      backgroundColor: "#FFF5F7",
+      overlaysWebView: true,   // gradient fills behind status bar on Android + iOS
     },
   },
   ios: {
