@@ -15,14 +15,14 @@
 
 html {
   height: 100%;
-  overflow: hidden; /* body is not the scroll container — page-content is */
+  overflow: hidden;
 }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: #f0f0f5;
   height: 100%;
-  overflow: hidden; /* prevents body scrollbar from showing at all */
+  overflow: hidden;
 }
 
 /* ── Safe area top spacer — transparent so each page's header colour shows through ── */
@@ -40,26 +40,27 @@ body {
 }
 
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
+/* IMPORTANT: overflow-x only — using overflow:hidden breaks         */
+/* position:fixed children on iOS WebKit (they get clipped/offset).  */
 .app-shell {
   max-width: var(--app-max-width);
   height: 100%;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;          /* horizontal clip only */
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
 }
 
 /* ── Scrollable page content ──────────────────────────────────────── */
-/* This element IS the scroll container — not body.                    */
-/* Its height stops exactly above the bottom nav, so the custom        */
-/* scrollbar track never bleeds into the nav area.                     */
+/* This IS the scroll container. Height ends above the bottom nav so  */
+/* the scrollbar track never bleeds into the nav area.                */
 .page-content {
   height: calc(100dvh - 80px - var(--safe-bottom));
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  /* Prevent rubber-band overscroll from revealing white app-shell bg  */
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: none;  /* no rubber-band white flash */
   padding-bottom: 16px;
 }
 
@@ -109,12 +110,13 @@ body {
   background-clip: text;
 }
 
-/* ── Scrollbar — hide custom, use native overlay indicator ────────── */
-/* The CSS scrollbar track caused a small box artifact at the bottom   */
-/* of the scroll container. Native scroll indicators (like WhatsApp)   */
-/* appear only while scrolling and don't leave artifacts.              */
-main::-webkit-scrollbar { display: none; }
-main { scrollbar-width: none; }
+/* ── Thin scrollbar on the page-content scroll container ─────────── */
+/* Transparent track so no box artifact appears at the container edge */
+main::-webkit-scrollbar { width: 3px; }
+main::-webkit-scrollbar-track { background: transparent; }
+main::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.4); border-radius: 2px; }
+main::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.65); }
+main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.4) transparent; }
 
 /* ── Slide-in compact title bar (WhatsApp-style) ──────────────────── */
 /* Appears only after the gradient hero title has scrolled away.        */
