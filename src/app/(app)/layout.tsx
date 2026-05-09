@@ -290,7 +290,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                            : 0;
             const showDot  = totalDot > 0;
             return (
-              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5 relative">
+              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-1.5 gap-0.5 relative">
                 {active && (
                   <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-7 h-7 rounded-2xl"
                     style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)" }} />
