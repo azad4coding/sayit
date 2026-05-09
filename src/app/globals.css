@@ -84,8 +84,9 @@ body {
   -webkit-backdrop-filter: blur(20px);
   /* Hairline separator with a hint of purple instead of plain grey   */
   border-top: 1px solid rgba(155, 89, 182, 0.18);
-  /* Safe-area padding so nothing hides behind the home indicator      */
-  padding-bottom: var(--safe-bottom);
+  /* Safe-area padding capped at 28px — prevents excessive gap on      */
+  /* tall-notch iPhones where env() alone gives 34px+ of dead space.  */
+  padding-bottom: min(var(--safe-bottom), 28px);
   z-index: 50;
 }
 

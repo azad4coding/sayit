@@ -494,8 +494,8 @@ function PawMomentsPage({ gradient_from, gradient_to }: { gradient_from: string;
             style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           </button>
-          <span className="text-2xl" style={{ lineHeight: 1 }}>🐾</span>
           <h1 className="text-white font-bold" style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Paw Moments</h1>
+          <span className="text-2xl" style={{ lineHeight: 1 }}>🐾</span>
         </div>
         <p className="text-white/70 text-xs mt-2 ml-1">Share pet photos as a beautiful collage</p>
       </div>
