@@ -58,7 +58,8 @@ body {
   height: calc(100dvh - 80px - var(--safe-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Small breathing room at the bottom of the scroll area */
+  /* Prevent rubber-band overscroll from revealing white app-shell bg  */
+  overscroll-behavior-y: none;
   padding-bottom: 16px;
 }
 
@@ -108,13 +109,12 @@ body {
   background-clip: text;
 }
 
-/* ── Custom scrollbar — only on the page-content scroll container ──── */
-/* Scoped to main so it never appears on html/body (which are overflow:hidden) */
-main::-webkit-scrollbar { width: 4px; }
-main::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 2px; }
-main::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.45); border-radius: 2px; }
-main::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.7); }
-main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.45) rgba(0,0,0,0.04); }
+/* ── Scrollbar — hide custom, use native overlay indicator ────────── */
+/* The CSS scrollbar track caused a small box artifact at the bottom   */
+/* of the scroll container. Native scroll indicators (like WhatsApp)   */
+/* appear only while scrolling and don't leave artifacts.              */
+main::-webkit-scrollbar { display: none; }
+main { scrollbar-width: none; }
 
 /* ── Slide-in compact title bar (WhatsApp-style) ──────────────────── */
 /* Appears only after the gradient hero title has scrolled away.        */
