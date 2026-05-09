@@ -43,7 +43,7 @@ export default function HomePage() {
   const firstName = profile?.full_name?.split(" ")[0] ?? "Guest";
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg, #FFF5F7 0%, #ffffff 40%)" }}>
+    <div className="flex flex-col" style={{ background: "linear-gradient(180deg, #FFF5F7 0%, #F8F0FF 60%, #fff5f7 100%)" }}>
       {/* ── Header ────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-5 pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 44px) + 16px)" }}>
         <div>
@@ -100,56 +100,64 @@ export default function HomePage() {
           <div
             className="relative rounded-3xl overflow-hidden px-6 py-5 flex items-center gap-4"
             style={{
-              background: "linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #533483 100%)",
-              boxShadow: "0 8px 32px rgba(83,52,131,0.35)",
+              background: "linear-gradient(135deg, #0d0221 0%, #3a0d7a 35%, #7b2ff7 70%, #c850c0 100%)",
+              boxShadow: "0 12px 40px rgba(123,47,247,0.45)",
             }}
           >
-            {/* Stars bg decoration */}
-            <div className="absolute inset-0 overflow-hidden">
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute rounded-full bg-white"
-                  style={{
-                    width: Math.random() * 3 + 1,
-                    height: Math.random() * 3 + 1,
-                    top: `${Math.random() * 100}%`,
-                    left: `${Math.random() * 100}%`,
-                    opacity: Math.random() * 0.6 + 0.2,
-                  }}
-                />
-              ))}
-              {/* Decorative circles — same as hero cards */}
-              <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full opacity-20 bg-white" />
-              <div className="absolute -right-2 bottom-2 w-20 h-20 rounded-full opacity-10 bg-white" />
-            </div>
+            {/* Premium shimmer overlay */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
+                backgroundSize: "200% 100%",
+              }}
+            />
 
-            {/* Icon */}
+            {/* Decorative orbs */}
+            <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full opacity-25"
+              style={{ background: "radial-gradient(circle, #c850c0, transparent)" }} />
+            <div className="absolute right-8 bottom-0 w-20 h-20 rounded-full opacity-15"
+              style={{ background: "radial-gradient(circle, #7b2ff7, transparent)" }} />
+
+            {/* Stars */}
+            {[
+              [15, 20], [40, 70], [60, 15], [75, 55], [85, 30], [25, 85],
+              [50, 40], [90, 70], [10, 60], [65, 80], [35, 10], [80, 45],
+            ].map(([t, l], i) => (
+              <div key={i} className="absolute rounded-full bg-white"
+                style={{ width: i % 3 === 0 ? 3 : 2, height: i % 3 === 0 ? 3 : 2, top: `${t}%`, left: `${l}%`, opacity: i % 2 === 0 ? 0.7 : 0.4 }}
+              />
+            ))}
+
+            {/* Gold icon */}
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 z-10"
-              style={{ background: "linear-gradient(135deg, #FFD700, #FF9500)" }}
+              style={{
+                background: "linear-gradient(135deg, #FFD700 0%, #FF9500 60%, #FF6B00 100%)",
+                boxShadow: "0 4px 16px rgba(255,165,0,0.5)",
+              }}
             >
               <span className="text-2xl">✨</span>
             </div>
 
             {/* Text */}
             <div className="z-10 flex-1">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-white font-bold text-base">AI Card Creator</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-white font-bold text-base tracking-tight">AI Card Creator</span>
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "#FFD700", color: "#1a1a2e" }}
+                  className="text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wide"
+                  style={{ background: "linear-gradient(90deg,#FFD700,#FF9500)", color: "#1a0533" }}
                 >
                   NEW
                 </span>
               </div>
-              <p className="text-white/60 text-xs leading-snug">
+              <p className="text-white/70 text-xs leading-snug">
                 Place yourselves in 50 exotic locations around the world
               </p>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-white/40 text-xs">❤️ Couple Cards</span>
+                <span className="text-white/50 text-[11px]">❤️ Couple Cards</span>
                 <span className="text-white/30 text-xs">·</span>
-                <span className="text-white/40 text-xs">✨ AI Generated</span>
+                <span className="text-white/50 text-[11px]">✨ AI Generated</span>
               </div>
             </div>
 
@@ -158,7 +166,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Circle categories (Birthday, Occasions, Holidays) ─────── */}
-      <div className="px-5 mb-2">
+      <div className="px-5 mb-8">
         <h3 className="text-sm font-bold text-gray-700 mb-4">Instant Moments</h3>
         <div className="grid grid-cols-3 gap-4">
           {catsLoading ? (
