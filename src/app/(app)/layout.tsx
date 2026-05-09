@@ -243,12 +243,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="safe-area-top" style={{ background: "transparent" }} />
 
       {/* ── Compact sticky title bar ── */}
-      {/* Rendered HERE as a sibling of <main>, NOT inside <main>.                    */}
-      {/* If placed inside the overflow:scroll <main>, iOS WebKit repositions          */}
-      {/* position:fixed children relative to the scroll container, making the bar    */}
-      {/* appear on top of the gradient hero at scroll position 0.                    */}
-      {barTitle && (
-        <div className={`sticky-title-bar${showTitleBar ? " bar-visible" : ""}`}>
+      {/* Conditionally rendered — only mounts when scrolled past 80px.   */}
+      {/* Using React conditional render (not CSS opacity/visibility) so  */}
+      {/* the element literally does not exist in the DOM at scroll=0.    */}
+      {/* This is bulletproof: no CSS trick can make a non-existent node  */}
+      {/* visible on any browser or platform.                             */}
+      {barTitle && showTitleBar && (
+        <div className="sticky-title-bar">
           <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>
             {barTitle}
           </span>

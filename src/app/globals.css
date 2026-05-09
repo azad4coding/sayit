@@ -40,42 +40,41 @@ body {
 }
 
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
-/* IMPORTANT: overflow-x only — using overflow:hidden breaks         */
-/* position:fixed children on iOS WebKit (they get clipped/offset).  */
+/* Flex column so page-content + bottom-nav fill exactly 100% height. */
+/* No height arithmetic needed — the browser distributes space.       */
 .app-shell {
   max-width: var(--app-max-width);
   height: 100%;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow-x: hidden;          /* horizontal clip only */
+  overflow-x: hidden;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Scrollable page content ──────────────────────────────────────── */
-/* This IS the scroll container. Height ends above the bottom nav so  */
-/* the scrollbar track never bleeds into the nav area.                */
-/* Nav content height = py-3 (24px) + icon (20px) + gap-1 (4px)      */
-/* + label (~14px) + border-top (1px) ≈ 63px → use 64px for safety.  */
+/* flex:1 + min-height:0 lets the browser size this exactly to fill  */
+/* the space between the top and the bottom nav — no px arithmetic,  */
+/* no bottom-box gap, works on every device with any nav height.      */
 .page-content {
-  height: calc(100vh - 64px - var(--safe-bottom));   /* Android fallback */
-  height: calc(100dvh - 64px - var(--safe-bottom));  /* preferred        */
-  overflow-y: scroll;            /* 'scroll' not 'auto' — Android needs   */
-  overflow-x: hidden;            /* explicit scroll to route touch events  */
+  flex: 1;
+  min-height: 0;                 /* required: lets flex child shrink    */
+  overflow-y: scroll;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;           /* lets Android WebView handle y-panning */
-  overscroll-behavior-y: none;   /* no rubber-band white flash            */
+  touch-action: pan-y;
+  overscroll-behavior-y: none;
   padding-bottom: 16px;
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
+/* No longer position:fixed — it's the second flex child of app-shell */
+/* so it always sits flush at the bottom with zero gap.               */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  flex-shrink: 0;
   width: 100%;
-  max-width: var(--app-max-width);
   background: #fff;
   border-top: 1px solid #f0f0f5;
   padding-bottom: var(--safe-bottom);
@@ -122,19 +121,16 @@ main::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.4); border-radius:
 main::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.65); }
 main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.4) transparent; }
 
-/* ── Slide-in compact title bar (WhatsApp-style) ──────────────────── */
-/* Appears only after the gradient hero title has scrolled away.        */
-/* Uses opacity + tiny translateY instead of full -100% slide so that  */
-/* iOS WebKit overflow-x:hidden context never shows a white flash.      */
+/* ── Compact title bar (WhatsApp-style) ───────────────────────────── */
+/* Rendered via React conditional — only exists in the DOM when the   */
+/* user has scrolled past the gradient hero (scrollTop > 80). This is */
+/* bulletproof: no opacity tricks, no CSS hiding, just not rendered.  */
+/* Fades in via keyframe animation on mount.                           */
 .sticky-title-bar {
   position: fixed;
   top: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(-6px); /* slight lift when hidden */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
   width: 100%;
   max-width: var(--app-max-width);
   z-index: 58;
@@ -149,11 +145,11 @@ main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.4) transparent;
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0,0,0,0.07);
   box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  animation: titleBarIn 0.2s ease forwards;
 }
-.sticky-title-bar.bar-visible {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-  pointer-events: auto;
+@keyframes titleBarIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* ── Smooth transitions everywhere ───────────────────────────────── */
