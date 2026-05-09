@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -84,11 +84,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => main.removeEventListener("scroll", handler);
   }, [checking]);
 
-  // ── Reset scroll + hide bar on every route change ────────────────────────
-  useEffect(() => {
+  // ── Reset bar BEFORE paint (useLayoutEffect) so there's never a flash ────
+  // useEffect runs after the browser paints, which can briefly show a stale
+  // showTitleBar=true from the previous page. useLayoutEffect runs before
+  // paint, ensuring the bar is hidden on the very first frame of any new page.
+  useLayoutEffect(() => {
     setShowTitleBar(false);
+  }, [pathname]);
+
+  // ── Reset scroll on every route change ───────────────────────────────────
+  // The overflow toggle kills iOS WebKit momentum scroll before resetting.
+  // Without it, momentum can fire extra scroll events after scrollTop=0,
+  // setting showTitleBar back to true.
+  useEffect(() => {
     const main = document.querySelector("main") as HTMLElement | null;
-    if (main) main.scrollTop = 0;
+    if (!main) return;
+    // Kill iOS momentum scroll, then reset position
+    main.style.overflowY = "hidden";
+    main.scrollTop = 0;
+    main.style.overflowY = "";
   }, [pathname]);
 
   // ── Register service worker + subscribe to push ─────────────────────────

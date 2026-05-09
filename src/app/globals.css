@@ -63,7 +63,10 @@ body {
   min-height: 0;                 /* required: lets flex child shrink    */
   overflow-y: scroll;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  /* -webkit-overflow-scrolling:touch removed — deprecated, causes iOS momentum
+     scroll to continue firing events after programmatic scrollTop=0 reset,
+     which makes the sticky title bar reappear after navigation. Modern iOS
+     uses smooth scrolling natively without this property. */
   touch-action: pan-y;
   overscroll-behavior-y: none;
   padding-bottom: 16px;
