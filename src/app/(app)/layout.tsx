@@ -281,8 +281,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="page-content">{children}</main>
 
       {/* ── Bottom Navigation ── */}
-      <nav className="bottom-nav" style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
-        <div className="flex items-center px-4">
+      <nav className="bottom-nav">
+        <div className="flex items-center px-2">
           {NAV.map(({ href, label, Icon }) => {
             const active   = pathname === href;
             const totalDot = href === "/history" ? (reactionDot + incomingDot)
@@ -290,26 +290,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                            : 0;
             const showDot  = totalDot > 0;
             return (
-              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 relative">
+              <Link key={href} href={href} className="flex-1 flex flex-col items-center py-2 gap-0.5 relative">
                 {active && (
-                  <span className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-2xl"
+                  <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-7 h-7 rounded-2xl"
                     style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)" }} />
                 )}
                 <div className="relative z-10">
                   <Icon
-                    className="w-5 h-5 transition-all"
-                    style={{ color: active ? "#9B59B6" : "#c0c0c0" }}
+                    className="w-[18px] h-[18px] transition-all"
+                    style={{ color: active ? "#9B59B6" : "#b0b0b0" }}
                     strokeWidth={active ? 2.5 : 1.8}
                   />
                   {showDot && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1 shadow-sm"
+                    <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] rounded-full flex items-center justify-center text-[8px] font-bold text-white px-0.5 shadow-sm"
                       style={{ background: "#E53935", boxShadow: "0 1px 4px rgba(229,57,53,0.5)" }}>
                       {totalDot > 99 ? "99+" : totalDot}
                     </span>
                   )}
                 </div>
-                <span className="text-[9px] font-bold transition-colors relative z-10"
-                  style={{ color: active ? "#9B59B6" : "#c0c0c0", letterSpacing: "0.2px" }}>
+                <span className="text-[9px] font-semibold transition-colors relative z-10"
+                  style={{ color: active ? "#9B59B6" : "#b0b0b0", letterSpacing: "0.1px" }}>
                   {label}
                 </span>
               </Link>

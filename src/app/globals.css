@@ -73,13 +73,18 @@ body {
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
-/* No longer position:fixed — it's the second flex child of app-shell */
-/* so it always sits flush at the bottom with zero gap.               */
+/* Flex child of app-shell — always flush at the bottom, zero gap.    */
+/* Slightly tinted so it reads as distinct from page content above.   */
 .bottom-nav {
   flex-shrink: 0;
   width: 100%;
-  background: #fff;
-  border-top: 1px solid #f0f0f5;
+  /* Subtle lavender tint — echoes the app's pink/purple gradient      */
+  background: rgba(248, 244, 255, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  /* Hairline separator with a hint of purple instead of plain grey   */
+  border-top: 1px solid rgba(155, 89, 182, 0.18);
+  /* Safe-area padding so nothing hides behind the home indicator      */
   padding-bottom: var(--safe-bottom);
   z-index: 50;
 }
