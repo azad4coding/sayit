@@ -33,21 +33,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [incomingDot, setIncomingDot] = useState(0);
   const [wishesDot,   setWishesDot]   = useState(0);
 
-  // ── Path-aware title bar ──────────────────────────────────────────────────
-  // Stores BOTH the pathname the bar was shown for AND whether it's visible.
-  // showTitleBar is DERIVED: only true when the stored path matches the
-  // current path. This means a scroll event fired by iOS momentum scroll
-  // on the OLD page can never make the bar visible on the NEW page — the
-  // path mismatch makes showTitleBar false automatically, with zero effects,
-  // zero timers, and zero useLayoutEffect hacks needed.
-  const [titleBar,    setTitleBar]    = useState({ path: "", show: false });
-  const showTitleBar = titleBar.path === pathname && titleBar.show;
-
-  // Always-fresh pathname ref so the scroll handler doesn't close over a
-  // stale pathname value (the handler is only attached once, but pathname
-  // changes on every navigation).
-  const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
+  // ── Title bar visibility ──────────────────────────────────────────────────
+  // Simple boolean state — shown only when user has scrolled > 80px.
+  //
+  // Root-cause of the persistent bug: pathnameRef.current updated during the
+  // React render phase (sync), but main.scrollTop = 0 runs in a useEffect
+  // (after paint). In that gap, iOS momentum scroll or layout-triggered scroll
+  // events fire with NEW pathname + OLD scrollTop → showTitleBar becomes true
+  // on the freshly-loaded page before the reset even runs.
+  //
+  // Fix: timestamp cooldown. Record the time of every navigation. The scroll
+  // handler ignores ALL events within 500 ms of a nav — long enough to outlast
+  // momentum scroll decay, layout shifts, and the React effect scheduling gap.
+  const [showTitleBar,  setShowTitleBar]  = useState(false);
+  const lastNavTimeRef  = useRef(0);
 
   const sentCardIds = useRef<Set<string>>(new Set());
   const userIdRef   = useRef<string | null>(null);
@@ -85,36 +84,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // ── Scroll listener on main — lives HERE, not inside each page ───────────
-  // KEY: the sticky title bar is rendered as a sibling of <main> in this
-  // layout, NOT inside <main>. On iOS WebKit, position:fixed children of an
-  // overflow:scroll container are trapped and positioned relative to that
-  // container (not the viewport), so putting the bar inside <main> made it
-  // cover the gradient hero instead of floating above it.
   // ── Scroll listener ───────────────────────────────────────────────────────
-  // Attached once (when auth check completes). Uses pathnameRef so it always
-  // records the CURRENT page's path alongside the show flag — ensuring that
-  // momentum-scroll events from a previous page can never reveal the bar on
-  // the new page (path mismatch makes showTitleBar false automatically).
+  // Attached once (when auth check completes).
+  // Ignores any event fired within 500 ms of a navigation (lastNavTimeRef).
   useEffect(() => {
     if (checking) return;
     const main = document.querySelector("main") as HTMLElement | null;
     if (!main) return;
-    const handler = () =>
-      setTitleBar({ path: pathnameRef.current, show: main.scrollTop > 80 });
+    const handler = () => {
+      if (Date.now() - lastNavTimeRef.current < 500) return; // cooldown
+      setShowTitleBar(main.scrollTop > 80);
+    };
     main.addEventListener("scroll", handler, { passive: true });
     return () => main.removeEventListener("scroll", handler);
   }, [checking]);
 
-  // ── Reset scroll position on every route change ───────────────────────────
-  // No need to reset showTitleBar here — the path-aware derivation above
-  // already makes it false the instant the pathname changes.
+  // ── Reset scroll + hide title bar on every route change ──────────────────
   useEffect(() => {
+    // Record nav timestamp FIRST — scroll handler checks this.
+    lastNavTimeRef.current = Date.now();
+    setShowTitleBar(false);
+
     const main = document.querySelector("main") as HTMLElement | null;
     if (!main) return;
     main.scrollTop = 0;
-    // One RAF pass to catch any late momentum-scroll that fires after the
-    // synchronous reset (common on iOS WebKit).
+    // One RAF pass to squash any late momentum-scroll (iOS WebKit).
     const raf = requestAnimationFrame(() => { main.scrollTop = 0; });
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
