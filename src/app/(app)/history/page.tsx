@@ -336,8 +336,6 @@ function ChatsPageInner() {
   const [listReactions, setListReactions] = useState<Record<string, Record<string, number>>>({});
   const [templateMap,   setTemplateMap]   = useState<TemplateMap>({});
   const [categoryMap,   setCategoryMap]   = useState<CategoryMap>({});
-  const titleBarRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     async function load() {
       const supabase = createClient();
@@ -524,19 +522,6 @@ function ChatsPageInner() {
     if (match) setSelected(match);
   }, [contacts, contactParam]);
 
-  // Scroll listener — listens on main.page-content (the actual scroll container)
-  useEffect(() => {
-    const scroller = document.querySelector("main") as HTMLElement | null;
-    if (!scroller) return;
-    const handleScroll = () => {
-      if (titleBarRef.current) {
-        titleBarRef.current.classList.toggle("bar-visible", scroller.scrollTop > 80);
-      }
-    };
-    scroller.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scroller.removeEventListener("scroll", handleScroll);
-  }, []);
-
   // Realtime reaction updates
   useEffect(() => {
     const supabase = createClient();
@@ -572,11 +557,6 @@ function ChatsPageInner() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
-
-      {/* ── Fixed compact title bar (WhatsApp-style) — hidden until scroll > 80px ── */}
-      <div className="sticky-title-bar" ref={titleBarRef}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Chats</span>
-      </div>
 
       {/* Premium gradient header */}
       <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>

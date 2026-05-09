@@ -15,23 +15,28 @@ const NAV = [
   { href: "/profile",    label: "Profile",    Icon: User          },
 ];
 
+// Which routes get a compact sticky title bar (matches the gradient hero title)
+const PAGE_TITLES: Record<string, string> = {
+  "/wishes":  "Wishes",
+  "/history": "Chats",
+  "/circle":  "My Circle",
+  "/profile": "Profile",
+};
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
-  // ── Reset scroll to top on every tab/page switch ─────────────────────────
-  // main.page-content is a persistent DOM node; Next.js SPA nav doesn't reset
-  // its scrollTop, so without this the sticky title bar stays visible when
-  // switching tabs while scrolled down.
-  useEffect(() => {
-    const main = document.querySelector("main");
-    if (main) main.scrollTop = 0;
-  }, [pathname]);
+  const [checking,      setChecking]      = useState(true);
+  const [reactionDot,   setReactionDot]   = useState(0);
+  const [incomingDot,   setIncomingDot]   = useState(0);
+  const [wishesDot,     setWishesDot]     = useState(0);
+  const [showTitleBar,  setShowTitleBar]  = useState(false);
+  const sentCardIds = useRef<Set<string>>(new Set());
+  const userIdRef   = useRef<string | null>(null);
 
-  // ── Capacitor: transparent status bar overlay (Android + iOS) ────────────
-  // Sets the status bar to overlay the WebView so env(safe-area-inset-top)
-  // returns the real status bar height and the gradient fills behind it.
+  // ── Capacitor: transparent status bar overlay ─────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -44,12 +49,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const [checking,     setChecking]     = useState(true);
-  const [reactionDot,  setReactionDot]  = useState(0);
-  const [incomingDot,  setIncomingDot]  = useState(0);
-  const [wishesDot,    setWishesDot]    = useState(0);
-  const sentCardIds = useRef<Set<string>>(new Set());
-  const userIdRef   = useRef<string | null>(null);
+  // ── Scroll listener on main — lives HERE, not inside each page ───────────
+  // KEY: the sticky title bar is rendered as a sibling of <main> in this
+  // layout, NOT inside <main>. On iOS WebKit, position:fixed children of an
+  // overflow:scroll container are trapped and positioned relative to that
+  // container (not the viewport), so putting the bar inside <main> made it
+  // cover the gradient hero instead of floating above it.
+  useEffect(() => {
+    if (checking) return;
+    const main = document.querySelector("main") as HTMLElement | null;
+    if (!main) return;
+    const handler = () => setShowTitleBar(main.scrollTop > 80);
+    main.addEventListener("scroll", handler, { passive: true });
+    return () => main.removeEventListener("scroll", handler);
+  }, [checking]);
+
+  // ── Reset scroll + hide bar on every route change ────────────────────────
+  useEffect(() => {
+    setShowTitleBar(false);
+    const main = document.querySelector("main") as HTMLElement | null;
+    if (main) main.scrollTop = 0;
+  }, [pathname]);
 
   // ── Register service worker + subscribe to push ─────────────────────────
   useEffect(() => {
@@ -57,24 +77,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function setupPush() {
       try {
-        // Register SW
         const reg = await navigator.serviceWorker.register("/sw.js");
-
-        // Ask permission (browser shows native dialog once)
         const permission = await Notification.requestPermission();
         if (permission !== "granted") return;
-
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
-        // Subscribe to push
         const existing = await reg.pushManager.getSubscription();
         const subscription = existing ?? await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
         });
-
-        // Save subscription to DB
         await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -92,7 +104,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
 
-      // If user has no phone on their auth account, check profiles table
       if (!user.phone && pathname !== "/add-phone") {
         const { data: profile } = await supabase
           .from("profiles")
@@ -107,14 +118,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       setChecking(false);
 
-      // ── Load sent card IDs for reaction filtering ───────────────────────
       const { data: sent } = await supabase
         .from("sent_cards")
         .select("id")
         .eq("sender_id", user.id);
       sentCardIds.current = new Set((sent ?? []).map((c: { id: string }) => c.id));
 
-      // ── Load unread incoming cards since last Chats visit ───────────────
       const lastSeenChats = (() => {
         try { return localStorage.getItem(`lastSeenChats_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
@@ -124,15 +133,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .select("id", { count: "exact", head: true })
         .eq("recipient_id", user.id)
         .gt("created_at", lastSeenChats);
-      // Don't set dot if user is already on the history/chats page
       if ((unreadCount ?? 0) > 0 && pathname !== "/history") setIncomingDot(unreadCount ?? 0);
 
-      // ── Load unread wishes activity since last Wishes visit ─────────────
       const lastSeenWishes = (() => {
         try { return localStorage.getItem(`lastSeenWishes_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
       })();
-      // Count new received cards + new reactions on sent cards
       const authPhone2 = user.phone ?? null;
       const { data: profData2 } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
       const myPhone2 = profData2?.phone ?? authPhone2;
@@ -151,14 +157,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .in("card_id", Array.from(sentCardIds.current))
         .gt("created_at", lastSeenWishes);
       const wishesTotal = (newRecvCount ?? 0) + (newRxCount ?? 0);
-      // Don't set dot if user is already on the wishes page
       if (wishesTotal > 0 && pathname !== "/wishes") setWishesDot(wishesTotal);
 
-      // ── Real-time subscriptions ─────────────────────────────────────────
       const channel = supabase
         .channel("layout-notifications")
-
-        // 1. New reaction on a card the user sent → Chats + Wishes dot
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "card_reactions" },
           (payload) => {
@@ -169,8 +171,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }
           }
         )
-
-        // 2. New card sent directly to this user → Chats + Wishes dot
         .on("postgres_changes",
           { event: "INSERT", schema: "public", table: "sent_cards",
             filter: `recipient_id=eq.${user.id}` },
@@ -179,7 +179,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             setWishesDot(prev => prev + 1);
           }
         )
-
         .subscribe();
 
       return () => { supabase.removeChannel(channel); };
@@ -216,27 +215,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const barTitle = PAGE_TITLES[pathname] ?? "";
+
   return (
     <>
-      {/* Covers the iOS status bar area so scrolling content never bleeds into the clock.
-          White pages get a white mask; gradient pages get their matching top colour. */}
-      {/* transparent — each page's gradient header naturally fills behind the status bar,
-          matching what native iOS apps do. No separate coloured layer = no seam. */}
+      {/* ── Safe area spacer (transparent — gradient headers fill behind status bar) ── */}
       <div className="safe-area-top" style={{ background: "transparent" }} />
+
+      {/* ── Compact sticky title bar ── */}
+      {/* Rendered HERE as a sibling of <main>, NOT inside <main>.                    */}
+      {/* If placed inside the overflow:scroll <main>, iOS WebKit repositions          */}
+      {/* position:fixed children relative to the scroll container, making the bar    */}
+      {/* appear on top of the gradient hero at scroll position 0.                    */}
+      {barTitle && (
+        <div className={`sticky-title-bar${showTitleBar ? " bar-visible" : ""}`}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>
+            {barTitle}
+          </span>
+        </div>
+      )}
+
       <main className="page-content">{children}</main>
 
       {/* ── Bottom Navigation ── */}
       <nav className="bottom-nav" style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
         <div className="flex items-center px-4">
           {NAV.map(({ href, label, Icon }) => {
-            const active    = pathname === href;
-            const totalDot  = href === "/history" ? (reactionDot + incomingDot)
-                            : href === "/wishes"  ? wishesDot
-                            : 0;
-            const showDot   = totalDot > 0;
+            const active   = pathname === href;
+            const totalDot = href === "/history" ? (reactionDot + incomingDot)
+                           : href === "/wishes"  ? wishesDot
+                           : 0;
+            const showDot  = totalDot > 0;
             return (
               <Link key={href} href={href} className="flex-1 flex flex-col items-center py-3 gap-1 relative">
-                {/* Active pill indicator */}
                 {active && (
                   <span className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-2xl"
                     style={{ background: "linear-gradient(135deg,#FF6B8A22,#9B59B622)" }} />
@@ -247,7 +258,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     style={{ color: active ? "#9B59B6" : "#c0c0c0" }}
                     strokeWidth={active ? 2.5 : 1.8}
                   />
-                  {/* Red notification badge */}
                   {showDot && (
                     <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] rounded-full flex items-center justify-center text-[9px] font-bold text-white px-1 shadow-sm"
                       style={{ background: "#E53935", boxShadow: "0 1px 4px rgba(229,57,53,0.5)" }}>

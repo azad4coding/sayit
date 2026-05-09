@@ -30,7 +30,6 @@ export default function ProfilePage() {
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const titleBarRef  = useRef<HTMLDivElement>(null);
 
   const accent = "#FF6B8A";
   const purple = "#9B59B6";
@@ -57,19 +56,6 @@ export default function ProfilePage() {
       setLoading(false);
     }
     load();
-  }, []);
-
-  // Scroll listener — listens on main.page-content (the actual scroll container)
-  useEffect(() => {
-    const scroller = document.querySelector("main") as HTMLElement | null;
-    if (!scroller) return;
-    const handleScroll = () => {
-      if (titleBarRef.current) {
-        titleBarRef.current.classList.toggle("bar-visible", scroller.scrollTop > 80);
-      }
-    };
-    scroller.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scroller.removeEventListener("scroll", handleScroll);
   }, []);
 
   function startEditName() {
@@ -153,11 +139,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-dvh flex flex-col pb-28" style={{ background: "#f5f6f7" }}>
-
-      {/* ── Fixed compact title bar (WhatsApp-style) — hidden until scroll > 80px ── */}
-      <div className="sticky-title-bar" ref={titleBarRef}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>Profile</span>
-      </div>
 
       {/* ── Hero ── */}
       <div className="relative" style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)" }}>
