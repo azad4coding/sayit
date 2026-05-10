@@ -130,14 +130,14 @@ export default function CirclePage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center bg-gray-50" style={{ minHeight: "100%" }}>
         <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
+    <div className="flex flex-col pb-6" style={{ minHeight: "100%", background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
       {/* ── Premium gradient header ── */}
       <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>

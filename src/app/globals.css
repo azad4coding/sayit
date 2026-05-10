@@ -20,7 +20,8 @@ html {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: #f0f0f5;
+  /* Match nav colour so nothing bleeds through below the app-shell    */
+  background: rgb(248, 244, 255);
   height: 100%;
   overflow: hidden;
 }
@@ -82,7 +83,7 @@ body {
   border-top: 1px solid rgba(155, 89, 182, 0.18);
   /* Safe-area padding capped at 28px — prevents excessive gap on      */
   /* tall-notch iPhones where env() alone gives 34px+ of dead space.  */
-  padding-bottom: min(var(--safe-bottom), 20px);
+  padding-bottom: var(--safe-bottom);
   z-index: 50;
 }
 

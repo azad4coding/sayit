@@ -166,7 +166,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Circle categories (Birthday, Occasions, Holidays) ─────── */}
-      <div className="px-5 mb-4">
+      <div className="px-5 pb-8">
         <h3 className="text-sm font-bold text-gray-700 mb-4">Instant Moments</h3>
         <div className="grid grid-cols-3 gap-4">
           {catsLoading ? (
