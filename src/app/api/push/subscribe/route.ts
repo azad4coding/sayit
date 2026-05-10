@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase
       .from("push_subscriptions")
       .upsert(
-        { user_id: userId, subscription, updated_at: new Date().toISOString() },
+        { user_id: userId, subscription },
         { onConflict: "user_id" }
       );
 
