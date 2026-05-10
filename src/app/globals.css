@@ -74,6 +74,16 @@ body {
   /* No padding-bottom here — each page handles its own bottom spacing  */
 }
 
+/* ── min-h-dvh fix inside scroll container ────────────────────────── */
+/* dvh = dynamic viewport height. Inside page-content the "viewport"   */
+/* is the scroll container itself, not the full screen. Overriding     */
+/* min-h-dvh to 100% here fixes all pages in one rule — no per-page   */
+/* edits needed. This prevents content from being sized to the full    */
+/* screen height (which kills scrolling) and instead fills the parent. */
+.page-content .min-h-dvh {
+  min-height: 100% !important;
+}
+
 /* ── Bottom navigation ────────────────────────────────────────────── */
 /* Flex child of app-shell — always flush at the bottom, zero gap.    */
 /* Slightly tinted so it reads as distinct from page content above.   */

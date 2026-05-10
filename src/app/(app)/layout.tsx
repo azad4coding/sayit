@@ -48,9 +48,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTitleBar,  setShowTitleBar]  = useState(false);
   const lastNavTimeRef  = useRef(0);
 
-  const sentCardIds  = useRef<Set<string>>(new Set());
-  const userIdRef    = useRef<string | null>(null);
+  const sentCardIds       = useRef<Set<string>>(new Set());
+  const userIdRef         = useRef<string | null>(null);
   const [showPushBanner, setShowPushBanner] = useState(false);
+
+  // ── Auth session gate ─────────────────────────────────────────────────────
+  // On native iOS, @capacitor/preferences is async. Supabase fires
+  // INITIAL_SESSION only after storage has been fully read — this is the
+  // earliest safe point to make auth decisions. We resolve a Promise with
+  // the session so the check() function can await it regardless of timing.
+  const initialSessionPromise = useRef<Promise<any> | null>(null);
+  const resolveInitialSession = useRef<((s: any) => void) | null>(null);
+
+  if (!initialSessionPromise.current) {
+    initialSessionPromise.current = new Promise(resolve => {
+      resolveInitialSession.current = resolve;
+    });
+  }
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
@@ -83,6 +97,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         } catch { /* offline — skip version check */ }
       } catch { /* not in Capacitor context */ }
     })();
+  }, []);
+
+  // ── Wait for auth session to hydrate from async storage ─────────────────
+  // onAuthStateChange fires INITIAL_SESSION only after @capacitor/preferences
+  // has finished its async read. We resolve the promise above with the session
+  // so check() can await it safely, no matter how slow preferences.get() is.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") {
+        resolveInitialSession.current?.(session);
+      } else if (event === "SIGNED_OUT") {
+        router.replace("/login");
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // ── Scroll listener ───────────────────────────────────────────────────────
@@ -179,12 +208,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function check() {
-      // On native iOS, @capacitor/preferences is async — the session may not
-      // have loaded into Supabase's in-memory cache yet when this effect fires.
-      // getSession() forces the storage read to complete before we proceed.
-      // We then call getUser() (server-validated) only if a local session exists.
-      const { data: { session } } = await supabase.auth.getSession();
+      // Await INITIAL_SESSION — guarantees @capacitor/preferences has resolved.
+      // On web this fires almost instantly; on native it waits for storage I/O.
+      const session = await initialSessionPromise.current;
       if (!session) { router.replace("/login"); return; }
+      // Server-validate the token (catches expired/revoked sessions)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;

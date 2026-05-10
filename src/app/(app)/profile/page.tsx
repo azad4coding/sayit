@@ -131,14 +131,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: "#f5f6f7" }}>
+      <div className="flex items-center justify-center" style={{ minHeight: "100%", background: "#f5f6f7" }}>
         <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh flex flex-col pb-28" style={{ background: "#f5f6f7" }}>
+    <div className="flex flex-col pb-8" style={{ minHeight: "100%", background: "#f5f6f7" }}>
 
       {/* ── Hero ── */}
       <div className="relative" style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)" }}>
