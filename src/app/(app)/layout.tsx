@@ -48,8 +48,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTitleBar,  setShowTitleBar]  = useState(false);
   const lastNavTimeRef  = useRef(0);
 
-  const sentCardIds = useRef<Set<string>>(new Set());
-  const userIdRef   = useRef<string | null>(null);
+  const sentCardIds  = useRef<Set<string>>(new Set());
+  const userIdRef    = useRef<string | null>(null);
+  const [showPushBanner, setShowPushBanner] = useState(false);
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
@@ -113,40 +114,51 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
-  // ── Register service worker + subscribe to push ─────────────────────────
+  // ── Register service worker + check push permission on mount ────────────
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
 
-    async function setupPush() {
+    async function checkPush() {
       try {
-        console.log("[Push] starting setup, PushManager:", !!window.PushManager, "Notification:", !!window.Notification);
-        const reg = await navigator.serviceWorker.register("/sw.js");
-        console.log("[Push] SW registered:", reg.scope);
-        const permission = await Notification.requestPermission();
-        console.log("[Push] permission:", permission);
-        if (permission !== "granted") return;
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { console.log("[Push] no user"); return; }
-        const existing = await reg.pushManager.getSubscription();
-        console.log("[Push] existing subscription:", !!existing);
-        const subscription = existing ?? await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-        });
-        console.log("[Push] subscription endpoint:", subscription.endpoint?.slice(0, 40));
-        const res = await fetch("/api/push/subscribe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscription, userId: user.id }),
-        });
-        console.log("[Push] subscribe API response:", res.status);
-      } catch (err) {
-        console.error("[Push] error:", err);
-      }
+        // Register SW silently (no permission prompt here)
+        await navigator.serviceWorker.register("/sw.js");
+
+        const permission = (Notification as any).permission;
+        if (permission === "granted") {
+          // Already granted — subscribe silently
+          await subscribePush();
+        } else if (permission === "default") {
+          // Not yet asked — show banner so user can tap to enable
+          setShowPushBanner(true);
+        }
+        // "denied" → do nothing
+      } catch { /* not supported */ }
     }
 
-    setupPush();
+    checkPush();
   }, []);
+
+  // Called when user taps the "Enable notifications" banner
+  async function subscribePush() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const permission = await Notification.requestPermission();
+      setShowPushBanner(false);
+      if (permission !== "granted") return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const existing = await reg.pushManager.getSubscription();
+      const subscription = existing ?? await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      });
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription, userId: user.id }),
+      });
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     async function check() {
@@ -284,6 +296,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {barTitle}
           </span>
         </div>
+      )}
+
+      {/* ── Push notification enable banner ── */}
+      {showPushBanner && (
+        <button
+          onClick={subscribePush}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            width: "100%", padding: "10px 16px", border: "none", cursor: "pointer",
+            background: "linear-gradient(90deg,#9B59B6,#FF6B8A)",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 18 }}>🔔</span>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "white" }}>Enable notifications</p>
+            <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.8)" }}>Get notified when someone sends you a card</p>
+          </div>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>Tap →</span>
+        </button>
       )}
 
       <main className="page-content">{children}</main>
