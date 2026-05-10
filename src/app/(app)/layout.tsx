@@ -72,7 +72,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // padding and varies by device) and write it to the root so the CSS
   // variable always reflects the real value. ResizeObserver picks up
   // orientation changes automatically.
+  //
+  // CRITICAL: dependency is [checking], NOT []. When checking=true the nav
+  // is not in the DOM (the spinner is shown instead). Running with [] would
+  // fire on mount while checking=true, find no nav, and return early —
+  // leaving --nav-height unset and the scroll container the wrong height.
+  // Running when checking transitions to false guarantees the nav exists.
   useEffect(() => {
+    if (checking) return;
     const nav = document.querySelector(".bottom-nav") as HTMLElement | null;
     if (!nav) return;
     const set = () => {
@@ -84,7 +91,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const ro = new ResizeObserver(set);
     ro.observe(nav);
     return () => ro.disconnect();
-  }, []);
+  }, [checking]);
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {

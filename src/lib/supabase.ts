@@ -10,19 +10,39 @@ import { createBrowserClient } from "@supabase/ssr";
 // On web / Android (where localStorage persists fine) we fall through to the
 // default behaviour.
 
-function makeNativeStorage() {
-  // Helper to get the Preferences plugin from the Capacitor global.
-  // Capacitor injects window.Capacitor into WKWebView/Android WebView at runtime.
+// Cache the resolved plugin so we only poll once
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _preferences: any = null;
+
+// Wait for window.Capacitor.Plugins.Preferences to be registered.
+// The Capacitor bridge is injected before page scripts, but plugin
+// registration can lag by a few milliseconds in remote-URL WKWebView.
+// We poll every 25 ms, up to 2 seconds (80 × 25 ms).
+// On non-native (web), isNativePlatform() is false → returns null instantly.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function awaitPreferences(): Promise<any> {
+  if (_preferences) return _preferences;
+
+  // Not a native app — use localStorage instead
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function getPreferences(): any {
+  if (!(window as any)?.Capacitor?.isNativePlatform?.()) return null;
+
+  for (let i = 0; i < 80; i++) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (window as any)?.Capacitor?.Plugins?.Preferences ?? null;
+    const P = (window as any)?.Capacitor?.Plugins?.Preferences;
+    if (P) { _preferences = P; return P; }
+    await new Promise(r => setTimeout(r, 25));
   }
 
+  // 2-second timeout — fall back to localStorage
+  return null;
+}
+
+function makeNativeStorage() {
   return {
     getItem: async (key: string): Promise<string | null> => {
       try {
-        const P = getPreferences();
+        const P = await awaitPreferences();
         if (!P) return localStorage.getItem(key);
         const { value } = await P.get({ key });
         return value ?? null;
@@ -32,7 +52,7 @@ function makeNativeStorage() {
     },
     setItem: async (key: string, value: string): Promise<void> => {
       try {
-        const P = getPreferences();
+        const P = await awaitPreferences();
         if (!P) { localStorage.setItem(key, value); return; }
         await P.set({ key, value });
       } catch {
@@ -41,7 +61,7 @@ function makeNativeStorage() {
     },
     removeItem: async (key: string): Promise<void> => {
       try {
-        const P = getPreferences();
+        const P = await awaitPreferences();
         if (!P) { localStorage.removeItem(key); return; }
         await P.remove({ key });
       } catch {
