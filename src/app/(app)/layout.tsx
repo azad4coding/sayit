@@ -179,6 +179,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function check() {
+      // On native iOS, @capacitor/preferences is async — the session may not
+      // have loaded into Supabase's in-memory cache yet when this effect fires.
+      // getSession() forces the storage read to complete before we proceed.
+      // We then call getUser() (server-validated) only if a local session exists.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.replace("/login"); return; }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
