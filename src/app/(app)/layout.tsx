@@ -66,6 +66,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     });
   }
 
+  // ── Nav height → CSS custom property ─────────────────────────────────────
+  // .page-content uses position:absolute with bottom:var(--nav-height).
+  // We measure the actual rendered nav height (which includes safe-area
+  // padding and varies by device) and write it to the root so the CSS
+  // variable always reflects the real value. ResizeObserver picks up
+  // orientation changes automatically.
+  useEffect(() => {
+    const nav = document.querySelector(".bottom-nav") as HTMLElement | null;
+    if (!nav) return;
+    const set = () => {
+      document.documentElement.style.setProperty(
+        "--nav-height", `${nav.getBoundingClientRect().height}px`
+      );
+    };
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, []);
+
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
     (async () => {
@@ -350,14 +370,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Push notification enable banner ── */}
+      {/* position:fixed so it sits above the absolute-positioned main     */}
+      {/* without affecting the layout flow. z-index 56 = below title bar  */}
+      {/* (58) but above page content.                                       */}
       {showPushBanner && (
         <button
           onClick={subscribePush}
           style={{
+            position: "fixed",
+            top: "env(safe-area-inset-top, 44px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "100%",
+            maxWidth: "var(--app-max-width)",
+            zIndex: 56,
             display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "10px 16px", border: "none", cursor: "pointer",
+            padding: "10px 16px", border: "none", cursor: "pointer",
             background: "linear-gradient(90deg,#9B59B6,#FF6B8A)",
-            flexShrink: 0,
           }}
         >
           <span style={{ fontSize: 18 }}>🔔</span>

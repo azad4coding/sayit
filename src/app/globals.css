@@ -41,33 +41,37 @@ body {
 }
 
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
-/* Flex column so page-content + bottom-nav fill exactly 100% height. */
-/* No height arithmetic needed — the browser distributes space.       */
+/* position:relative so page-content and bottom-nav can be           */
+/* absolutely positioned inside it. height:100% fills the viewport.  */
 .app-shell {
   max-width: var(--app-max-width);
   height: 100%;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow-x: hidden;
+  overflow: hidden;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
 }
 
 /* ── Scrollable page content ──────────────────────────────────────── */
-/* flex:1 + min-height:0 lets the browser size this exactly to fill  */
-/* the space between the top and the bottom nav — no px arithmetic,  */
-/* no bottom-box gap, works on every device with any nav height.      */
+/* Absolute positioning gives the scroll container an EXPLICIT pixel  */
+/* height, which is the only reliable pattern on iOS WKWebView.       */
+/* Flexbox-computed heights fail in Capacitor remote-URL WebViews —   */
+/* the browser doesn't treat a flex child as a scroll container with  */
+/* a definite height, so overflow-y:scroll never engages.             */
+/* --nav-height is set by layout.tsx via ResizeObserver so the value  */
+/* always matches the actual rendered nav (varies by device safe area).*/
 .page-content {
-  flex: 1;
-  min-height: 0;                 /* required: lets flex child shrink    */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--nav-height, 75px);
   overflow-y: scroll;
   overflow-x: hidden;
   touch-action: pan-y;
   overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: touch; /* legacy iOS WKWebView momentum scroll */
-  /* No padding-bottom here — each page handles its own bottom spacing  */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── iOS touch-action fix ─────────────────────────────────────────── */
@@ -103,10 +107,14 @@ body {
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
-/* Flex child of app-shell — always flush at the bottom, zero gap.    */
-/* Slightly tinted so it reads as distinct from page content above.   */
+/* Absolutely positioned at the bottom of app-shell. This avoids the  */
+/* position:fixed jumping bug on iOS while still being viewport-locked */
+/* (app-shell itself fills 100% of the viewport via html/body 100%).  */
 .bottom-nav {
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   /* Subtle lavender tint — echoes the app's pink/purple gradient      */
   background: rgba(248, 244, 255, 0.97);
@@ -114,8 +122,6 @@ body {
   -webkit-backdrop-filter: blur(20px);
   /* Hairline separator with a hint of purple instead of plain grey   */
   border-top: 1px solid rgba(155, 89, 182, 0.18);
-  /* Safe-area padding capped at 28px — prevents excessive gap on      */
-  /* tall-notch iPhones where env() alone gives 34px+ of dead space.  */
   padding-bottom: var(--safe-bottom);
   z-index: 50;
 }
