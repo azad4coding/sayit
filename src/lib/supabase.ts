@@ -15,9 +15,11 @@ function makeNativeStorage() {
 
   async function load() {
     if (!Preferences) {
+      // webpackIgnore tells the bundler to skip this — it's only resolved
+      // at runtime inside the Capacitor WKWebView, not during the Next.js build.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore — @capacitor/preferences is installed at runtime on native
-      const mod = await import("@capacitor/preferences");
+      // @ts-ignore
+      const mod = await import(/* webpackIgnore: true */ "@capacitor/preferences");
       Preferences = mod.Preferences;
     }
     return Preferences;
