@@ -140,7 +140,7 @@ export default function CirclePage() {
     <div className="flex flex-col pb-6" style={{ minHeight: "100%", background: "linear-gradient(180deg,#FAFAF8,#F2F1EE)" }}>
 
       {/* ── Premium gradient header ── */}
-      <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16, position: "relative", touchAction: "pan-y" }}>
+      <div style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 60%,#9B59B6 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 20, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden", touchAction: "pan-y" }}>
         {/* Decorative blobs */}
         <div style={{ position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -15, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />

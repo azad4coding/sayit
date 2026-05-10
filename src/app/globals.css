@@ -14,8 +14,6 @@
 }
 
 html {
-  position: fixed;      /* prevents WKWebView native scroll from activating  */
-  width: 100%;
   height: 100%;
   overflow: hidden;
 }
@@ -24,8 +22,6 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   /* Match nav colour so nothing bleeds through below the app-shell    */
   background: rgb(248, 244, 255);
-  position: fixed;      /* belt-and-suspenders: fully disables native scroll */
-  width: 100%;
   height: 100%;
   overflow: hidden;
 }

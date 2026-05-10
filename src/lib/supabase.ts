@@ -57,15 +57,30 @@ function makeNativeStorage() {
 // Singleton so every createClient() call shares the same storage instance
 const nativeStorage = makeNativeStorage();
 
+// ── Singleton Supabase client ─────────────────────────────────────────────
+// CRITICAL: every call to createClient() must return the SAME instance.
+// Multiple instances = multiple independent auth states = onAuthStateChange
+// in layout.tsx fires on a different instance than getUser() elsewhere,
+// causing the INITIAL_SESSION promise to never resolve → OTP on every open.
+let _client: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createClient() {
+  if (typeof window === "undefined") {
+    // SSR: always create a fresh client (no singleton on server)
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+
+  if (_client) return _client;
+
   // Detect native platform synchronously via the Capacitor global
   // (injected into WKWebView/Android WebView by the Capacitor runtime)
-  const isNative =
-    typeof window !== "undefined" &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).Capacitor?.isNativePlatform?.();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isNative = (window as any).Capacitor?.isNativePlatform?.();
 
-  return createBrowserClient(
+  _client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     isNative
@@ -79,4 +94,6 @@ export function createClient() {
         }
       : undefined
   );
+
+  return _client;
 }
