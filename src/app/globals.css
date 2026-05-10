@@ -71,13 +71,25 @@ body {
 }
 
 /* ── iOS touch-action fix ─────────────────────────────────────────── */
-/* On iOS WKWebView, full-width <button>/<a> elements absorb touch     */
-/* events and prevent the parent scroll container from scrolling.      */
-/* touch-action:pan-y tells WebKit: allow vertical scroll even when    */
-/* the touch starts on an interactive element. Tap/click still works.  */
-.page-content button,
-.page-content a {
+/* On iOS WKWebView, ANY element — button, anchor, or plain div with   */
+/* overflow:hidden — can absorb a touch gesture and prevent the parent */
+/* scroll container from receiving it. The prior rule only covered     */
+/* button+a, which fixed Chats contact rows but not Circle/Profile     */
+/* where the list items are plain <div>s inside overflow:hidden cards. */
+/* The fix: apply touch-action:pan-y to EVERYTHING inside page-content */
+/* so vertical-scroll gestures always reach the <main> scroll         */
+/* container, regardless of which element the touch lands on.          */
+/* Taps/clicks still fire normally — pan-y only affects panning.       */
+/* We restore auto on form fields so text-selection & input gestures   */
+/* work as expected.                                                    */
+.page-content * {
   touch-action: pan-y;
+}
+.page-content input,
+.page-content textarea,
+.page-content select,
+.page-content [contenteditable="true"] {
+  touch-action: auto;
 }
 
 /* ── min-h-dvh fix inside scroll container ────────────────────────── */
