@@ -145,19 +145,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       const permission = await Notification.requestPermission();
       setShowPushBanner(false);
       if (permission !== "granted") return;
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { alert("[Push] no user logged in"); return; }
+
       const existing = await reg.pushManager.getSubscription();
+
+      // Convert base64url VAPID key → Uint8Array (required on iOS Safari)
+      const rawKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+      if (!rawKey) { alert("[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing"); return; }
+      const padding  = "=".repeat((4 - rawKey.length % 4) % 4);
+      const base64   = (rawKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const binary   = atob(base64);
+      const keyBytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) keyBytes[i] = binary.charCodeAt(i);
+
       const subscription = existing ?? await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        applicationServerKey: keyBytes,
       });
-      await fetch("/api/push/subscribe", {
+
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription, userId: user.id }),
       });
-    } catch { /* ignore */ }
+      const json = await res.json();
+      if (!res.ok) alert("[Push] subscribe API error: " + JSON.stringify(json));
+    } catch (err: any) {
+      alert("[Push] error: " + (err?.message ?? String(err)));
+    }
   }
 
   useEffect(() => {
