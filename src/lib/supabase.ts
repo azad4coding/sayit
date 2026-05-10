@@ -3,32 +3,27 @@ import { createBrowserClient } from "@supabase/ssr";
 // ── Capacitor-aware Supabase storage adapter ──────────────────────────────
 // On iOS, WKWebView does not reliably persist localStorage between app
 // launches, which causes Supabase to lose the session and ask for OTP
-// every time the app opens. We swap in @capacitor/preferences (backed by
-// native UserDefaults/Keychain) when running inside a Capacitor native app.
+// every time the app opens. We use window.Capacitor.Plugins.Preferences
+// (backed by native UserDefaults/Keychain) when running inside a Capacitor
+// native app. This avoids dynamic imports of bare npm specifiers which fail
+// in remote-URL WKWebView contexts (browser can't resolve them at runtime).
 // On web / Android (where localStorage persists fine) we fall through to the
 // default behaviour.
 
 function makeNativeStorage() {
-  // Lazy-import so the web bundle is not affected at all
+  // Helper to get the Preferences plugin from the Capacitor global.
+  // Capacitor injects window.Capacitor into WKWebView/Android WebView at runtime.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let Preferences: any = null;
-
-  async function load() {
-    if (!Preferences) {
-      // webpackIgnore tells the bundler to skip this — it's only resolved
-      // at runtime inside the Capacitor WKWebView, not during the Next.js build.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const mod = await import(/* webpackIgnore: true */ "@capacitor/preferences");
-      Preferences = mod.Preferences;
-    }
-    return Preferences;
+  function getPreferences(): any {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (window as any)?.Capacitor?.Plugins?.Preferences ?? null;
   }
 
   return {
     getItem: async (key: string): Promise<string | null> => {
       try {
-        const P = await load();
+        const P = getPreferences();
+        if (!P) return localStorage.getItem(key);
         const { value } = await P.get({ key });
         return value ?? null;
       } catch {
@@ -37,7 +32,8 @@ function makeNativeStorage() {
     },
     setItem: async (key: string, value: string): Promise<void> => {
       try {
-        const P = await load();
+        const P = getPreferences();
+        if (!P) { localStorage.setItem(key, value); return; }
         await P.set({ key, value });
       } catch {
         localStorage.setItem(key, value);
@@ -45,7 +41,8 @@ function makeNativeStorage() {
     },
     removeItem: async (key: string): Promise<void> => {
       try {
-        const P = await load();
+        const P = getPreferences();
+        if (!P) { localStorage.removeItem(key); return; }
         await P.remove({ key });
       } catch {
         localStorage.removeItem(key);

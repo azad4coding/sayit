@@ -70,6 +70,16 @@ body {
   /* No padding-bottom here — each page handles its own bottom spacing  */
 }
 
+/* ── iOS touch-action fix ─────────────────────────────────────────── */
+/* On iOS WKWebView, full-width <button>/<a> elements absorb touch     */
+/* events and prevent the parent scroll container from scrolling.      */
+/* touch-action:pan-y tells WebKit: allow vertical scroll even when    */
+/* the touch starts on an interactive element. Tap/click still works.  */
+.page-content button,
+.page-content a {
+  touch-action: pan-y;
+}
+
 /* ── min-h-dvh fix inside scroll container ────────────────────────── */
 /* dvh = dynamic viewport height. Inside page-content the "viewport"   */
 /* is the scroll container itself, not the full screen. Overriding     */
