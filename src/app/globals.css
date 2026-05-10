@@ -66,6 +66,7 @@ body {
   overflow-x: hidden;
   touch-action: pan-y;
   overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch; /* legacy iOS WKWebView momentum scroll */
   /* No padding-bottom here — each page handles its own bottom spacing  */
 }
 

@@ -559,7 +559,7 @@ function ChatsPageInner() {
     <div className="flex flex-col" style={{ minHeight: "100%", background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
 
       {/* Premium gradient header */}
-      <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", touchAction: "pan-y" }}>
         {/* Decorative blobs */}
         <div style={{ position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
         <div style={{ position: "absolute", bottom: -10, right: 55, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
@@ -701,7 +701,7 @@ function ChatsPageInner() {
 export default function ChatsPage() {
   return (
     <Suspense fallback={
-      <div className="flex-1 flex items-center justify-center min-h-dvh">
+      <div className="flex-1 flex items-center justify-center" style={{ minHeight: "100%" }}>
         <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
       </div>
     }>
