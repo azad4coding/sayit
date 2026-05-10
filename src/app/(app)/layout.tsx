@@ -119,22 +119,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     async function setupPush() {
       try {
+        console.log("[Push] starting setup, PushManager:", !!window.PushManager, "Notification:", !!window.Notification);
         const reg = await navigator.serviceWorker.register("/sw.js");
+        console.log("[Push] SW registered:", reg.scope);
         const permission = await Notification.requestPermission();
+        console.log("[Push] permission:", permission);
         if (permission !== "granted") return;
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) { console.log("[Push] no user"); return; }
         const existing = await reg.pushManager.getSubscription();
+        console.log("[Push] existing subscription:", !!existing);
         const subscription = existing ?? await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
         });
-        await fetch("/api/push/subscribe", {
+        console.log("[Push] subscription endpoint:", subscription.endpoint?.slice(0, 40));
+        const res = await fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subscription, userId: user.id }),
         });
-      } catch { /* push not supported or blocked */ }
+        console.log("[Push] subscribe API response:", res.status);
+      } catch (err) {
+        console.error("[Push] error:", err);
+      }
     }
 
     setupPush();
