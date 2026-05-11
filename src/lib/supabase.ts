@@ -1,39 +1,51 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { Preferences } from "@capacitor/preferences";
 
-// ── Capacitor-aware Supabase storage adapter ──────────────────────────────
-// @capacitor/preferences is statically imported so webpack bundles it.
-// When running inside a Capacitor native app, the Capacitor bridge
-// automatically routes Preferences calls to the native implementation
-// (UserDefaults on iOS, SharedPreferences on Android), which persist
-// across app restarts. On plain web, Preferences falls back to
-// localStorage automatically — no isNative check needed.
-//
-// This replaces all previous approaches (dynamic import / window.Capacitor
-// polling) which both had timing issues in remote-URL WKWebView.
+// ── Capacitor Preferences via runtime bridge ──────────────────────────────
+// We deliberately do NOT statically import @capacitor/preferences because
+// the package is ESM-only and causes webpack "Module not found" errors on
+// Vercel. Instead we reach into window.Capacitor.Plugins.Preferences, which
+// the Capacitor bridge injects before any page JS runs in WKWebView.
+// On plain web (no bridge) this is undefined and we fall back to localStorage.
+
+interface CapPrefs {
+  get(o: { key: string }): Promise<{ value: string | null }>;
+  set(o: { key: string; value: string }): Promise<void>;
+  remove(o: { key: string }): Promise<void>;
+}
+
+function getPrefs(): CapPrefs | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (typeof window !== "undefined" && (window as any).Capacitor?.Plugins?.Preferences) || null;
+  } catch {
+    return null;
+  }
+}
 
 const nativeStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    try {
-      const { value } = await Preferences.get({ key });
-      return value ?? null;
-    } catch {
-      try { return localStorage.getItem(key); } catch { return null; }
+    const prefs = getPrefs();
+    if (prefs) {
+      try {
+        const { value } = await prefs.get({ key });
+        return value ?? null;
+      } catch { /* fall through to localStorage */ }
     }
+    try { return localStorage.getItem(key); } catch { return null; }
   },
   setItem: async (key: string, value: string): Promise<void> => {
-    try {
-      await Preferences.set({ key, value });
-    } catch {
-      try { localStorage.setItem(key, value); } catch { /* ignore */ }
+    const prefs = getPrefs();
+    if (prefs) {
+      try { await prefs.set({ key, value }); return; } catch { /* fall through */ }
     }
+    try { localStorage.setItem(key, value); } catch { /* ignore */ }
   },
   removeItem: async (key: string): Promise<void> => {
-    try {
-      await Preferences.remove({ key });
-    } catch {
-      try { localStorage.removeItem(key); } catch { /* ignore */ }
+    const prefs = getPrefs();
+    if (prefs) {
+      try { await prefs.remove({ key }); return; } catch { /* fall through */ }
     }
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
   },
 };
 

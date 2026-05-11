@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@capacitor/core', '@capacitor/preferences'],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
