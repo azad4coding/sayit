@@ -55,16 +55,23 @@ body {
   max-width: var(--app-max-width);
   min-height: 100dvh;
   margin: 0 auto;
-  background: #fff;
+  /* Neutral background — matches page backgrounds so no white flash   */
+  /* shows below short-content pages (e.g. home gradient ending early) */
+  background: #f5f6f7;
   position: relative;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
 }
 
 /* ── Page content ─────────────────────────────────────────────────── */
-/* Plain block — content determines height, document scrolls freely.   */
-/* Bottom padding ensures content is never hidden behind the fixed nav.*/
+/* min-height:100dvh ensures the content area always fills the full    */
+/* viewport. This means:                                                */
+/*   • Child page roots using minHeight:"100%" resolve to 100dvh       */
+/*     → gradients cover the full screen even on short pages           */
+/*   • When content IS taller, the element grows freely for scroll      */
+/* Bottom padding keeps last items above the fixed nav bar.            */
 .page-content {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+  min-height: 100dvh;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */

@@ -6,8 +6,9 @@ import { createClient } from "@/lib/supabase";
 import {
   LogOut, Edit2, Check, X, Trash2, Camera,
   Phone, Mail, ChevronRight, ShieldCheck,
-  HelpCircle, Star,
+  HelpCircle, Star, BookUser,
 } from "lucide-react";
+import { checkContactsPermission, requestContactsPermission } from "@/lib/contacts";
 
 export default function ProfilePage() {
   const router   = useRouter();
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const [clearing,       setClearing]       = useState(false);
   const [confirmClear,   setConfirmClear]   = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [contactsPermission, setContactsPermission] = useState<"granted" | "denied" | "prompt" | null>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,9 +56,27 @@ export default function ProfilePage() {
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
 
       setLoading(false);
+
+      // Check contacts permission status so we can show a Settings link
+      const perm = await checkContactsPermission();
+      setContactsPermission(perm);
     }
     load();
   }, []);
+
+  async function handleGrantContacts() {
+    if (contactsPermission === "prompt") {
+      const granted = await requestContactsPermission();
+      setContactsPermission(granted ? "granted" : "denied");
+    } else {
+      // Permission was denied — open iOS Settings so user can toggle it
+      try {
+        window.location.href = "app-settings:";
+      } catch {
+        // Fallback for web: nothing we can do
+      }
+    }
+  }
 
   function startEditName() {
     setDraftName(name);
@@ -138,7 +158,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col pb-8" style={{ minHeight: "100%", background: "#f5f6f7" }}>
+    <div className="flex flex-col pb-8" style={{ minHeight: "100dvh", background: "#f5f6f7" }}>
 
       {/* ── Hero ── */}
       <div className="relative" style={{ background: "linear-gradient(to bottom,#FF6B8A 0%,#C050A0 55%,#9B59B6 100%)" }}>
@@ -236,7 +256,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-4">
+          <div className="flex items-center gap-4 px-4 py-4 border-b border-gray-50">
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: `${purple}18` }}>
               <Mail className="w-4 h-4" style={{ color: purple }} />
@@ -246,6 +266,29 @@ export default function ProfilePage() {
               <p className="text-sm font-semibold text-gray-800 truncate">{email || "—"}</p>
             </div>
           </div>
+
+          {/* Contacts permission row — only shown on native iOS */}
+          {contactsPermission !== null && (
+            <div className="flex items-center gap-4 px-4 py-4">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: contactsPermission === "granted" ? "#27AE6018" : "#FF6B8A18" }}>
+                <BookUser className="w-4 h-4" style={{ color: contactsPermission === "granted" ? "#27AE60" : accent }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Contacts Access</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {contactsPermission === "granted" ? "Allowed" : contactsPermission === "denied" ? "Denied — tap to fix" : "Not yet granted"}
+                </p>
+              </div>
+              {contactsPermission !== "granted" && (
+                <button onClick={handleGrantContacts}
+                  className="text-xs font-bold px-3 py-1.5 rounded-full text-white flex-shrink-0"
+                  style={{ background: `linear-gradient(135deg,${accent},${purple})` }}>
+                  {contactsPermission === "denied" ? "Settings" : "Allow"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

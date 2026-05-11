@@ -43,7 +43,7 @@ export default function HomePage() {
   const firstName = profile?.full_name?.split(" ")[0] ?? "Guest";
 
   return (
-    <div className="flex flex-col" style={{ minHeight: "100%", background: "linear-gradient(180deg, #FFF5F7 0%, #F8F0FF 60%, #fff5f7 100%)" }}>
+    <div className="flex flex-col" style={{ minHeight: "100dvh", background: "linear-gradient(180deg, #FFF5F7 0%, #F8F0FF 60%, #fff5f7 100%)" }}>
       {/* ── Header ────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-5 pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top, 44px) + 16px)" }}>
         <div>

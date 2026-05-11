@@ -216,7 +216,7 @@ function ThreadView({
   }
 
   return (
-    <div className="flex flex-col" style={{ minHeight: "100%", background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col" style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
       {/* Header */}
       <div style={{ background: "white", borderBottom: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 12px rgba(0,0,0,0.04)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)" }}
         className="flex items-center gap-3 px-4 pb-4">
@@ -556,7 +556,7 @@ function ChatsPageInner() {
   );
 
   return (
-    <div className="flex flex-col" style={{ minHeight: "100%", background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
+    <div className="flex flex-col" style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FAFAF8 0%,#F2F1EE 100%)" }}>
 
       {/* Premium gradient header */}
       <div style={{ background: "linear-gradient(to bottom,#9B59B6 0%,#C050A0 60%,#FF6B8A 100%)", paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)", paddingBottom: 16, paddingLeft: 16, paddingRight: 16, position: "relative", overflow: "hidden", touchAction: "pan-y" }}>
