@@ -44,41 +44,40 @@ body {
 }
 
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
-/* min-height:100dvh ensures the shell always fills the viewport even  */
-/* on short pages. Flex column pushes the nav to the bottom.           */
-/* The document (body) is what scrolls — not this container.           */
+/* Plain block container — NO flex, NO overflow tricks.                */
+/* min-height:100dvh fills the viewport on short pages, but the        */
+/* element grows freely beyond that so the document can scroll.        */
+/* overflow-x:hidden was removed because it implicitly forces           */
+/* overflow-y:auto (CSS spec), turning app-shell into a scroll         */
+/* container and clipping tall page content — the root cause of the    */
+/* Chats / Circle / Profile "can't scroll" bug.                        */
 .app-shell {
   max-width: var(--app-max-width);
   min-height: 100dvh;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow-x: hidden;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
-  display: flex;
-  flex-direction: column;
 }
 
 /* ── Page content ─────────────────────────────────────────────────── */
-/* flex:1 fills the space between the top and the sticky bottom nav.   */
-/* No overflow-y:scroll here — the DOCUMENT scrolls, not this element. */
-/* This is the only approach that works reliably in Capacitor           */
-/* remote-URL WKWebView, where overflow:scroll on div/main elements    */
-/* does not engage native touch scrolling.                              */
+/* Plain block — content determines height, document scrolls freely.   */
+/* Bottom padding ensures content is never hidden behind the fixed nav.*/
 .page-content {
-  flex: 1;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
-/* position:sticky keeps the nav at the bottom of the viewport as the  */
-/* user scrolls. flex-shrink:0 prevents it from being compressed.      */
-/* This works correctly in Capacitor WKWebView (no Safari toolbar       */
-/* means no viewport height changes, so sticky is rock-solid).         */
+/* position:fixed always pins the nav to the viewport bottom.          */
+/* This is the simplest layout that works reliably in Capacitor         */
+/* remote-URL WKWebView — no flex sizing quirks, no sticky edge cases. */
 .bottom-nav {
-  flex-shrink: 0;
-  position: sticky;
+  position: fixed;
   bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  max-width: var(--app-max-width);
   background: rgba(248, 244, 255, 0.97);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
