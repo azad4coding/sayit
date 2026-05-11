@@ -14,19 +14,22 @@
 }
 
 html {
-  height: 100%;
-  overflow: hidden;
+  /* No height:100% or overflow:hidden — we use document-level scroll     */
+  /* which WKWebView handles natively at the OS level. All previous       */
+  /* attempts to scroll inside a CSS overflow container failed because    */
+  /* WKWebView remote-URL mode does not reliably treat flex/absolute      */
+  /* children as scroll containers.                                        */
 }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  /* Match nav colour so nothing bleeds through below the app-shell    */
   background: rgb(248, 244, 255);
-  height: 100%;
-  overflow: hidden;
+  /* No overflow:hidden — let the document scroll                         */
+  /* Prevent iOS rubber-band elastic overscroll at document edges         */
+  overscroll-behavior: none;
 }
 
-/* ── Safe area top spacer — transparent so each page's header colour shows through ── */
+/* ── Safe area top spacer ─────────────────────────────────────────── */
 .safe-area-top {
   position: fixed;
   top: 0;
@@ -41,86 +44,44 @@ body {
 }
 
 /* ── Phone shell wrapper ──────────────────────────────────────────── */
-/* position:relative so page-content and bottom-nav can be           */
-/* absolutely positioned inside it. height:100% fills the viewport.  */
+/* min-height:100dvh ensures the shell always fills the viewport even  */
+/* on short pages. Flex column pushes the nav to the bottom.           */
+/* The document (body) is what scrolls — not this container.           */
 .app-shell {
   max-width: var(--app-max-width);
-  height: 100%;
+  min-height: 100dvh;
   margin: 0 auto;
   background: #fff;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 40px rgba(0,0,0,0.15);
-}
-
-/* ── Scrollable page content ──────────────────────────────────────── */
-/* Absolute positioning gives the scroll container an EXPLICIT pixel  */
-/* height, which is the only reliable pattern on iOS WKWebView.       */
-/* Flexbox-computed heights fail in Capacitor remote-URL WebViews —   */
-/* the browser doesn't treat a flex child as a scroll container with  */
-/* a definite height, so overflow-y:scroll never engages.             */
-/* --nav-height is set by layout.tsx via ResizeObserver so the value  */
-/* always matches the actual rendered nav (varies by device safe area).*/
-.page-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: var(--nav-height, 75px);
-  overflow-y: scroll;
   overflow-x: hidden;
-  touch-action: pan-y;
-  overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 0 40px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── iOS touch-action fix ─────────────────────────────────────────── */
-/* On iOS WKWebView, ANY element — button, anchor, or plain div with   */
-/* overflow:hidden — can absorb a touch gesture and prevent the parent */
-/* scroll container from receiving it. The prior rule only covered     */
-/* button+a, which fixed Chats contact rows but not Circle/Profile     */
-/* where the list items are plain <div>s inside overflow:hidden cards. */
-/* The fix: apply touch-action:pan-y to EVERYTHING inside page-content */
-/* so vertical-scroll gestures always reach the <main> scroll         */
-/* container, regardless of which element the touch lands on.          */
-/* Taps/clicks still fire normally — pan-y only affects panning.       */
-/* We restore auto on form fields so text-selection & input gestures   */
-/* work as expected.                                                    */
-.page-content * {
-  touch-action: pan-y;
-}
-.page-content input,
-.page-content textarea,
-.page-content select,
-.page-content [contenteditable="true"] {
-  touch-action: auto;
-}
-
-/* ── min-h-dvh fix inside scroll container ────────────────────────── */
-/* dvh = dynamic viewport height. Inside page-content the "viewport"   */
-/* is the scroll container itself, not the full screen. Overriding     */
-/* min-h-dvh to 100% here fixes all pages in one rule — no per-page   */
-/* edits needed. This prevents content from being sized to the full    */
-/* screen height (which kills scrolling) and instead fills the parent. */
-.page-content .min-h-dvh {
-  min-height: 100% !important;
+/* ── Page content ─────────────────────────────────────────────────── */
+/* flex:1 fills the space between the top and the sticky bottom nav.   */
+/* No overflow-y:scroll here — the DOCUMENT scrolls, not this element. */
+/* This is the only approach that works reliably in Capacitor           */
+/* remote-URL WKWebView, where overflow:scroll on div/main elements    */
+/* does not engage native touch scrolling.                              */
+.page-content {
+  flex: 1;
 }
 
 /* ── Bottom navigation ────────────────────────────────────────────── */
-/* Absolutely positioned at the bottom of app-shell. This avoids the  */
-/* position:fixed jumping bug on iOS while still being viewport-locked */
-/* (app-shell itself fills 100% of the viewport via html/body 100%).  */
+/* position:sticky keeps the nav at the bottom of the viewport as the  */
+/* user scrolls. flex-shrink:0 prevents it from being compressed.      */
+/* This works correctly in Capacitor WKWebView (no Safari toolbar       */
+/* means no viewport height changes, so sticky is rock-solid).         */
 .bottom-nav {
-  position: absolute;
+  flex-shrink: 0;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
   width: 100%;
-  /* Subtle lavender tint — echoes the app's pink/purple gradient      */
   background: rgba(248, 244, 255, 0.97);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  /* Hairline separator with a hint of purple instead of plain grey   */
   border-top: 1px solid rgba(155, 89, 182, 0.18);
   padding-bottom: var(--safe-bottom);
   z-index: 50;
@@ -158,19 +119,7 @@ body {
   background-clip: text;
 }
 
-/* ── Thin scrollbar on the page-content scroll container ─────────── */
-/* Transparent track so no box artifact appears at the container edge */
-main::-webkit-scrollbar { width: 3px; }
-main::-webkit-scrollbar-track { background: transparent; }
-main::-webkit-scrollbar-thumb { background: rgba(155,89,182,0.4); border-radius: 2px; }
-main::-webkit-scrollbar-thumb:hover { background: rgba(155,89,182,0.65); }
-main { scrollbar-width: thin; scrollbar-color: rgba(155,89,182,0.4) transparent; }
-
 /* ── Compact title bar (WhatsApp-style) ───────────────────────────── */
-/* Rendered via React conditional — only exists in the DOM when the   */
-/* user has scrolled past the gradient hero (scrollTop > 80). This is */
-/* bulletproof: no opacity tricks, no CSS hiding, just not rendered.  */
-/* Fades in via keyframe animation on mount.                           */
 .sticky-title-bar {
   position: fixed;
   top: 0;

@@ -66,32 +66,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     });
   }
 
-  // ── Nav height → CSS custom property ─────────────────────────────────────
-  // .page-content uses position:absolute with bottom:var(--nav-height).
-  // We measure the actual rendered nav height (which includes safe-area
-  // padding and varies by device) and write it to the root so the CSS
-  // variable always reflects the real value. ResizeObserver picks up
-  // orientation changes automatically.
-  //
-  // CRITICAL: dependency is [checking], NOT []. When checking=true the nav
-  // is not in the DOM (the spinner is shown instead). Running with [] would
-  // fire on mount while checking=true, find no nav, and return early —
-  // leaving --nav-height unset and the scroll container the wrong height.
-  // Running when checking transitions to false guarantees the nav exists.
-  useEffect(() => {
-    if (checking) return;
-    const nav = document.querySelector(".bottom-nav") as HTMLElement | null;
-    if (!nav) return;
-    const set = () => {
-      document.documentElement.style.setProperty(
-        "--nav-height", `${nav.getBoundingClientRect().height}px`
-      );
-    };
-    set();
-    const ro = new ResizeObserver(set);
-    ro.observe(nav);
-    return () => ro.disconnect();
-  }, [checking]);
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
@@ -142,31 +116,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── Scroll listener ───────────────────────────────────────────────────────
-  // Attached once (when auth check completes).
-  // Ignores any event fired within 500 ms of a navigation (lastNavTimeRef).
+  // Listens on WINDOW because we now use document-level scroll (the only
+  // pattern that works in Capacitor remote-URL WKWebView). All previous
+  // attempts to scroll inside a CSS overflow container failed — WKWebView
+  // does not reliably treat flex/absolute children as scroll containers.
   useEffect(() => {
     if (checking) return;
-    const main = document.querySelector("main") as HTMLElement | null;
-    if (!main) return;
     const handler = () => {
       if (Date.now() - lastNavTimeRef.current < 500) return; // cooldown
-      setShowTitleBar(main.scrollTop > 80);
+      setShowTitleBar(window.scrollY > 80);
     };
-    main.addEventListener("scroll", handler, { passive: true });
-    return () => main.removeEventListener("scroll", handler);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
   }, [checking]);
 
   // ── Reset scroll + hide title bar on every route change ──────────────────
   useEffect(() => {
-    // Record nav timestamp FIRST — scroll handler checks this.
     lastNavTimeRef.current = Date.now();
     setShowTitleBar(false);
-
-    const main = document.querySelector("main") as HTMLElement | null;
-    if (!main) return;
-    main.scrollTop = 0;
+    window.scrollTo(0, 0);
     // One RAF pass to squash any late momentum-scroll (iOS WebKit).
-    const raf = requestAnimationFrame(() => { main.scrollTop = 0; });
+    const raf = requestAnimationFrame(() => { window.scrollTo(0, 0); });
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
@@ -377,23 +347,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Push notification enable banner ── */}
-      {/* position:fixed so it sits above the absolute-positioned main     */}
-      {/* without affecting the layout flow. z-index 56 = below title bar  */}
-      {/* (58) but above page content.                                       */}
       {showPushBanner && (
         <button
           onClick={subscribePush}
           style={{
-            position: "fixed",
-            top: "env(safe-area-inset-top, 44px)",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "100%",
-            maxWidth: "var(--app-max-width)",
-            zIndex: 56,
             display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 16px", border: "none", cursor: "pointer",
+            width: "100%", padding: "10px 16px", border: "none", cursor: "pointer",
             background: "linear-gradient(90deg,#9B59B6,#FF6B8A)",
+            flexShrink: 0,
           }}
         >
           <span style={{ fontSize: 18 }}>🔔</span>
