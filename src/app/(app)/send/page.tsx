@@ -6,11 +6,11 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { getTemplateById, getCategoryById, type DBTemplate, type DBCategory } from "@/lib/supabase-data";
 import { ensurePlus } from "@/lib/phone";
+import { getOrRequestContacts, type SayItContact } from "@/lib/contacts";
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 const FREE_DAILY_LIMIT = 10;
-
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://sayit-gamma.vercel.app";
 
 const COUNTRY_CODES = [
@@ -23,17 +23,16 @@ const COUNTRY_CODES = [
 ];
 
 type FoundUser = { id: string; name: string; phone: string };
-type SearchStatus = "idle" | "searching" | "found" | "not-found";
 
 function SendPageInner() {
   const router   = useRouter();
   const params   = useSearchParams();
   const supabase = createClient();
 
-  const templateId  = params.get("templateId") ?? "";
-  const cardType    = params.get("type") ?? "";          // "paw-moments" for paw flow
-  const message     = params.get("message") ?? "";
-  const signatureParam = params.get("signature") ?? ""; // custom signature typed in card
+  const templateId     = params.get("templateId") ?? "";
+  const cardType       = params.get("type") ?? "";
+  const message        = params.get("message") ?? "";
+  const signatureParam = params.get("signature") ?? "";
 
   const isPawCard    = cardType === "paw-moments";
   const isCustomCard = cardType === "custom-card";
@@ -43,20 +42,29 @@ function SendPageInner() {
   const [template, setTemplate] = useState<DBTemplate | null>(null);
   const [category, setCategory] = useState<DBCategory | null>(null);
 
-  // Fetch template + category from Supabase when templateId is a UUID
   useEffect(() => {
     if (!templateId || isPawCard || isCustomCard || isMemeCard) return;
     getTemplateById(templateId).then(tmpl => {
       setTemplate(tmpl);
-      if (tmpl?.category_id) {
-        getCategoryById(tmpl.category_id).then(setCategory);
-      }
+      if (tmpl?.category_id) getCategoryById(tmpl.category_id).then(setCategory);
     });
   }, [templateId]);
 
+  // ── Contact state ─────────────────────────────────────────────────────
+  const [sayItContacts,   setSayItContacts]   = useState<SayItContact[]>([]);
+  const [contactsGranted, setContactsGranted] = useState(false);
+  const [contactsLoading, setContactsLoading] = useState(true);
+  const [searchQuery,     setSearchQuery]     = useState("");
+  const [suggestions,     setSuggestions]     = useState<SayItContact[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<SayItContact | null>(null);
+
+  // Phone input (for manual entry when no contact selected)
   const [phone,          setPhone]          = useState("");
   const [countryCode,    setCountryCode]    = useState("+1");
   const [showCCDropdown, setShowCCDropdown] = useState(false);
+
+  // Send state
   const [sending,        setSending]        = useState(false);
   const [shortCode,      setShortCode]      = useState("");
   const [senderName,     setSenderName]     = useState("");
@@ -65,26 +73,44 @@ function SendPageInner() {
   const [showUpgrade,    setShowUpgrade]    = useState(false);
   const [country,        setCountry]        = useState("US");
   const [foundUser,      setFoundUser]      = useState<FoundUser | null>(null);
-  const [searchStatus,   setSearchStatus]   = useState<SearchStatus>("idle");
   const [phoneError,     setPhoneError]     = useState<string | null>(null);
   const [recipientOnApp, setRecipientOnApp] = useState(false);
-  // Deferred save: store the pending insert payload until user actually taps WA/SMS
   const [pendingPayload, setPendingPayload] = useState<Record<string, unknown> | null>(null);
   const [pendingCircle,  setPendingCircle]  = useState<Record<string, unknown> | null>(null);
   const [cardSaved,      setCardSaved]      = useState(false);
+  // True when registered recipient hasn't received from us before → WhatsApp/SMS forced
+  const [firstContactForced, setFirstContactForced] = useState(false);
 
-  // Unified search
-  const [searchQuery,    setSearchQuery]    = useState("");
-  const [suggestions,    setSuggestions]    = useState<FoundUser[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedContact, setSelectedContact] = useState<FoundUser | null>(null);
+  // ── Load device contacts on mount + request permission ───────────────
+  useEffect(() => {
+    getOrRequestContacts(supabase).then(({ granted, contacts }) => {
+      setContactsGranted(granted);
+      setSayItContacts(contacts);
+      setContactsLoading(false);
+    });
+  }, []);
 
-  // Fetch geo on mount
+  // ── Geo + daily count ─────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/geo").then(r => r.json()).then(d => setCountry(d.country ?? "US")).catch(() => {});
   }, []);
 
-  // Pre-fill recipient if coming from Circle page
+  useEffect(() => {
+    async function fetchDailyCount() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("sent_cards").select("id", { count: "exact", head: true })
+        .eq("sender_id", user.id).gte("created_at", today.toISOString());
+      const c = count ?? 0;
+      setDailyCount(c);
+      if (c >= FREE_DAILY_LIMIT) setShowUpgrade(true);
+    }
+    fetchDailyCount();
+  }, []);
+
+  // ── Pre-fill from Circle page ─────────────────────────────────────────
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("circle_contact");
@@ -92,61 +118,81 @@ function SendPageInner() {
       sessionStorage.removeItem("circle_contact");
       const contact: FoundUser = JSON.parse(raw);
       if (!contact?.phone) return;
-      selectContact(contact);
+      // Find in sayItContacts or create a synthetic entry
+      const match = sayItContacts.find(c => c.phones.includes(contact.phone) || c.primaryPhone === contact.phone);
+      if (match) {
+        selectContact(match);
+      } else {
+        // Synthetic contact (they're on SayIt but not in device contacts)
+        const synthetic: SayItContact = {
+          displayName: contact.name,
+          phones: [contact.phone],
+          userId: contact.id,
+          onSayIt: true,
+          primaryPhone: contact.phone,
+        };
+        selectContact(synthetic);
+      }
     } catch { /* ignore */ }
-  }, []);
+  }, [sayItContacts]);
 
-  // Unified search: name OR phone
+  // ── Search: filter device contacts by name or phone ──────────────────
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q || selectedContact) { setSuggestions([]); setShowSuggestions(false); return; }
 
     const isPhone = /^\+?[\d\s\-()]{4,}$/.test(q);
-    const timer = setTimeout(async () => {
-      if (isPhone) {
-        const digits = q.replace(/\D/g, "");
-        // Build exact-match variants to avoid partial/false matches
-        const variants: string[] = [];
-        if (digits.length >= 10) {
-          variants.push(`+${digits}`);                    // already has country code digits
-          if (!digits.startsWith("1"))  variants.push(`+1${digits}`);   // US
-          if (!digits.startsWith("91")) variants.push(`+91${digits}`);  // India
-          if (!digits.startsWith("44")) variants.push(`+44${digits}`);  // UK
-          if (!digits.startsWith("971")) variants.push(`+971${digits}`); // UAE
-        }
-        // Also try with the currently selected country code
-        variants.push(`${countryCode}${digits}`);
-        // Deduplicate
-        const uniqueVariants = Array.from(new Set(variants));
 
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .in("phone", uniqueVariants)
-          .limit(5);
-        setSuggestions((data ?? []).map((p: any) => ({ id: p.id, name: p.full_name ?? p.phone, phone: p.phone })));
-      } else {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .ilike("full_name", `%${q}%`)
-          .not("phone", "is", null)
-          .limit(6);
-        setSuggestions((data ?? []).map((p: any) => ({ id: p.id, name: p.full_name ?? "SayIt User", phone: p.phone })));
+    if (isPhone) {
+      // Phone typed: check Supabase for that specific number (still allowed)
+      const digits = q.replace(/\D/g, "");
+      setPhone(digits);
+      const variants: string[] = [];
+      if (digits.length >= 10) {
+        variants.push(`+${digits}`);
+        if (!digits.startsWith("1"))   variants.push(`+1${digits}`);
+        if (!digits.startsWith("91"))  variants.push(`+91${digits}`);
+        if (!digits.startsWith("44"))  variants.push(`+44${digits}`);
+        if (!digits.startsWith("971")) variants.push(`+971${digits}`);
       }
-      setShowSuggestions(true);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [searchQuery, selectedContact]);
+      variants.push(`${countryCode}${digits}`);
+      const unique = Array.from(new Set(variants));
 
-  function selectContact(contact: FoundUser) {
+      supabase.from("profiles").select("id, full_name, phone")
+        .in("phone", unique).limit(5).then(({ data }: any) => {
+          const results: SayItContact[] = (data ?? []).map((p: any) => ({
+            displayName: p.full_name ?? p.phone,
+            phones: [p.phone],
+            userId: p.id,
+            onSayIt: true,
+            primaryPhone: p.phone,
+          }));
+          setSuggestions(results);
+          setShowSuggestions(results.length > 0);
+        });
+    } else {
+      // Name typed: filter device contacts (privacy-safe — no global search)
+      const ql = q.toLowerCase();
+      const matched = sayItContacts
+        .filter(c => c.displayName.toLowerCase().includes(ql))
+        .slice(0, 8);
+
+      // Also include non-SayIt device contacts so user can send via WhatsApp
+      // (these come from the device contacts list, enriched by matchContactsWithSayIt)
+      setSuggestions(matched);
+      setShowSuggestions(matched.length > 0);
+    }
+  }, [searchQuery, selectedContact, sayItContacts, countryCode]);
+
+  function selectContact(contact: SayItContact) {
     setSelectedContact(contact);
-    setFoundUser(contact);
-    setSearchStatus("found");
+    setFoundUser(contact.onSayIt && contact.userId
+      ? { id: contact.userId, name: contact.displayName, phone: contact.primaryPhone }
+      : null
+    );
     setShowSuggestions(false);
-    setSearchQuery(contact.name);
-    // Parse phone into country code + local number
-    const raw = contact.phone ?? "";
+    setSearchQuery(contact.displayName);
+    const raw = contact.primaryPhone ?? "";
     const matched = COUNTRY_CODES.find(c => raw.startsWith(c.code));
     if (matched) {
       setCountryCode(matched.code);
@@ -159,90 +205,51 @@ function SendPageInner() {
   function clearContact() {
     setSelectedContact(null);
     setFoundUser(null);
-    setSearchStatus("idle");
     setSearchQuery("");
     setPhone("");
     setSuggestions([]);
+    setFirstContactForced(false);
   }
-
-  // Fetch today's card count on mount
-  useEffect(() => {
-    async function fetchDailyCount() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { count } = await supabase
-        .from("sent_cards")
-        .select("id", { count: "exact", head: true })
-        .eq("sender_id", user.id)
-        .gte("created_at", today.toISOString());
-      const c = count ?? 0;
-      setDailyCount(c);
-      if (c >= FREE_DAILY_LIMIT) setShowUpgrade(true);
-    }
-    fetchDailyCount();
-  }, []);
 
   const cardUrl = shortCode ? `${BASE_URL}/preview/${shortCode}` : "";
 
   async function handleSend() {
     setPhoneError(null);
-    if (!phone.trim()) {
-      setPhoneError("Please enter a phone number");
+    if (!phone.trim() && !selectedContact) {
+      setPhoneError("Please enter a phone number or select a contact");
       return;
     }
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setPhoneError("Please enter a valid phone number");
-      return;
-    }
+    if (digits.length < 6) { setPhoneError("Please enter a valid phone number"); return; }
 
-    // ── Daily limit check ─────────────────────────────────────────
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Daily limit check
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     const { count: todayCount } = await supabase
-      .from("sent_cards")
-      .select("id", { count: "exact", head: true })
-      .eq("sender_id", user.id)
-      .gte("created_at", today.toISOString());
-
-    if ((todayCount ?? 0) >= FREE_DAILY_LIMIT) {
-      setShowUpgrade(true);
-      return;
-    }
+      .from("sent_cards").select("id", { count: "exact", head: true })
+      .eq("sender_id", user.id).gte("created_at", today.toISOString());
+    if ((todayCount ?? 0) >= FREE_DAILY_LIMIT) { setShowUpgrade(true); return; }
 
     setSending(true);
 
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", user.id)
-      .single();
-    const profileName = profile?.full_name ?? user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split("@")[0] ?? "Someone";
-    // Use custom signature from card compose if provided, otherwise fall back to profile name
+      .from("profiles").select("full_name, phone").eq("id", user.id).single();
+    const profileName = profile?.full_name ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Someone";
     const pawSignature = (() => { try { return sessionStorage.getItem("card_signature") ?? ""; } catch { return ""; } })();
     const name = signatureParam.trim() || pawSignature.trim() || profileName;
     setSenderName(name);
 
-    // Safety net: ensure a profile row exists before inserting sent_cards
-    // (the trigger can silently fail for Google OAuth or manually created users)
     if (!profile) {
       await supabase.from("profiles").upsert({
-        id:        user.id,
-        full_name: name,
-        phone:     ensurePlus(user.phone),   // always store with + prefix
+        id: user.id, full_name: name, phone: ensurePlus(user.phone),
       }, { onConflict: "id" });
     }
 
     const code = uuidv4().slice(0, 8);
     const fullPhone = `${countryCode}${phone.replace(/\D/g, "")}`;
 
-    // Read extra data from sessionStorage based on card type
     let pawPhotos: string[] | null = null;
     let pawFrame: string | null = null;
     let customBgPhoto: string | null = null;
@@ -250,43 +257,33 @@ function SendPageInner() {
     let finalMessage = message;
 
     if (isPawCard) {
-      try {
-        pawPhotos    = JSON.parse(sessionStorage.getItem("paw_photos") ?? "[]");
-        finalMessage = sessionStorage.getItem("paw_message") ?? message;
-        pawFrame     = sessionStorage.getItem("paw_frame") ?? "wooden";
-      } catch { pawPhotos = []; pawFrame = "wooden"; }
+      try { pawPhotos = JSON.parse(sessionStorage.getItem("paw_photos") ?? "[]"); finalMessage = sessionStorage.getItem("paw_message") ?? message; pawFrame = sessionStorage.getItem("paw_frame") ?? "wooden"; }
+      catch { pawPhotos = []; pawFrame = "wooden"; }
     }
-
     if (isCustomCard) {
-      try {
-        customBgPhoto = sessionStorage.getItem("custom_bg_photo");
-        finalMessage  = sessionStorage.getItem("custom_message") ?? message;
-      } catch { customBgPhoto = null; }
+      try { customBgPhoto = sessionStorage.getItem("custom_bg_photo"); finalMessage = sessionStorage.getItem("custom_message") ?? message; }
+      catch { customBgPhoto = null; }
     }
-
     if (isMemeCard) {
-      try {
-        memeImageUrl  = sessionStorage.getItem("meme_image");     // base64 data URL
-        finalMessage  = sessionStorage.getItem("card_message") ?? message;
-      } catch { memeImageUrl = null; }
+      try { memeImageUrl = sessionStorage.getItem("meme_image"); finalMessage = sessionStorage.getItem("card_message") ?? message; }
+      catch { memeImageUrl = null; }
     }
 
-    const recipientName = foundUser?.name ?? null;
-    const senderPhone   = ensurePlus(user.phone ?? (profile as any)?.phone);
+    const senderPhone = ensurePlus(user.phone ?? (profile as any)?.phone);
 
     const cardPayload: Record<string, unknown> = {
       sender_id:       user.id,
       recipient_phone: fullPhone,
       recipient_id:    foundUser?.id ?? null,
-      recipient_name:  recipientName,
+      recipient_name:  foundUser?.name ?? selectedContact?.displayName ?? null,
       template_id:     templateId || null,
       message:         finalMessage,
       short_code:      code,
       sender_name:     name,
       front_image_url: template?.front_image_url ?? null,
-      ...(isPawCard    && { card_type: "paw-moments",  paw_photos: pawPhotos, paw_frame: pawFrame }),
-      ...(isCustomCard && { card_type: "custom-card",  paw_photos: customBgPhoto ? [customBgPhoto] : [] }),
-      ...(isMemeCard   && { card_type: "meme",         meme_image_url: memeImageUrl }),
+      ...(isPawCard    && { card_type: "paw-moments", paw_photos: pawPhotos, paw_frame: pawFrame }),
+      ...(isCustomCard && { card_type: "custom-card", paw_photos: customBgPhoto ? [customBgPhoto] : [] }),
+      ...(isMemeCard   && { card_type: "meme", meme_image_url: memeImageUrl }),
     };
 
     const circlePayload: Record<string, unknown> = {
@@ -299,27 +296,72 @@ function SendPageInner() {
       updated_at:      new Date().toISOString(),
     };
 
-    // ── SayIt-to-SayIt: save immediately so recipient sees it right away ──
+    // ── Privacy: first-contact check ──────────────────────────────────
+    // If recipient is on SayIt, check for mutual history.
+    // "Mutual" = they have previously sent a card to us.
+    // First-timers go via WhatsApp/SMS so recipient decides whether to engage.
     if (foundUser) {
+      const myPhone = ensurePlus(user.phone ?? (profile as any)?.phone ?? "");
+      const withoutPlus = myPhone.replace(/^\+/, "");
+
+      const { data: recipientSentToMe } = await supabase
+        .from("sent_cards")
+        .select("id")
+        .eq("sender_id", foundUser.id)
+        .or(
+          myPhone
+            ? `recipient_id.eq.${user.id},recipient_phone.eq.${myPhone},recipient_phone.eq.${withoutPlus}`
+            : `recipient_id.eq.${user.id}`
+        )
+        .limit(1);
+
+      // Also check if sender is blocked
+      const { data: blockRow } = await supabase
+        .from("blocked_contacts")
+        .select("id")
+        .eq("blocked_user_id", user.id)
+        .eq("user_id", foundUser.id)
+        .maybeSingle();
+
+      if (blockRow) {
+        // Sender is blocked by this recipient — silently force external route
+        // (don't tell sender they're blocked)
+        setSending(false);
+        setFirstContactForced(true);
+        setPendingPayload({ ...cardPayload, recipient_id: null }); // strip recipient_id
+        setPendingCircle(circlePayload);
+        setCardSaved(false);
+        setShortCode(code);
+        return;
+      }
+
+      const isMutual = (recipientSentToMe ?? []).length > 0;
+
+      if (!isMutual) {
+        // First contact → stage for WhatsApp/SMS, strip recipient_id so no push
+        setSending(false);
+        setFirstContactForced(true);
+        setPendingPayload({ ...cardPayload, recipient_id: null });
+        setPendingCircle(circlePayload);
+        setCardSaved(false);
+        setShortCode(code);
+        return;
+      }
+
+      // ── Mutual contact: direct in-app delivery ─────────────────────
       let { error } = await supabase.from("sent_cards").insert(cardPayload);
       if (error) {
-        // retry without front_image_url (RLS edge case)
         const { front_image_url: _, ...slim } = cardPayload;
         ({ error } = await supabase.from("sent_cards").insert(slim));
       }
       if (error) { alert("Failed to send: " + error.message); setSending(false); return; }
 
-      await supabase.from("circles").upsert(circlePayload,
-        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+      await supabase.from("circles").upsert(circlePayload, { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
 
-      // ── Fire push notification to recipient (fire-and-forget) ──────────
       supabase.auth.getSession().then(({ data: { session: pushSession } }) => {
         fetch("/api/push/send", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${pushSession?.access_token ?? ""}`,
-          },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pushSession?.access_token ?? ""}` },
           body: JSON.stringify({ recipientId: foundUser.id, senderName: name, cardCode: code }),
         }).catch(() => {});
       });
@@ -331,7 +373,7 @@ function SendPageInner() {
       return;
     }
 
-    // ── External recipient: stage data, save only when user taps WA/SMS ──
+    // ── External recipient (not on SayIt): stage for WhatsApp/SMS ────
     setPendingPayload(cardPayload);
     setPendingCircle(circlePayload);
     setCardSaved(false);
@@ -339,52 +381,39 @@ function SendPageInner() {
     setShortCode(code);
   }
 
-  // Called when user taps WhatsApp or SMS — this is when we actually persist
   async function saveCardNow() {
     if (cardSaved || !pendingPayload) return;
-    setCardSaved(true); // prevent double-save if both buttons are tapped
-
+    setCardSaved(true);
     let { error } = await supabase.from("sent_cards").insert(pendingPayload);
     if (error) {
       const { front_image_url: _, ...slim } = pendingPayload;
       ({ error } = await supabase.from("sent_cards").insert(slim));
     }
-
     if (!error && pendingCircle) {
-      await supabase.from("circles").upsert(pendingCircle,
-        { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
+      await supabase.from("circles").upsert(pendingCircle, { onConflict: "sender_id,recipient_phone", ignoreDuplicates: true });
       setDailyCount(prev => (prev ?? 0) + 1);
     }
   }
 
   function cancelSend() {
-    // Nothing was saved — just clear local state
-    setPendingPayload(null);
-    setPendingCircle(null);
-    setCardSaved(false);
-    setShortCode("");
+    setPendingPayload(null); setPendingCircle(null);
+    setCardSaved(false); setShortCode("");
+    setFirstContactForced(false);
   }
 
-  // ── Upgrade screen ───────────────────────────────────────────────
+  // ── Upgrade screen ────────────────────────────────────────────────────
   if (showUpgrade) {
     return (
       <div className="flex flex-col min-h-dvh px-6 py-10 items-center justify-center"
         style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
-
-        {/* Icon */}
         <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-lg"
           style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
           <Sparkles className="w-9 h-9 text-white" />
         </div>
-
-        {/* Heading */}
-        <h2 className="text-2xl font-bold text-gray-800 text-center">You've sent {FREE_DAILY_LIMIT} cards today</h2>
+        <h2 className="text-2xl font-bold text-gray-800 text-center">You&apos;ve sent {FREE_DAILY_LIMIT} cards today</h2>
         <p className="text-gray-400 text-sm text-center mt-2 leading-relaxed">
-          Free accounts can send {FREE_DAILY_LIMIT} cards per day.<br />
-          Upgrade to send unlimited cards, unlock premium templates, and more.
+          Free accounts can send {FREE_DAILY_LIMIT} cards per day.<br />Upgrade for unlimited cards.
         </p>
-
-        {/* Perks */}
         <div className="w-full mt-8 flex flex-col gap-3">
           {[
             { icon: "💌", text: "Unlimited cards every day" },
@@ -398,25 +427,18 @@ function SendPageInner() {
             </div>
           ))}
         </div>
-
-        {/* Pricing */}
         {(() => {
           const isIndia = country === "IN";
-          const annual  = isIndia ? { price: "₹999 / year",  sub: "Just ₹83/month — save 44%" }
-                                  : { price: "$9.99 / year", sub: "Just $0.83/month — save 50%" };
-          const monthly = isIndia ? { price: "₹149 / month", sub: "Cancel anytime" }
-                                  : { price: "$1.99 / month", sub: "Cancel anytime" };
+          const annual  = isIndia ? { price: "₹999 / year",  sub: "Just ₹83/month" } : { price: "$9.99 / year", sub: "Just $0.83/month" };
+          const monthly = isIndia ? { price: "₹149 / month", sub: "Cancel anytime" }  : { price: "$1.99 / month", sub: "Cancel anytime" };
           return (
             <div className="w-full mt-6 flex flex-col gap-3">
-              {/* Annual — highlighted */}
               <button className="w-full rounded-2xl p-4 text-white shadow-lg relative overflow-hidden"
                 style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                <div className="absolute top-2 right-3 bg-white/20 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide">BEST VALUE</div>
+                <div className="absolute top-2 right-3 bg-white/20 rounded-full px-2 py-0.5 text-[10px] font-bold">BEST VALUE</div>
                 <p className="text-base font-bold text-left">{annual.price}</p>
                 <p className="text-xs text-white/75 text-left mt-0.5">{annual.sub}</p>
               </button>
-
-              {/* Monthly */}
               <button className="w-full rounded-2xl p-4 bg-white border border-gray-100 shadow-sm">
                 <p className="text-base font-bold text-gray-800 text-left">{monthly.price}</p>
                 <p className="text-xs text-gray-400 text-left mt-0.5">{monthly.sub}</p>
@@ -424,25 +446,20 @@ function SendPageInner() {
             </div>
           );
         })()}
-
         <p className="text-[10px] text-gray-300 mt-4 text-center">Payment coming soon — tap to join the waitlist</p>
-
-        {/* Dismiss */}
-        <button onClick={() => setShowUpgrade(false)}
-          className="mt-6 text-sm text-gray-400 font-medium">
+        <button onClick={() => setShowUpgrade(false)} className="mt-6 text-sm text-gray-400 font-medium">
           Maybe later — cards reset tomorrow
         </button>
       </div>
     );
   }
 
-  // ── Direct delivery success (recipient is on SayIt) ─────────────
+  // ── Direct delivery success ───────────────────────────────────────────
   if (shortCode && recipientOnApp && foundUser) {
     const initials = foundUser.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center px-8 gap-6"
         style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
-        {/* Avatar */}
         <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-2xl font-bold text-white shadow-xl"
           style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
           {initials}
@@ -452,12 +469,9 @@ function SendPageInner() {
             <CheckCircle2 className="w-5 h-5" style={{ color: "#22c55e" }} />
             <span className="text-sm font-semibold text-green-600">Delivered on SayIt</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800">
-            Card sent to {foundUser.name.split(" ")[0]}! 🎉
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800">Card sent to {foundUser.name.split(" ")[0]}! 🎉</h2>
           <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-            {foundUser.name.split(" ")[0]} will see it in their Chats tab right now.
-            No link needed 💌
+            {foundUser.name.split(" ")[0]} will see it in their Chats tab right now. No link needed 💌
           </p>
         </div>
         <div className="w-full flex flex-col gap-3">
@@ -475,15 +489,12 @@ function SendPageInner() {
     );
   }
 
-  // ── Post-share confirmation (iMessage / WhatsApp flow) ───────────
+  // ── Post-share confirmation ───────────────────────────────────────────
   if (shortCode && shared) {
-    const firstName = phone ? `+${countryCode.replace("+", "")}${phone}` : "them";
-    const displayName = foundUser?.name?.split(" ")[0] ?? senderName.split(" ")[0] ?? firstName;
+    const displayName = foundUser?.name?.split(" ")[0] ?? senderName.split(" ")[0] ?? "them";
     return (
       <div className="flex flex-col min-h-dvh items-center justify-center px-8 gap-6"
         style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
-
-        {/* Animated success ring + checkmark */}
         <div style={{ position: "relative", width: 96, height: 96 }}>
           <div className="absolute inset-0 rounded-full animate-ping"
             style={{ background: "linear-gradient(135deg,#FF6B8A40,#9B59B640)" }} />
@@ -492,17 +503,18 @@ function SendPageInner() {
             <CheckCircle2 className="w-12 h-12 text-white" />
           </div>
         </div>
-
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800">Card sent! 🎉</h2>
           <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-            Your card is on its way to{" "}
-            <span className="font-semibold text-gray-700">{displayName}</span>.<br />
+            Your card is on its way to <span className="font-semibold text-gray-700">{displayName}</span>.<br />
             They&apos;ll see it as soon as they tap the link 💌
           </p>
+          {firstContactForced && (
+            <p className="text-xs text-purple-400 mt-2">
+              Once they&apos;re on SayIt and connect back, future cards will arrive directly in-app ✨
+            </p>
+          )}
         </div>
-
-        {/* Card thumbnail */}
         {template && (
           <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 w-full">
             <div className="relative w-10 h-14 rounded-xl overflow-hidden flex-shrink-0">
@@ -515,8 +527,6 @@ function SendPageInner() {
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" style={{ color: "#22c55e" }} />
           </div>
         )}
-
-        {/* CTAs */}
         <div className="w-full flex flex-col gap-3">
           <button onClick={() => router.push("/home")}
             className="w-full py-4 rounded-2xl text-white font-semibold shadow-md"
@@ -532,47 +542,42 @@ function SendPageInner() {
     );
   }
 
-  // ── Share sheet ──────────────────────────────────────────────────
+  // ── Share sheet ───────────────────────────────────────────────────────
   if (shortCode) {
-    const shareText = `${senderName} sent you a card 💌 Open it here: ${cardUrl}`;
-    // Strip non-digits for WhatsApp (needs raw number)
-    // Strip everything except digits, then ensure country code is present
+    const shareText = firstContactForced && foundUser
+      ? `${senderName} sent you a card on SayIt 💌 Open it here: ${cardUrl}\n\nDownload SayIt to send cards back!`
+      : `${senderName} sent you a card 💌 Open it here: ${cardUrl}`;
     let rawPhone = phone.replace(/\D/g, "");
-    // If no country code (10 digits = Indian mobile), prepend 91
     if (rawPhone.length === 10) rawPhone = "91" + rawPhone;
     const smsHref = `sms:${phone.trim()}&body=${encodeURIComponent(shareText)}`;
     const waHref  = `https://wa.me/${rawPhone}?text=${encodeURIComponent(shareText)}`;
 
     return (
       <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#FFF5F7,#F8F0FF)" }}>
-        {/* Header */}
         <div className="px-5 pt-14 pb-2 flex items-center gap-3">
           <button onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
         </div>
-
         <div className="flex flex-col items-center px-6 pt-4 pb-10 gap-6 flex-1">
-          {/* Card preview */}
-          {isPawCard ? (
-            <div className="w-44 h-44 rounded-3xl shadow-2xl flex items-center justify-center text-6xl overflow-hidden"
-              style={{ background: "linear-gradient(135deg,#9B59B6,#C39BD3)" }}>
-              🐾
-            </div>
-          ) : isCustomCard && (() => { try { return sessionStorage.getItem("custom_bg_photo"); } catch { return null; } })() ? (
-            <div className="relative w-44 h-60 rounded-3xl overflow-hidden shadow-2xl">
-              <img
-                src={(() => { try { return sessionStorage.getItem("custom_bg_photo") ?? ""; } catch { return ""; } })()}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-              <div className="absolute bottom-3 left-0 right-0 text-center">
-                <span className="text-white text-xs font-semibold tracking-wider">{category?.icon} {category?.name}</span>
+          {/* First-contact notice */}
+          {firstContactForced && (
+            <div className="w-full rounded-2xl px-4 py-3 flex items-start gap-3"
+              style={{ background: "linear-gradient(135deg,#F8F0FF,#FFF5F7)", border: "1px solid rgba(155,89,182,0.2)" }}>
+              <span className="text-lg mt-0.5">🔒</span>
+              <div>
+                <p className="text-xs font-bold text-purple-700">First card to {foundUser?.name?.split(" ")[0] ?? "this person"}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                  For privacy, first-time cards are always shared via WhatsApp or SMS.
+                  Once they&apos;re on SayIt and connect back, future cards arrive directly in-app.
+                </p>
               </div>
             </div>
-          ) : template ? (
+          )}
+
+          {/* Card preview */}
+          {template ? (
             <div className="relative w-44 h-60 rounded-3xl overflow-hidden shadow-2xl">
               <Image src={template.front_image_url} alt="" fill className="object-cover" sizes="176px" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -589,39 +594,25 @@ function SendPageInner() {
             <p className="text-gray-400 text-sm mt-1">Now choose how to deliver it</p>
           </div>
 
-          {/* Share buttons */}
           <div className="w-full flex flex-col gap-3">
-            {/* iMessage / SMS */}
             <a href={smsHref}
               onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#34C759,#30D158)" }}>
+              style={{ background: "linear-gradient(135deg,#34C759,#30D158)", textDecoration: "none" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold">iMessage / SMS</p>
-                <p className="text-xs text-white/75">Opens Messages app</p>
-              </div>
+              <div className="flex-1"><p className="text-sm font-bold">iMessage / SMS</p><p className="text-xs text-white/75">Opens Messages app</p></div>
               <span className="text-white/60 text-lg">›</span>
             </a>
-
-            {/* WhatsApp */}
             <a href={waHref} target="_blank" rel="noopener noreferrer"
               onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)" }}>
+              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", textDecoration: "none" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold">WhatsApp</p>
-                <p className="text-xs text-white/75">Opens WhatsApp chat</p>
-              </div>
+              <div className="flex-1"><p className="text-sm font-bold">WhatsApp</p><p className="text-xs text-white/75">Opens WhatsApp chat</p></div>
               <span className="text-white/60 text-lg">›</span>
             </a>
-
           </div>
-
-          {/* Cancel — nothing was saved so nothing to clean up */}
-          <button
-            onClick={() => { cancelSend(); router.push("/home"); }}
+          <button onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
             Cancel
           </button>
@@ -630,9 +621,9 @@ function SendPageInner() {
     );
   }
 
+  // ── Main send form ────────────────────────────────────────────────────
   return (
     <div className="flex flex-col min-h-dvh bg-gray-50">
-      {/* Header */}
       <div className="bg-white px-5 pt-14 pb-4 flex items-center gap-3 shadow-sm">
         <button onClick={() => router.back()}
           className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
@@ -640,7 +631,9 @@ function SendPageInner() {
         </button>
         <div className="flex-1">
           <h2 className="font-bold text-gray-800">Send Card</h2>
-          <p className="text-xs text-gray-400">Search by name or enter a number</p>
+          <p className="text-xs text-gray-400">
+            {contactsGranted ? "Search your contacts or enter a number" : "Enter a phone number to send"}
+          </p>
         </div>
         {template && (
           <div className="relative w-10 h-14 rounded-xl overflow-hidden shadow-sm">
@@ -650,7 +643,6 @@ function SendPageInner() {
       </div>
 
       <div className="flex flex-col gap-4 px-5 py-8">
-        {/* Card preview strip */}
         {template && (
           <div className="flex gap-3 items-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
             <div className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0">
@@ -659,63 +651,97 @@ function SendPageInner() {
             <div>
               <p className="text-xs text-gray-400">Sending</p>
               <p className="font-semibold text-gray-800 text-sm">{template.title}</p>
-              {message && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 italic">"{message}"</p>}
+              {message && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 italic">&ldquo;{message}&rdquo;</p>}
             </div>
           </div>
         )}
 
-        {/* Unified recipient search */}
+        {/* Contacts permission banner */}
+        {!contactsGranted && !contactsLoading && (
+          <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
+            style={{ background: "linear-gradient(135deg,#F8F0FF,#FFF5F7)", border: "1px solid rgba(155,89,182,0.2)" }}>
+            <span className="text-xl">📋</span>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-purple-700">Find friends on SayIt</p>
+              <p className="text-xs text-gray-500">Allow contacts access to search by name</p>
+            </div>
+            <button
+              onClick={async () => {
+                const { Contacts } = await import("@capacitor-community/contacts").catch(() => ({ Contacts: null }));
+                if (!Contacts) return;
+                const result = await Contacts.requestPermissions();
+                if (result.contacts === "granted") {
+                  setContactsGranted(true);
+                  const { contacts } = await getOrRequestContacts(supabase);
+                  setSayItContacts(contacts);
+                }
+              }}
+              className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
+              style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
+              Allow
+            </button>
+          </div>
+        )}
+
+        {/* Recipient search */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <label className="text-xs font-semibold text-gray-500 mb-2 block">Send To</label>
 
-          {/* Search input or selected contact chip */}
           {selectedContact ? (
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
               style={{ background: "linear-gradient(135deg,#FF6B8A10,#9B59B610)", border: "1px solid #FF6B8A30" }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                 style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                {selectedContact.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                {selectedContact.displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">{selectedContact.name}</p>
-                <p className="text-[11px] text-green-600 font-medium">✓ On SayIt — card will be delivered directly</p>
+                <p className="text-sm font-semibold text-gray-800">{selectedContact.displayName}</p>
+                <p className="text-[11px] font-medium" style={{ color: selectedContact.onSayIt ? "#22c55e" : "#9ca3af" }}>
+                  {selectedContact.onSayIt ? "✓ On SayIt" : "📱 Send via WhatsApp / SMS"}
+                </p>
               </div>
-              <button onClick={clearContact} className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">✕</button>
+              <button onClick={clearContact}
+                className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">✕</button>
             </div>
           ) : (
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name or enter phone number"
+                placeholder={contactsGranted ? "Search contacts or enter phone number" : "Enter phone number"}
                 value={searchQuery}
                 onChange={e => {
                   const v = e.target.value;
                   setSearchQuery(v);
                   setPhoneError(null);
-                  // If it looks like a phone, also update the phone state
                   if (/^\+?[\d\s\-()]+$/.test(v)) {
                     setPhone(v.replace(/\D/g, ""));
                     setFoundUser(null);
-                    setSearchStatus("idle");
                   }
                 }}
                 onFocus={() => searchQuery && setShowSuggestions(true)}
                 className="w-full px-4 py-3.5 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200 bg-gray-50"
                 autoFocus
               />
-              {/* Suggestions dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                  {suggestions.map(s => (
-                    <button key={s.id} onClick={() => selectContact(s)}
+                  {suggestions.map((s, i) => (
+                    <button key={`${s.userId ?? s.primaryPhone}-${i}`}
+                      onClick={() => selectContact(s)}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-gray-50 border-b border-gray-50 last:border-0">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                        {s.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{
+                          background: s.onSayIt
+                            ? "linear-gradient(135deg,#FF6B8A,#9B59B6)"
+                            : "linear-gradient(135deg,#e5e7eb,#d1d5db)",
+                          color: s.onSayIt ? "white" : "#9ca3af",
+                        }}>
+                        {s.displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{s.name}</p>
-                        <p className="text-[11px] text-green-600">✓ On SayIt</p>
+                        <p className="text-sm font-semibold text-gray-800">{s.displayName}</p>
+                        <p className="text-[11px]" style={{ color: s.onSayIt ? "#22c55e" : "#9ca3af" }}>
+                          {s.onSayIt ? "✓ On SayIt" : s.primaryPhone}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -724,7 +750,7 @@ function SendPageInner() {
             </div>
           )}
 
-          {/* Manual phone input shown when query looks like a phone number and no contact selected */}
+          {/* Manual phone display when typing a number */}
           {!selectedContact && phone.length >= 6 && (
             <div className="mt-3">
               <div className="flex gap-2">
@@ -749,19 +775,14 @@ function SendPageInner() {
                     </div>
                   )}
                 </div>
-                <div className="flex-1 px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-600">
-                  {phone}
-                </div>
+                <div className="flex-1 px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-600">{phone}</div>
               </div>
               <p className="text-xs text-gray-400 mt-2 px-1">👋 Not on SayIt yet — you can invite them via WhatsApp or SMS</p>
             </div>
           )}
         </div>
 
-        {/* Phone validation error */}
-        {phoneError && (
-          <p className="text-sm text-red-500 px-1 -mt-2">{phoneError}</p>
-        )}
+        {phoneError && <p className="text-sm text-red-500 px-1 -mt-2">{phoneError}</p>}
 
         {/* Daily limit indicator */}
         {dailyCount !== null && (
@@ -769,9 +790,7 @@ function SendPageInner() {
             <div className="flex gap-1.5 items-center">
               {Array.from({ length: FREE_DAILY_LIMIT }).map((_, i) => (
                 <div key={i} className="w-8 h-1.5 rounded-full transition-all"
-                  style={{ background: i < dailyCount
-                    ? "linear-gradient(135deg,#FF6B8A,#9B59B6)"
-                    : "#E5E7EB" }} />
+                  style={{ background: i < dailyCount ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "#E5E7EB" }} />
               ))}
             </div>
             <p className="text-[11px] text-gray-400">
@@ -785,10 +804,8 @@ function SendPageInner() {
           </div>
         )}
 
-        {/* Send button — or upgrade CTA if limit hit */}
         {dailyCount !== null && dailyCount >= FREE_DAILY_LIMIT ? (
-          <button
-            onClick={() => setShowUpgrade(true)}
+          <button onClick={() => setShowUpgrade(true)}
             className="w-full py-4 rounded-2xl text-white font-semibold shadow-md flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
             <Sparkles className="w-4 h-4" /> Upgrade to Send More
@@ -798,19 +815,11 @@ function SendPageInner() {
             onClick={handleSend}
             disabled={(!phone.trim() && !selectedContact) || sending}
             className="w-full py-4 text-white font-bold disabled:opacity-40 flex items-center justify-center gap-2"
-            style={{
-              background: "linear-gradient(135deg,#FF6B8A,#9B59B6)",
-              borderRadius: 30,
-              boxShadow: "0 4px 18px rgba(255,107,138,0.35)",
-              fontSize: 15,
-              letterSpacing: 0.5,
-            }}>
+            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", borderRadius: 30, boxShadow: "0 4px 18px rgba(255,107,138,0.35)", fontSize: 15 }}>
             {sending
               ? <><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> Sending…</>
               : selectedContact
-                ? <>✨ SayIt to {selectedContact.name.split(" ")[0]}</>
-                : foundUser
-                ? <>✨ SayIt to {foundUser.name.split(" ")[0]}</>
+                ? <>✨ SayIt to {selectedContact.displayName.split(" ")[0]}</>
                 : <>✨ SayIt</>}
           </button>
         )}

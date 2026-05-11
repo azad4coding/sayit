@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Search, ArrowLeft, ChevronDown, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { getOrRequestContacts, SayItContact } from "@/lib/contacts";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://sayit-gamma.vercel.app";
 
@@ -40,7 +41,8 @@ const VENDORS = [
 
 type Step = "browse" | "amount" | "send" | "share" | "done";
 type Vendor = typeof VENDORS[0];
-type FoundUser = { id: string; name: string; phone: string };
+// id is null for device contacts not registered on SayIt
+type FoundUser = { id: string | null; name: string; phone: string; onSayIt: boolean };
 
 export default function GiftCardsPage() {
   const router = useRouter();
@@ -65,6 +67,7 @@ export default function GiftCardsPage() {
   const [pendingPayload,  setPendingPayload]  = useState<Record<string, unknown> | null>(null);
   const [pendingCircle,   setPendingCircle]   = useState<Record<string, unknown> | null>(null);
   const [cardSaved,       setCardSaved]       = useState(false);
+  const [sayItContacts,   setSayItContacts]   = useState<SayItContact[]>([]);
 
   const accent = "#FF6B8A";
 
@@ -73,23 +76,47 @@ export default function GiftCardsPage() {
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ── Contact search ───────────────────────────────────────────────
+  // ── Load device contacts on mount ────────────────────────────────
+  useEffect(() => {
+    async function loadContacts() {
+      const supabase = createClient();
+      const { contacts } = await getOrRequestContacts(supabase);
+      setSayItContacts(contacts);
+    }
+    loadContacts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Contact search (name → local filter; phone → device lookup) ──
   useEffect(() => {
     if (!phoneSearch.trim() || selectedContact) { setSuggestions([]); return; }
-    const timer = setTimeout(async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, phone")
-        .ilike("full_name", `%${phoneSearch}%`)
-        .not("phone", "is", null)
-        .limit(6);
-      setSuggestions((data ?? []).map((p: any) => ({
-        id: p.id, name: p.full_name ?? "SayIt User", phone: p.phone,
-      })));
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [phoneSearch, selectedContact]);
+
+    const isPhoneQuery = /^\+?[\d\s\-()]{4,}$/.test(phoneSearch.trim());
+
+    if (isPhoneQuery) {
+      // Match against device contacts by digits
+      const digits = phoneSearch.replace(/\D/g, "");
+      const match = sayItContacts.find(c =>
+        c.phones.some(p => {
+          const pd = p.replace(/\D/g, "");
+          return pd === digits || pd.endsWith(digits) || digits.endsWith(pd);
+        })
+      );
+      setSuggestions(match
+        ? [{ id: match.userId, name: match.displayName, phone: match.primaryPhone, onSayIt: match.onSayIt }]
+        : []
+      );
+      return;
+    }
+
+    // Name search — filter device contacts locally (no global Supabase query)
+    const q = phoneSearch.toLowerCase();
+    const filtered = sayItContacts
+      .filter(c => c.displayName.toLowerCase().includes(q))
+      .slice(0, 6)
+      .map(c => ({ id: c.userId, name: c.displayName, phone: c.primaryPhone, onSayIt: c.onSayIt }));
+    setSuggestions(filtered);
+  }, [phoneSearch, selectedContact, sayItContacts]);
 
   function selectContact(c: FoundUser) {
     setSelectedContact(c);
@@ -146,7 +173,7 @@ export default function GiftCardsPage() {
     const cardPayload: Record<string, unknown> = {
       sender_id:       user.id,
       recipient_phone: fullPhone,
-      recipient_id:    selectedContact?.id ?? null,
+      recipient_id:    (selectedContact?.onSayIt ? selectedContact?.id : null) ?? null,
       recipient_name:  selectedContact?.name ?? null,
       template_id:     null,
       message:         gcData,
@@ -161,13 +188,13 @@ export default function GiftCardsPage() {
       sender_phone:    user.phone ?? profile?.phone ?? null,
       sender_name:     name,
       recipient_phone: fullPhone,
-      recipient_id:    selectedContact?.id ?? null,
+      recipient_id:    (selectedContact?.onSayIt ? selectedContact?.id : null) ?? null,
       status:          "accepted",
       updated_at:      new Date().toISOString(),
     };
 
     // ── Registered recipient: save immediately + push notification ────
-    if (selectedContact) {
+    if (selectedContact?.onSayIt && selectedContact.id) {
       const { error: dbErr } = await supabase.from("sent_cards").insert(cardPayload);
       if (dbErr) { setError("Failed to send: " + dbErr.message); setSending(false); return; }
 
@@ -179,7 +206,7 @@ export default function GiftCardsPage() {
         fetch("/api/push/send", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pushSession?.access_token ?? ""}` },
-          body: JSON.stringify({ recipientId: selectedContact.id, senderName: name, cardCode: code }),
+          body: JSON.stringify({ recipientId: selectedContact.id!, senderName: name, cardCode: code }),
         }).catch(() => {});
       });
 
@@ -446,7 +473,10 @@ export default function GiftCardsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{selectedContact.name}</p>
-                  <p className="text-[11px] text-green-600 font-medium">✓ On SayIt — gift card will be delivered directly</p>
+                  {selectedContact.onSayIt
+                    ? <p className="text-[11px] text-green-600 font-medium">✓ On SayIt — gift card will be delivered directly</p>
+                    : <p className="text-[11px] text-amber-600 font-medium">📱 Not on SayIt — you'll share via WhatsApp or SMS</p>
+                  }
                 </div>
                 <button onClick={clearContact}
                   className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">✕</button>
@@ -478,7 +508,10 @@ export default function GiftCardsPage() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-800">{s.name}</p>
-                          <p className="text-[11px] text-green-600">✓ On SayIt</p>
+                          {s.onSayIt
+                            ? <p className="text-[11px] text-green-600">✓ On SayIt</p>
+                            : <p className="text-[11px] text-gray-400">In your contacts</p>
+                          }
                         </div>
                       </button>
                     ))}
