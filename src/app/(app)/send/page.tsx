@@ -656,32 +656,7 @@ function SendPageInner() {
           </div>
         )}
 
-        {/* Contacts permission banner */}
-        {!contactsGranted && !contactsLoading && (
-          <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
-            style={{ background: "linear-gradient(135deg,#F8F0FF,#FFF5F7)", border: "1px solid rgba(155,89,182,0.2)" }}>
-            <span className="text-xl">📋</span>
-            <div className="flex-1">
-              <p className="text-xs font-bold text-purple-700">Find friends on SayIt</p>
-              <p className="text-xs text-gray-500">Allow contacts access to search by name</p>
-            </div>
-            <button
-              onClick={async () => {
-                const { Contacts } = await import("@capacitor-community/contacts").catch(() => ({ Contacts: null }));
-                if (!Contacts) return;
-                const result = await Contacts.requestPermissions();
-                if (result.contacts === "granted") {
-                  setContactsGranted(true);
-                  const { contacts } = await getOrRequestContacts(supabase);
-                  setSayItContacts(contacts);
-                }
-              }}
-              className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
-              style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-              Allow
-            </button>
-          </div>
-        )}
+        {/* Contacts permission is requested at registration — no inline banner needed */}
 
         {/* Recipient search */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { ChevronDown } from "lucide-react";
 import { normalizePhone } from "@/lib/phone";
+import { requestContactsPermission } from "@/lib/contacts";
 
 // ── Country codes ─────────────────────────────────────────────────────────────
 const COUNTRY_CODES = [
@@ -155,6 +156,9 @@ function RegisterInner() {
         body: JSON.stringify({ userId: data.user.id, phone: fullPhone }),
       });
     }
+    // Request contacts permission right after account creation — standard app UX
+    await requestContactsPermission();
+
     setLoading(false);
     redirectAfterAuth();
   }
