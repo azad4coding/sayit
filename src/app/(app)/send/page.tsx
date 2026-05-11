@@ -301,7 +301,7 @@ function SendPageInner() {
     // "Mutual" = they have previously sent a card to us.
     // First-timers go via WhatsApp/SMS so recipient decides whether to engage.
     if (foundUser) {
-      const myPhone = ensurePlus(user.phone ?? (profile as any)?.phone ?? "");
+      const myPhone = ensurePlus(user.phone ?? (profile as any)?.phone ?? "") || "";
       const withoutPlus = myPhone.replace(/^\+/, "");
 
       const { data: recipientSentToMe } = await supabase
