@@ -225,40 +225,44 @@ function LoginInner() {
                   <ChevronDown className="w-3 h-3 text-gray-400" />
                 </button>
                 {showCCDropdown && (
-                  <>
-                    {/* Backdrop */}
-                    <div className="fixed inset-0 z-40 bg-black/40" onClick={() => { setShowCCDropdown(false); setCcQuery(""); }} />
-                    {/* Bottom sheet — sits above keyboard on both iOS and Android */}
-                    <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl"
-                      style={{ maxHeight: "65vh", display: "flex", flexDirection: "column", overflow: "hidden", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-                      {/* Handle bar */}
-                      <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0" />
-                      <p className="text-center text-sm font-bold text-gray-700 py-2 flex-shrink-0">Select Country</p>
-                      {/* Search bar */}
-                      <div className="px-4 pb-3 border-b border-gray-100 flex items-center gap-2 flex-shrink-0">
-                        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <input type="text" placeholder="Search country…" value={ccQuery}
-                          onChange={e => setCcQuery(e.target.value)}
-                          className="flex-1 text-sm outline-none text-gray-700 py-1"
-                          style={{ background: "transparent" }} />
-                      </div>
-                      {/* Country list */}
-                      <div style={{ overflowY: "auto", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-                        {COUNTRY_CODES
-                          .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
-                          .map((c, idx) => (
-                            <button key={`${c.code}-${idx}`} type="button"
-                              onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); setCcQuery(""); }}
-                              className="w-full flex items-center gap-3 px-5 py-3 text-sm text-left active:bg-gray-50"
-                              style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
-                              <span className="text-lg">{c.flag}</span>
-                              <span className="flex-1">{c.name}</span>
-                              <span className="text-gray-400 text-xs font-medium">{c.code}</span>
-                            </button>
-                          ))}
-                      </div>
+                  /* Full-screen modal — keyboard shrinks the list area naturally
+                     instead of squishing the whole sheet (iOS bottom-sheet bug)  */
+                  <div className="fixed inset-0 z-50 bg-white flex flex-col"
+                    style={{ paddingTop: "env(safe-area-inset-top, 44px)" }}>
+                    {/* Header */}
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                      <button type="button"
+                        onClick={() => { setShowCCDropdown(false); setCcQuery(""); }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 text-lg font-bold">
+                        ✕
+                      </button>
+                      <p className="font-bold text-gray-800">Select Country</p>
                     </div>
-                  </>
+                    {/* Search */}
+                    <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2 flex-shrink-0">
+                      <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <input type="text" placeholder="Search country…" value={ccQuery}
+                        onChange={e => setCcQuery(e.target.value)}
+                        autoFocus
+                        className="flex-1 text-sm outline-none text-gray-700 py-1"
+                        style={{ background: "transparent" }} />
+                    </div>
+                    {/* Country list — shrinks when keyboard appears, stays scrollable */}
+                    <div style={{ overflowY: "auto", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+                      {COUNTRY_CODES
+                        .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
+                        .map((c, idx) => (
+                          <button key={`${c.code}-${idx}`} type="button"
+                            onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); setCcQuery(""); }}
+                            className="w-full flex items-center gap-3 px-5 py-3.5 text-sm text-left active:bg-gray-50"
+                            style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
+                            <span className="text-lg">{c.flag}</span>
+                            <span className="flex-1">{c.name}</span>
+                            <span className="text-gray-400 text-xs font-medium">{c.code}</span>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
                 )}
               </div>
               <input type="tel" inputMode="numeric" placeholder="98765 43210"
