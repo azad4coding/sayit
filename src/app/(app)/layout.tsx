@@ -143,22 +143,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // OneSignal is initialised natively in AppDelegate.swift / MainActivity.java.
   // Here we link the logged-in user's Supabase UUID as the OneSignal external_id
   // so the server can target them by user ID when sending pushes.
-  // Run only after auth check completes (checking = false) so user is guaranteed
+  // Run only after auth check completes (checking = false) so user is guaranteed.
+  //
+  // iOS: uses window.webkit.messageHandlers.sayitBridge (WKScriptMessageHandler
+  // registered in ViewController.capacitorDidLoad). Bypasses Capacitor plugin
+  // routing entirely — no UNIMPLEMENTED errors possible.
+  // Android: registerPlugin("OneSignalPlugin") routes to the Java plugin.
   useEffect(() => {
-    if (checking) return;  // wait for auth to finish
+    if (checking) return;
     async function linkOneSignalUser() {
       try {
-        const { Capacitor, registerPlugin } = await import("@capacitor/core");
+        const { Capacitor } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;
 
         const { data: { user } } = await supabase.auth.getUser();
-        console.log("[OneSignal] current user:", user?.id ?? "none");
         if (!user) return;
 
-        // registerPlugin creates a typed bridge to our native SayItOSBridge plugin
-        const SayItOSBridge = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("SayItOSBridge");
-        await SayItOSBridge.login({ userId: user.id });
-        console.log("[OneSignal] linked userId:", user.id);
+        if (Capacitor.getPlatform() === "ios") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const wk = (window as any).webkit?.messageHandlers?.sayitBridge;
+          if (wk) {
+            wk.postMessage({ action: "linkOneSignal", userId: user.id });
+            console.log("[OneSignal] WK message sent, userId:", user.id);
+          } else {
+            console.warn("[OneSignal] sayitBridge handler not available");
+          }
+        } else {
+          // Android: Capacitor Java plugin registered in MainActivity
+          const { registerPlugin } = await import("@capacitor/core");
+          const OSPlugin = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("OneSignalPlugin");
+          await OSPlugin.login({ userId: user.id });
+          console.log("[OneSignal] Android linked userId:", user.id);
+        }
       } catch (err) {
         console.warn("[OneSignal] user link skipped:", err);
       }
