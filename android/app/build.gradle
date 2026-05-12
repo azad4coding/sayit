@@ -40,6 +40,8 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // OneSignal push notifications
+    implementation 'com.onesignal:OneSignal:[5.0.0, 5.99.99]'
 }
 
 apply from: 'capacitor.build.gradle'
