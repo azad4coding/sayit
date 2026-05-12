@@ -6,9 +6,8 @@ import { createClient } from "@/lib/supabase";
 import {
   LogOut, Edit2, Check, X, Trash2, Camera,
   Phone, Mail, ChevronRight, ShieldCheck,
-  HelpCircle, Star, BookUser,
+  HelpCircle, Star,
 } from "lucide-react";
-import { checkContactsPermission, requestContactsPermission } from "@/lib/contacts";
 
 export default function ProfilePage() {
   const router   = useRouter();
@@ -28,9 +27,13 @@ export default function ProfilePage() {
   const [clearing,       setClearing]       = useState(false);
   const [confirmClear,   setConfirmClear]   = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [contactsPermission, setContactsPermission] = useState<"granted" | "denied" | "prompt" | null>(null);
+  const [editingEmail,   setEditingEmail]   = useState(false);
+  const [draftEmail,     setDraftEmail]     = useState("");
+  const [emailSaving,    setEmailSaving]    = useState(false);
+  const [emailMessage,   setEmailMessage]   = useState("");
 
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef  = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const accent = "#FF6B8A";
@@ -56,25 +59,40 @@ export default function ProfilePage() {
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
 
       setLoading(false);
-
-      // Check contacts permission status so we can show a Settings link
-      const perm = await checkContactsPermission();
-      setContactsPermission(perm);
     }
     load();
   }, []);
 
-  async function handleGrantContacts() {
-    if (contactsPermission === "prompt") {
-      const granted = await requestContactsPermission();
-      setContactsPermission(granted ? "granted" : "denied");
+  function startEditEmail() {
+    setDraftEmail(email);
+    setEmailMessage("");
+    setEditingEmail(true);
+    setTimeout(() => emailInputRef.current?.focus(), 50);
+  }
+
+  function cancelEditEmail() {
+    setEditingEmail(false);
+    setDraftEmail("");
+    setEmailMessage("");
+  }
+
+  async function saveEmail() {
+    const trimmed = draftEmail.trim().toLowerCase();
+    if (!trimmed || trimmed === email) { cancelEditEmail(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailMessage("Please enter a valid email address.");
+      return;
+    }
+    setEmailSaving(true);
+    const { error: authErr } = await supabase.auth.updateUser({ email: trimmed });
+    setEmailSaving(false);
+    if (authErr) {
+      setEmailMessage(authErr.message);
     } else {
-      // Permission was denied — open iOS Settings so user can toggle it
-      try {
-        window.location.href = "app-settings:";
-      } catch {
-        // Fallback for web: nothing we can do
-      }
+      setEditingEmail(false);
+      setDraftEmail("");
+      setEmailMessage("Confirmation sent to " + trimmed + ". Check your inbox to confirm.");
+      setTimeout(() => setEmailMessage(""), 6000);
     }
   }
 
@@ -256,39 +274,52 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-4 border-b border-gray-50">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+          <div className="flex items-start gap-4 px-4 py-4">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
               style={{ background: `${purple}18` }}>
               <Mail className="w-4 h-4" style={{ color: purple }} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">{email || "—"}</p>
-            </div>
-          </div>
-
-          {/* Contacts permission row — only shown on native iOS */}
-          {contactsPermission !== null && (
-            <div className="flex items-center gap-4 px-4 py-4">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: contactsPermission === "granted" ? "#27AE6018" : "#FF6B8A18" }}>
-                <BookUser className="w-4 h-4" style={{ color: contactsPermission === "granted" ? "#27AE60" : accent }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Contacts Access</p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {contactsPermission === "granted" ? "Allowed" : contactsPermission === "denied" ? "Denied — tap to fix" : "Not yet granted"}
+              {editingEmail ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    value={draftEmail}
+                    onChange={e => setDraftEmail(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") saveEmail(); if (e.key === "Escape") cancelEditEmail(); }}
+                    placeholder="new@email.com"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-purple-200 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent"
+                  />
+                  <button onClick={saveEmail} disabled={emailSaving}
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${purple}22` }}>
+                    {emailSaving
+                      ? <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                      : <Check className="w-4 h-4" style={{ color: purple }} />}
+                  </button>
+                  <button onClick={cancelEditEmail}
+                    className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <X className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{email || "—"}</p>
+                  <button onClick={startEditEmail}
+                    className="flex-shrink-0 p-1 rounded-full active:bg-gray-100">
+                    <Edit2 className="w-3.5 h-3.5 text-gray-300" />
+                  </button>
+                </div>
+              )}
+              {emailMessage && (
+                <p className={`text-xs mt-1.5 leading-snug ${emailMessage.startsWith("Confirmation") ? "text-green-500" : "text-red-400"}`}>
+                  {emailMessage}
                 </p>
-              </div>
-              {contactsPermission !== "granted" && (
-                <button onClick={handleGrantContacts}
-                  className="text-xs font-bold px-3 py-1.5 rounded-full text-white flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg,${accent},${purple})` }}>
-                  {contactsPermission === "denied" ? "Settings" : "Allow"}
-                </button>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 

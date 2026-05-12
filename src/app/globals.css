@@ -159,6 +159,17 @@ body {
 a, button { transition: opacity 0.15s ease, transform 0.15s ease; }
 button:active { transform: scale(0.97); }
 
+/* ── Hide scrollbar (mobile app — no visible scrollbar needed) ──────── */
+/* Hides the OS scrollbar indicator so it never bleeds through the        */
+/* fixed gradient header or bottom nav.                                   */
+* {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE / Edge legacy */
+}
+*::-webkit-scrollbar {
+  display: none;                  /* Chrome / Safari / WebKit */
+}
+
 /* ── Shimmer loading animation ────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
