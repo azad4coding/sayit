@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { normalizePhone } from "@/lib/phone";
 import { requestContactsPermission } from "@/lib/contacts";
 
@@ -16,6 +16,47 @@ const COUNTRY_CODES = [
   { code: "+971", flag: "🇦🇪", name: "UAE" },
   { code: "+65",  flag: "🇸🇬", name: "Singapore" },
   { code: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "+39",  flag: "🇮🇹", name: "Italy" },
+  { code: "+34",  flag: "🇪🇸", name: "Spain" },
+  { code: "+55",  flag: "🇧🇷", name: "Brazil" },
+  { code: "+52",  flag: "🇲🇽", name: "Mexico" },
+  { code: "+81",  flag: "🇯🇵", name: "Japan" },
+  { code: "+82",  flag: "🇰🇷", name: "South Korea" },
+  { code: "+86",  flag: "🇨🇳", name: "China" },
+  { code: "+92",  flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+94",  flag: "🇱🇰", name: "Sri Lanka" },
+  { code: "+977", flag: "🇳🇵", name: "Nepal" },
+  { code: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "+63",  flag: "🇵🇭", name: "Philippines" },
+  { code: "+62",  flag: "🇮🇩", name: "Indonesia" },
+  { code: "+66",  flag: "🇹🇭", name: "Thailand" },
+  { code: "+84",  flag: "🇻🇳", name: "Vietnam" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+974", flag: "🇶🇦", name: "Qatar" },
+  { code: "+965", flag: "🇰🇼", name: "Kuwait" },
+  { code: "+973", flag: "🇧🇭", name: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", name: "Oman" },
+  { code: "+20",  flag: "🇪🇬", name: "Egypt" },
+  { code: "+27",  flag: "🇿🇦", name: "South Africa" },
+  { code: "+234", flag: "🇳🇬", name: "Nigeria" },
+  { code: "+254", flag: "🇰🇪", name: "Kenya" },
+  { code: "+7",   flag: "🇷🇺", name: "Russia" },
+  { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
+  { code: "+41",  flag: "🇨🇭", name: "Switzerland" },
+  { code: "+46",  flag: "🇸🇪", name: "Sweden" },
+  { code: "+47",  flag: "🇳🇴", name: "Norway" },
+  { code: "+45",  flag: "🇩🇰", name: "Denmark" },
+  { code: "+358", flag: "🇫🇮", name: "Finland" },
+  { code: "+48",  flag: "🇵🇱", name: "Poland" },
+  { code: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "+54",  flag: "🇦🇷", name: "Argentina" },
+  { code: "+56",  flag: "🇨🇱", name: "Chile" },
+  { code: "+57",  flag: "🇨🇴", name: "Colombia" },
+  { code: "+90",  flag: "🇹🇷", name: "Turkey" },
+  { code: "+93",  flag: "🇦🇫", name: "Afghanistan" },
 ];
 
 // ── 6-box OTP input ───────────────────────────────────────────────────────────
@@ -100,6 +141,7 @@ function RegisterInner() {
   const [phoneStep,      setPhoneStep]      = useState<"details" | "otp">("details");
   const [countryCode,    setCountryCode]    = useState("+91");
   const [showCCDropdown, setShowCCDropdown] = useState(false);
+  const [ccQuery,        setCcQuery]        = useState("");
   const [phoneNumber,    setPhoneNumber]    = useState("");
   const [otp,            setOtp]            = useState(["", "", "", "", "", ""]);
   const [resendSecs,     setResendSecs]     = useState(0);
@@ -234,9 +276,9 @@ function RegisterInner() {
 
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Phone Number</label>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <button type="button" onClick={() => setShowCCDropdown(v => !v)}
+                <div className="flex gap-2 w-full">
+                  <div className="relative flex-shrink-0">
+                    <button type="button" onClick={() => { setShowCCDropdown(v => !v); setCcQuery(""); }}
                       className="h-full px-3 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap"
                       style={{ minWidth: 88 }}>
                       <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
@@ -245,22 +287,31 @@ function RegisterInner() {
                     </button>
                     {showCCDropdown && (
                       <>
-                        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowCCDropdown(false)} />
-                        <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col"
-                          style={{ maxHeight: "65vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => { setShowCCDropdown(false); setCcQuery(""); }} />
+                        <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl"
+                          style={{ maxHeight: "65vh", display: "flex", flexDirection: "column", overflow: "hidden", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
                           <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0" />
                           <p className="text-center text-sm font-bold text-gray-700 py-2 flex-shrink-0">Select Country</p>
-                          <div style={{ overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
-                            {COUNTRY_CODES.map(c => (
-                              <button key={c.code} type="button"
-                                onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); }}
-                                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-left active:bg-gray-50"
-                                style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
-                                <span className="text-lg">{c.flag}</span>
-                                <span className="flex-1">{c.name}</span>
-                                <span className="text-gray-400 text-xs font-medium">{c.code}</span>
-                              </button>
-                            ))}
+                          <div className="px-4 pb-3 border-b border-gray-100 flex items-center gap-2 flex-shrink-0">
+                            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <input type="text" placeholder="Search country…" value={ccQuery}
+                              onChange={e => setCcQuery(e.target.value)}
+                              className="flex-1 text-sm outline-none text-gray-700 py-1"
+                              style={{ background: "transparent" }} />
+                          </div>
+                          <div style={{ overflowY: "auto", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+                            {COUNTRY_CODES
+                              .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
+                              .map((c, idx) => (
+                                <button key={`${c.code}-${idx}`} type="button"
+                                  onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); setCcQuery(""); }}
+                                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-left active:bg-gray-50"
+                                  style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
+                                  <span className="text-lg">{c.flag}</span>
+                                  <span className="flex-1">{c.name}</span>
+                                  <span className="text-gray-400 text-xs font-medium">{c.code}</span>
+                                </button>
+                              ))}
                           </div>
                         </div>
                       </>
@@ -269,7 +320,7 @@ function RegisterInner() {
                   <input
                     type="tel" inputMode="numeric" placeholder="98765 43210"
                     value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)}
-                    className="flex-1 px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm focus:outline-none focus:ring-2 shadow-sm"
+                    className="min-w-0 flex-1 px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm focus:outline-none focus:ring-2 shadow-sm"
                     style={{ "--tw-ring-color": "#FF6B8A55" } as React.CSSProperties}
                     onKeyDown={e => e.key === "Enter" && sendOtp()}
                   />

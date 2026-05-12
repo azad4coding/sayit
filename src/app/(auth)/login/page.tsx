@@ -215,8 +215,8 @@ function LoginInner() {
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Phone Number</label>
-            <div className="flex gap-2">
-              <div className="relative">
+            <div className="flex gap-2 w-full">
+              <div className="relative flex-shrink-0">
                 <button type="button" onClick={() => { setShowCCDropdown(v => !v); setCcQuery(""); }}
                   className="h-full px-3 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm font-semibold flex items-center gap-1.5 shadow-sm whitespace-nowrap"
                   style={{ minWidth: 90 }}>
@@ -229,8 +229,8 @@ function LoginInner() {
                     {/* Backdrop */}
                     <div className="fixed inset-0 z-40 bg-black/40" onClick={() => { setShowCCDropdown(false); setCcQuery(""); }} />
                     {/* Bottom sheet — sits above keyboard on both iOS and Android */}
-                    <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col"
-                      style={{ maxHeight: "65vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                    <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl"
+                      style={{ maxHeight: "65vh", display: "flex", flexDirection: "column", overflow: "hidden", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
                       {/* Handle bar */}
                       <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0" />
                       <p className="text-center text-sm font-bold text-gray-700 py-2 flex-shrink-0">Select Country</p>
@@ -243,7 +243,7 @@ function LoginInner() {
                           style={{ background: "transparent" }} />
                       </div>
                       {/* Country list */}
-                      <div style={{ overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+                      <div style={{ overflowY: "auto", flex: 1, minHeight: 0, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
                         {COUNTRY_CODES
                           .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
                           .map((c, idx) => (
@@ -264,7 +264,7 @@ function LoginInner() {
               <input type="tel" inputMode="numeric" placeholder="98765 43210"
                 value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendOtp()}
-                className="flex-1 px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-200 shadow-sm" />
+                className="min-w-0 flex-1 px-4 py-3.5 rounded-2xl border border-gray-100 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-200 shadow-sm" />
             </div>
           </div>
 
