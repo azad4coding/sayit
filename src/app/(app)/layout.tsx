@@ -149,7 +149,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         const { Capacitor, registerPlugin } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const prefsAvailable = !!(window as any).Capacitor?.Plugins?.Preferences;
+        console.log("[OneSignal] Capacitor.Plugins.Preferences available:", prefsAvailable);
+
         const { data: { user } } = await supabase.auth.getUser();
+        console.log("[OneSignal] current user:", user?.id ?? "none");
         if (!user) return;
 
         // registerPlugin creates a typed bridge to our native OneSignalPlugin

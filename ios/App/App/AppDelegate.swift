@@ -12,7 +12,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         OneSignal.initialize("6c42b899-7188-4e29-9056-b9c316bc0c74", withLaunchOptions: launchOptions)
         // Ask for notification permission (shows system dialog once)
         OneSignal.Notifications.requestPermission({ _ in }, fallbackToSettings: true)
+        // Debug: check CapacitorStorage suite
+        if let suite = UserDefaults(suiteName: "CapacitorStorage") {
+            let suiteKeys = Array(suite.dictionaryRepresentation().keys)
+            print("[DEBUG] CapacitorStorage suite keys:", suiteKeys)
+        } else {
+            print("[DEBUG] CapacitorStorage suite not found")
+        }
+
+        // Link the logged-in Supabase user to OneSignal
+        linkOneSignalUser()
         return true
+    }
+
+    /// Reads the Supabase session from Capacitor Preferences (UserDefaults)
+    /// and calls OneSignal.login() with the user's UUID — no JS bridge needed.
+    private func linkOneSignalUser() {
+        let key = "sb-yvsglotmanqmvcogbbkf-auth-token"
+        // @capacitor/preferences v8 uses a UserDefaults suite named "CapacitorStorage"
+        let prefs = UserDefaults(suiteName: "CapacitorStorage") ?? UserDefaults.standard
+        guard
+            let raw  = prefs.string(forKey: key),
+            let data = raw.data(using: .utf8),
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let user = json["user"] as? [String: Any],
+            let uid  = user["id"] as? String
+        else {
+            print("[OneSignal] no Supabase session found in CapacitorStorage suite")
+            return
+        }
+        OneSignal.login(uid)
+        print("[OneSignal] linked userId:", uid)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -30,7 +60,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // Re-link OneSignal user on every foreground (handles login after first launch)
+        linkOneSignalUser()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
