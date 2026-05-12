@@ -1,82 +1,89 @@
 import UIKit
 import Capacitor
 import OneSignalFramework
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    // Guard against adding the WKScriptMessageHandler more than once
+    // (applicationDidBecomeActive fires on every foreground transition).
+    private var sayItBridgeInstalled = false
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialise OneSignal — must happen before the app finishes launching
         OneSignal.initialize("6c42b899-7188-4e29-9056-b9c316bc0c74", withLaunchOptions: launchOptions)
         // Ask for notification permission (shows system dialog once)
         OneSignal.Notifications.requestPermission({ _ in }, fallbackToSettings: true)
-        // Link after a short delay to allow WebView to initialize Capacitor Preferences
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            self.linkOneSignalUser()
-        }
         return true
     }
 
-    /// Reads the Supabase session from Capacitor Preferences (UserDefaults)
-    /// and calls OneSignal.login() with the user's UUID — no JS bridge needed.
-    private func linkOneSignalUser() {
-        let baseKey = "sb-yvsglotmanqmvcogbbkf-auth-token"
-        // Try both storage locations @capacitor/preferences may use
-        let candidates: [(UserDefaults, String)] = [
-            (UserDefaults.standard, "CapacitorStorage.\(baseKey)"),
-            (UserDefaults.standard, baseKey),
-            (UserDefaults(suiteName: "CapacitorStorage") ?? UserDefaults.standard, baseKey),
-        ]
-        for (store, key) in candidates {
-            if let raw  = store.string(forKey: key),
-               let data = raw.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let user = json["user"] as? [String: Any],
-               let uid  = user["id"] as? String {
-                OneSignal.login(uid)
-                print("[OneSignal] linked userId:", uid, "via key:", key)
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Install the WebKit message handler the first time the app becomes active.
+        // By this point CAPBridgeViewController.viewDidLoad has already run and the
+        // WKWebView exists — so bridge?.webView is non-nil.
+        installSayItBridge()
+    }
+
+    // ── WKScriptMessageHandler installation ─────────────────────────────────
+    // JS calls: window.webkit.messageHandlers.sayitBridge.postMessage({...})
+    // This completely bypasses Capacitor's plugin routing — no UNIMPLEMENTED.
+    private func installSayItBridge() {
+        guard !sayItBridgeInstalled else { return }
+
+        // Give the Capacitor bridge one run-loop tick to finish viewDidLoad
+        // before we try to access it (safety net for very fast launches).
+        DispatchQueue.main.async {
+            guard let bridgeVC = self.window?.rootViewController as? CAPBridgeViewController,
+                  let webView  = bridgeVC.bridge?.webView
+            else {
+                print("[SayItBridge] webView not ready yet — will retry on next foreground")
                 return
             }
+            webView.configuration.userContentController.add(self, name: "sayitBridge")
+            self.sayItBridgeInstalled = true
+            print("[SayItBridge] WKScriptMessageHandler installed ✓")
         }
-        print("[OneSignal] session not found — keys tried:", candidates.map { $0.1 })
-    }
-
-    func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
-    }
-
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        // Re-link OneSignal user on every foreground (handles login after first launch)
-        linkOneSignalUser()
-    }
-
-    func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        // Called when the app was launched with an activity, including Universal Links.
-        // Feel free to add additional processing here, but if you want the App API to support
-        // tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    func applicationWillResignActive(_ application: UIApplication) {}
+    func applicationDidEnterBackground(_ application: UIApplication) {}
+    func applicationWillEnterForeground(_ application: UIApplication) {}
+    func applicationWillTerminate(_ application: UIApplication) {}
+}
+
+// ── Handle messages from JS ──────────────────────────────────────────────────
+extension AppDelegate: WKScriptMessageHandler {
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        guard message.name == "sayitBridge",
+              let body   = message.body as? [String: Any],
+              let action = body["action"] as? String
+        else { return }
+
+        switch action {
+        case "linkOneSignal":
+            if let userId = body["userId"] as? String, !userId.isEmpty {
+                OneSignal.login(userId)
+                print("[OneSignal] linked userId:", userId)
+            }
+        case "logoutOneSignal":
+            OneSignal.logout()
+            print("[OneSignal] logged out")
+        default:
+            break
+        }
+    }
 }
