@@ -185,8 +185,12 @@ function LoginInner() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col px-6 py-10"
-      style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}>
+    <div className="min-h-dvh flex flex-col px-6"
+      style={{
+        background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)",
+        paddingTop: "calc(env(safe-area-inset-top, 44px) + 20px)",
+        paddingBottom: 40,
+      }}>
 
       {/* Logo */}
       <div className="flex flex-col items-center mb-7 gap-2">
@@ -222,24 +226,34 @@ function LoginInner() {
                 </button>
                 {showCCDropdown && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowCCDropdown(false)} />
-                    <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50" style={{ width: 220, maxHeight: 320 }}>
-                      <div className="px-3 py-2 border-b border-gray-50 flex items-center gap-2">
-                        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-40 bg-black/40" onClick={() => { setShowCCDropdown(false); setCcQuery(""); }} />
+                    {/* Bottom sheet — sits above keyboard on both iOS and Android */}
+                    <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col"
+                      style={{ maxHeight: "65vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                      {/* Handle bar */}
+                      <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0" />
+                      <p className="text-center text-sm font-bold text-gray-700 py-2 flex-shrink-0">Select Country</p>
+                      {/* Search bar */}
+                      <div className="px-4 pb-3 border-b border-gray-100 flex items-center gap-2 flex-shrink-0">
+                        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <input type="text" placeholder="Search country…" value={ccQuery}
                           onChange={e => setCcQuery(e.target.value)}
-                          className="flex-1 text-sm outline-none text-gray-700" autoFocus />
+                          className="flex-1 text-sm outline-none text-gray-700 py-1"
+                          style={{ background: "transparent" }} />
                       </div>
-                      <div style={{ overflowY: "auto", maxHeight: 264 }}>
+                      {/* Country list */}
+                      <div style={{ overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
                         {COUNTRY_CODES
                           .filter(c => !ccQuery || c.name.toLowerCase().includes(ccQuery.toLowerCase()) || c.code.includes(ccQuery))
                           .map((c, idx) => (
                             <button key={`${c.code}-${idx}`} type="button"
                               onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); setCcQuery(""); }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50 text-left"
+                              className="w-full flex items-center gap-3 px-5 py-3 text-sm text-left active:bg-gray-50"
                               style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
-                              <span>{c.flag}</span><span className="flex-1">{c.name}</span>
-                              <span className="text-gray-400 text-xs">{c.code}</span>
+                              <span className="text-lg">{c.flag}</span>
+                              <span className="flex-1">{c.name}</span>
+                              <span className="text-gray-400 text-xs font-medium">{c.code}</span>
                             </button>
                           ))}
                       </div>

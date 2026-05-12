@@ -60,6 +60,9 @@ body {
   background: #f5f6f7;
   position: relative;
   box-shadow: 0 0 40px rgba(0,0,0,0.15);
+  /* clip (not hidden) prevents horizontal overflow without creating a  */
+  /* scroll container — fixes Android right-margin slippery scroll bug  */
+  overflow-x: clip;
 }
 
 /* ── Page content ─────────────────────────────────────────────────── */

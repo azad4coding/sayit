@@ -172,8 +172,12 @@ function RegisterInner() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col px-6 py-10"
-      style={{ background: "linear-gradient(160deg, #FFF5F7 0%, #F8F0FF 100%)" }}>
+    <div className="min-h-dvh flex flex-col px-6"
+      style={{
+        background: "linear-gradient(160deg, #FFF5F7 0%, #F8F0FF 100%)",
+        paddingTop: "calc(env(safe-area-inset-top, 44px) + 20px)",
+        paddingBottom: 40,
+      }}>
 
       {/* Card received banner */}
       {fromCard && (
@@ -240,18 +244,26 @@ function RegisterInner() {
                       <ChevronDown className="w-3 h-3 text-gray-400" />
                     </button>
                     {showCCDropdown && (
-                      <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50" style={{ minWidth: 180 }}>
-                        {COUNTRY_CODES.map(c => (
-                          <button key={c.code} type="button"
-                            onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 text-left"
-                            style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
-                            <span>{c.flag}</span>
-                            <span>{c.name}</span>
-                            <span className="ml-auto text-gray-400 text-xs">{c.code}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <>
+                        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowCCDropdown(false)} />
+                        <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl flex flex-col"
+                          style={{ maxHeight: "65vh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+                          <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mt-3 mb-1 flex-shrink-0" />
+                          <p className="text-center text-sm font-bold text-gray-700 py-2 flex-shrink-0">Select Country</p>
+                          <div style={{ overflowY: "auto", flex: 1, WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+                            {COUNTRY_CODES.map(c => (
+                              <button key={c.code} type="button"
+                                onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); }}
+                                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-left active:bg-gray-50"
+                                style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? accent : "#333" }}>
+                                <span className="text-lg">{c.flag}</span>
+                                <span className="flex-1">{c.name}</span>
+                                <span className="text-gray-400 text-xs font-medium">{c.code}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                   <input
