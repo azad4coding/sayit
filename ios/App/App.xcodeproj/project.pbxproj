@@ -21,6 +21,7 @@
 		D2DC0E9F2FB37BC1000D4795 /* OneSignalLocation in Frameworks */ = {isa = PBXBuildFile; productRef = D2DC0E9E2FB37BC1000D4795 /* OneSignalLocation */; };
 		D2DC0EA22FB37EDF000D4795 /* OneSignalPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DC0EA12FB37EDF000D4795 /* OneSignalPlugin.swift */; };
 		D2DC0EB12FB37EDF000D4795 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DC0EB02FB37EDF000D4795 /* ViewController.swift */; };
+		D2DC0EC12FB37EDF000D4795 /* ContactsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DC0E952FB26C88000D4795 /* ContactsPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -189,6 +190,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				D2DC0EA22FB37EDF000D4795 /* OneSignalPlugin.swift in Sources */,
 				D2DC0EB12FB37EDF000D4795 /* ViewController.swift in Sources */,
+				D2DC0EC12FB37EDF000D4795 /* ContactsPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

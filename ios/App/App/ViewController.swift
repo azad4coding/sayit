@@ -3,22 +3,30 @@ import Capacitor
 import OneSignalFramework
 import WebKit
 
-/// Custom bridge view controller.
-/// Instead of fighting Capacitor's plugin-discovery system, we attach a
-/// WKScriptMessageHandler directly to the WebView. JS can then call:
-///   window.webkit.messageHandlers.sayitBridge.postMessage({...})
-/// without going through the Capacitor plugin bridge at all.
+// @objc(ViewController) is REQUIRED — the storyboard resolves customClass via
+// NSClassFromString("ViewController"). Without this attribute, Swift mangles
+// the name to "_TtC3App14ViewController" and UIKit can't find the class,
+// which causes the black-screen crash we saw previously.
+@objc(ViewController)
 class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
 
     override func capacitorDidLoad() {
-        // bridge?.webView is the WKWebView Capacitor creates for us.
-        // Adding a message handler here is safe — capacitorDidLoad fires
-        // after the bridge and WebView are fully initialised.
+        // 1. Register ContactsPlugin explicitly.
+        //    CAPBridgedPlugin auto-discovery only works for SPM-distributed plugins,
+        //    not app-local plugins living in the app target. Must register here.
+        bridge?.registerPluginInstance(ContactsPlugin())
+
+        // 2. Add WKScriptMessageHandler for OneSignal user linking.
+        //    Bypasses Capacitor plugin routing entirely — fire-and-forget, no
+        //    UNIMPLEMENTED errors. JS calls:
+        //    window.webkit.messageHandlers.sayitBridge.postMessage({...})
         bridge?.webView?.configuration.userContentController
             .add(self, name: "sayitBridge")
-        print("[SayItBridge] WKScriptMessageHandler registered")
+
+        print("[ViewController] capacitorDidLoad ✓ — ContactsPlugin + sayitBridge ready")
     }
 
+    // ── Handle messages from JS (OneSignal user linking) ─────────────────────
     func userContentController(
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
@@ -28,12 +36,17 @@ class ViewController: CAPBridgeViewController, WKScriptMessageHandler {
               let action = body["action"] as? String
         else { return }
 
-        if action == "linkOneSignal", let userId = body["userId"] as? String {
-            OneSignal.login(userId)
-            print("[OneSignal] WKMessage linked userId:", userId)
-        } else if action == "logoutOneSignal" {
+        switch action {
+        case "linkOneSignal":
+            if let userId = body["userId"] as? String, !userId.isEmpty {
+                OneSignal.login(userId)
+                print("[OneSignal] linked userId:", userId)
+            }
+        case "logoutOneSignal":
             OneSignal.logout()
-            print("[OneSignal] WKMessage logout")
+            print("[OneSignal] logged out")
+        default:
+            break
         }
     }
 }
