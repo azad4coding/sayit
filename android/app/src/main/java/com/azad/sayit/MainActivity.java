@@ -12,6 +12,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Register OneSignal plugin before super.onCreate
+        registerPlugin(OneSignalPlugin.class);
+
         super.onCreate(savedInstanceState);
 
         OneSignal.getDebug().setLogLevel(LogLevel.NONE);
