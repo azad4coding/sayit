@@ -307,9 +307,19 @@ function ThreadView({
                           <span className="text-[9px] font-medium" style={{ color: isSent ? "#C9A84C" : "#66BB6A" }}>
                             · {category}
                           </span>
+                          {isSent && card.viewed_at && (
+                            <span className="text-[9px] font-semibold flex items-center gap-0.5" style={{ color: "#3B82F6" }}>
+                              · 👁 Seen
+                            </span>
+                          )}
                         </div>
 
-                        <p className="text-[10px] mt-1.5" style={{ color: "#bbb" }}>{timeAgo(card.created_at)}</p>
+                        <p className="text-[10px] mt-1.5" style={{ color: "#bbb" }}>
+                          {timeAgo(card.created_at)}
+                          {isSent && card.viewed_at && (
+                            <span style={{ color: "#93C5FD" }}> · seen {timeAgo(card.viewed_at)}</span>
+                          )}
+                        </p>
                       </div>
                     </div>
                   </button>

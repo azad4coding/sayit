@@ -612,12 +612,20 @@ function CardPageInner() {
 
   useEffect(() => {
     if (!isViewMode && !startEnvelope) return;
-    createClient().auth.getUser().then(({ data }) => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data }) => {
       const uid = data.user?.id ?? null;
       setUserId(uid);
       if (startEnvelope) {
-        // Registered users skip envelope; non-registered see it
         setStage(uid ? 'card' : 'envelope');
+      }
+      // Mark card as viewed when a recipient opens it through the in-app history
+      if (isReceived && viewCardId) {
+        sb.from('sent_cards')
+          .update({ viewed_at: new Date().toISOString() })
+          .eq('id', viewCardId)
+          .is('viewed_at', null)   // only write once — don't overwrite first-view time
+          .then(() => {});
       }
     });
   }, [isViewMode, startEnvelope]);
