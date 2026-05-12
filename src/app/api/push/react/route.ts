@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { webpush } from "@/lib/webpush";
+import { sendPush } from "@/lib/onesignal-server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,7 @@ const anonClient = createClient(
 // Body: { cardId: string, emoji: string }
 // Auth: Bearer <supabase access token>
 //
-// Looks up the card's sender and fires a push notification to them:
-//   "{reactorName} reacted {emoji} to your card"
+// Notifies the card sender that someone reacted to their card.
 export async function POST(req: NextRequest) {
   // ── 1. Auth check ───────────────────────────────────────────────────────
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
@@ -36,53 +35,32 @@ export async function POST(req: NextRequest) {
 
   // ── 3. Look up card sender + reactor name in parallel ──────────────────
   const [cardRes, reactorRes] = await Promise.all([
-    supabase.from("sent_cards").select("sender_id, code").eq("id", cardId).single(),
+    supabase.from("sent_cards").select("sender_id, short_code").eq("id", cardId).single(),
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),
   ]);
 
-  const senderId   = cardRes.data?.sender_id;
-  const cardCode   = cardRes.data?.code;
+  const senderId    = cardRes.data?.sender_id;
+  const cardCode    = cardRes.data?.short_code;
   const reactorName = reactorRes.data?.full_name?.trim() || "Someone";
 
-  // Don't notify if reactor IS the sender (they're reacting to their own card)
+  // Don't notify if the reactor IS the sender
   if (!senderId || senderId === user.id) {
     return NextResponse.json({ ok: true, reason: "self-reaction or no sender" });
   }
 
-  // ── 4. Look up all push subscriptions for the sender ──────────────────
-  // We store one subscription per user, but query as array to future-proof
-  // for multi-device support without changing this code.
-  const { data: subs } = await supabase
-    .from("push_subscriptions")
-    .select("subscription")
-    .eq("user_id", senderId);
-
-  if (!subs?.length) return NextResponse.json({ ok: true, reason: "no subscription" });
-
-  const payload = JSON.stringify({
-    type:  "reaction",
+  // ── 4. Send via OneSignal ───────────────────────────────────────────────
+  const result = await sendPush({
+    recipientUserIds: [senderId],
     title: reactorName,
     body:  `Reacted ${emoji} to your card`,
-    url:   cardCode ? `/card/${cardCode}?view=true&cardId=${cardId}&direction=sent` : "/wishes",
+    data: {
+      type:     "reaction",
+      cardCode: cardCode ?? "",
+      url: cardCode
+        ? `/card/${cardCode}?view=true&cardId=${cardId}&direction=sent`
+        : "/wishes",
+    },
   });
 
-  // ── 5. Fan out to all devices ──────────────────────────────────────────
-  const results = await Promise.allSettled(
-    subs.map(async ({ subscription }) => {
-      try {
-        await webpush.sendNotification(subscription, payload);
-      } catch (err: any) {
-        // 410 Gone — subscription expired, remove it
-        if (err.statusCode === 410) {
-          await supabase.from("push_subscriptions").delete()
-            .eq("user_id", senderId)
-            .eq("subscription", subscription);
-        }
-        throw err;
-      }
-    })
-  );
-
-  const sent = results.filter(r => r.status === "fulfilled").length;
-  return NextResponse.json({ ok: true, sent });
+  return NextResponse.json({ ok: result.ok, error: result.error });
 }

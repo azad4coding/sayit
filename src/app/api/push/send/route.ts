@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { webpush } from "@/lib/webpush";
+import { sendPush } from "@/lib/onesignal-server";
 
 export const dynamic = "force-dynamic";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const anonClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +13,9 @@ const anonClient = createClient(
 // Body: { recipientId: string, senderName?: string, cardCode?: string }
 // Auth: Bearer <supabase access token>
 //
-// Sends a "you received a card" push to all of the recipient's devices.
+// Sends a "you received a card" push notification to the recipient via OneSignal.
+// OneSignal targets the device by external_id (= Supabase user UUID),
+// so no subscription objects need to be stored.
 export async function POST(req: NextRequest) {
   // ── 1. Auth guard ───────────────────────────────────────────────────────
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
@@ -34,37 +31,22 @@ export async function POST(req: NextRequest) {
   const { recipientId, senderName, cardCode } = body;
   if (!recipientId) return NextResponse.json({ error: "Missing recipientId" }, { status: 400 });
 
-  // ── 3. Look up all subscriptions for this recipient ─────────────────────
-  const { data: subs } = await supabase
-    .from("push_subscriptions")
-    .select("subscription")
-    .eq("user_id", recipientId);
+  // Don't send a notification to yourself
+  if (recipientId === user.id) return NextResponse.json({ ok: true, reason: "self-send" });
 
-  if (!subs?.length) return NextResponse.json({ ok: true, reason: "no subscription" });
-
-  const payload = JSON.stringify({
-    type:  "card",
+  // ── 3. Send via OneSignal ───────────────────────────────────────────────
+  const result = await sendPush({
+    recipientUserIds: [recipientId],
     title: senderName || "SayIt",
     body:  "Sent you a card 💌",
-    url:   cardCode ? `/card/${cardCode}?view=true&startEnvelope=true&direction=received` : "/history",
+    data: {
+      type:     "card",
+      cardCode: cardCode ?? "",
+      url: cardCode
+        ? `/card/${cardCode}?view=true&startEnvelope=true&direction=received`
+        : "/history",
+    },
   });
 
-  // ── 4. Fan out to all devices ──────────────────────────────────────────
-  const results = await Promise.allSettled(
-    subs.map(async ({ subscription }) => {
-      try {
-        await webpush.sendNotification(subscription, payload);
-      } catch (err: any) {
-        if (err.statusCode === 410) {
-          await supabase.from("push_subscriptions").delete()
-            .eq("user_id", recipientId)
-            .eq("subscription", subscription);
-        }
-        throw err;
-      }
-    })
-  );
-
-  const sent = results.filter(r => r.status === "fulfilled").length;
-  return NextResponse.json({ ok: true, sent });
+  return NextResponse.json({ ok: result.ok, error: result.error });
 }

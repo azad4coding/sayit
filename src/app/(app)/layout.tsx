@@ -48,9 +48,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTitleBar,  setShowTitleBar]  = useState(false);
   const lastNavTimeRef  = useRef(0);
 
-  const sentCardIds       = useRef<Set<string>>(new Set());
-  const userIdRef         = useRef<string | null>(null);
-  const [showPushBanner, setShowPushBanner] = useState(false);
+  const sentCardIds = useRef<Set<string>>(new Set());
+  const userIdRef   = useRef<string | null>(null);
 
   // ── Auth session gate ─────────────────────────────────────────────────────
   // On native iOS, @capacitor/preferences is async. Supabase fires
@@ -140,68 +139,53 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
-  // ── Register service worker + check push permission on mount ────────────
+  // ── OneSignal push notifications (native iOS + Android only) ────────────
+  // Web Push (PushManager) is unavailable in Capacitor WKWebView, so we use
+  // the OneSignal Capacitor plugin which goes through APNs / FCM natively.
+  // The plugin is lazy-imported so it doesn't crash on web/SSR.
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
-    async function checkPush() {
+    async function initOneSignal() {
       try {
-        // Register SW silently (no permission prompt here)
-        await navigator.serviceWorker.register("/sw.js");
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;  // skip on web
 
-        const permission = (Notification as any).permission;
-        if (permission === "granted") {
-          // Already granted — subscribe silently
-          await subscribePush();
-        } else if (permission === "default") {
-          // Not yet asked — show banner so user can tap to enable
-          setShowPushBanner(true);
-        }
-        // "denied" → do nothing
-      } catch { /* not supported */ }
+        const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+        if (!appId) { console.warn("[OneSignal] NEXT_PUBLIC_ONESIGNAL_APP_ID not set"); return; }
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error — onesignal-capacitor installed after npm install
+        const OneSignal = (await import("onesignal-capacitor")).default;
+
+        // Initialise the SDK
+        OneSignal.initialize(appId);
+
+        // Get the logged-in user so we can link their Supabase ID to the device
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // login() sets the external_id on OneSignal — this is how the server
+        // targets this specific user when sending a notification
+        await OneSignal.login(user.id);
+
+        // Ask for permission — shows the system "Allow Notifications?" dialog.
+        // On iOS this can only be shown once; subsequent calls are no-ops.
+        const { value: accepted } = await OneSignal.Notifications.requestPermission(true);
+        console.log("[OneSignal] permission:", accepted ? "granted" : "denied");
+
+        // Handle notification tap — navigate to the relevant screen
+        OneSignal.Notifications.addEventListener("click", (event: any) => {
+          const url = event?.notification?.additionalData?.url as string | undefined;
+          if (url) router.push(url);
+        });
+
+      } catch (err) {
+        // Plugin not installed or native bridge not available — safe to ignore
+        console.warn("[OneSignal] init skipped:", err);
+      }
     }
 
-    checkPush();
+    initOneSignal();
   }, []);
-
-  // Called when user taps the "Enable notifications" banner
-  async function subscribePush() {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const permission = await Notification.requestPermission();
-      setShowPushBanner(false);
-      if (permission !== "granted") return;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { alert("[Push] no user logged in"); return; }
-
-      const existing = await reg.pushManager.getSubscription();
-
-      // Convert base64url VAPID key → Uint8Array (required on iOS Safari)
-      const rawKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-      if (!rawKey) { alert("[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing"); return; }
-      const padding  = "=".repeat((4 - rawKey.length % 4) % 4);
-      const base64   = (rawKey + padding).replace(/-/g, "+").replace(/_/g, "/");
-      const binary   = atob(base64);
-      const keyBytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) keyBytes[i] = binary.charCodeAt(i);
-
-      const subscription = existing ?? await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: keyBytes,
-      });
-
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription, userId: user.id }),
-      });
-      const json = await res.json();
-      if (!res.ok) alert("[Push] subscribe API error: " + JSON.stringify(json));
-    } catch (err: any) {
-      alert("[Push] error: " + (err?.message ?? String(err)));
-    }
-  }
 
   useEffect(() => {
     async function check() {
@@ -346,25 +330,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* ── Push notification enable banner ── */}
-      {showPushBanner && (
-        <button
-          onClick={subscribePush}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            width: "100%", padding: "10px 16px", border: "none", cursor: "pointer",
-            background: "linear-gradient(90deg,#9B59B6,#FF6B8A)",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: 18 }}>🔔</span>
-          <div style={{ flex: 1, textAlign: "left" }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "white" }}>Enable notifications</p>
-            <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.8)" }}>Get notified when someone sends you a card</p>
-          </div>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>Tap →</span>
-        </button>
-      )}
+      {/* Push permission is requested by OneSignal natively — no banner needed */}
 
       <main className="page-content">{children}</main>
 
