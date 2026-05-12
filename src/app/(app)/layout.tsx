@@ -139,26 +139,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
-  // ── OneSignal push notifications (native iOS only) ───────────────────────
-  // OneSignal is initialised natively in AppDelegate.swift (APNs setup).
-  // Here we only link the logged-in user's Supabase UUID as the OneSignal
-  // external_id so the server can target them by user ID when sending pushes.
+  // ── OneSignal push notifications (native iOS + Android) ──────────────────
+  // OneSignal is initialised natively in AppDelegate.swift / MainActivity.java.
+  // Here we link the logged-in user's Supabase UUID as the OneSignal external_id
+  // so the server can target them by user ID when sending pushes.
   useEffect(() => {
     async function linkOneSignalUser() {
       try {
-        const { Capacitor } = await import("@capacitor/core");
-        if (!Capacitor.isNativePlatform()) return;  // skip on web
+        const { Capacitor, registerPlugin } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform()) return;
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Call our thin native Capacitor plugin to set the external_id
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { Plugins } = Capacitor as any;
-        if (Plugins?.OneSignalPlugin?.login) {
-          await Plugins.OneSignalPlugin.login({ userId: user.id });
-          console.log("[OneSignal] linked userId:", user.id);
-        }
+        // registerPlugin creates a typed bridge to our native OneSignalPlugin
+        const OneSignalPlugin = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("OneSignalPlugin");
+        await OneSignalPlugin.login({ userId: user.id });
+        console.log("[OneSignal] linked userId:", user.id);
       } catch (err) {
         console.warn("[OneSignal] user link skipped:", err);
       }
