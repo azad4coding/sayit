@@ -15,6 +15,11 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		D2DC0E992FB37BC1000D4795 /* OneSignalExtension in Frameworks */ = {isa = PBXBuildFile; productRef = D2DC0E982FB37BC1000D4795 /* OneSignalExtension */; };
+		D2DC0E9B2FB37BC1000D4795 /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = D2DC0E9A2FB37BC1000D4795 /* OneSignalFramework */; };
+		D2DC0E9D2FB37BC1000D4795 /* OneSignalInAppMessages in Frameworks */ = {isa = PBXBuildFile; productRef = D2DC0E9C2FB37BC1000D4795 /* OneSignalInAppMessages */; };
+		D2DC0E9F2FB37BC1000D4795 /* OneSignalLocation in Frameworks */ = {isa = PBXBuildFile; productRef = D2DC0E9E2FB37BC1000D4795 /* OneSignalLocation */; };
+		D2DC0EA22FB37EDF000D4795 /* OneSignalPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DC0EA12FB37EDF000D4795 /* OneSignalPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +35,7 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		D2DC0E952FB26C88000D4795 /* ContactsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsPlugin.swift; sourceTree = "<group>"; };
 		D2DC0E962FB377CA000D4795 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
+		D2DC0EA12FB37EDF000D4795 /* OneSignalPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSignalPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +44,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+				D2DC0E9F2FB37BC1000D4795 /* OneSignalLocation in Frameworks */,
+				D2DC0E9B2FB37BC1000D4795 /* OneSignalFramework in Frameworks */,
+				D2DC0E9D2FB37BC1000D4795 /* OneSignalInAppMessages in Frameworks */,
+				D2DC0E992FB37BC1000D4795 /* OneSignalExtension in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,6 +76,7 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				D2DC0EA12FB37EDF000D4795 /* OneSignalPlugin.swift */,
 				D2DC0E962FB377CA000D4795 /* App.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -104,6 +115,10 @@
 			name = App;
 			packageProductDependencies = (
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
+				D2DC0E982FB37BC1000D4795 /* OneSignalExtension */,
+				D2DC0E9A2FB37BC1000D4795 /* OneSignalFramework */,
+				D2DC0E9C2FB37BC1000D4795 /* OneSignalInAppMessages */,
+				D2DC0E9E2FB37BC1000D4795 /* OneSignalLocation */,
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
@@ -136,6 +151,7 @@
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
 				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
+				D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -168,6 +184,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				D2DC0EA22FB37EDF000D4795 /* OneSignalPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -385,11 +402,42 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/OneSignal/OneSignal-iOS-SDK";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		4D22ABE82AF431CB00220026 /* CapApp-SPM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
 			productName = "CapApp-SPM";
+		};
+		D2DC0E982FB37BC1000D4795 /* OneSignalExtension */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */;
+			productName = OneSignalExtension;
+		};
+		D2DC0E9A2FB37BC1000D4795 /* OneSignalFramework */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */;
+			productName = OneSignalFramework;
+		};
+		D2DC0E9C2FB37BC1000D4795 /* OneSignalInAppMessages */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */;
+			productName = OneSignalInAppMessages;
+		};
+		D2DC0E9E2FB37BC1000D4795 /* OneSignalLocation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2DC0E972FB37BC1000D4795 /* XCRemoteSwiftPackageReference "OneSignal-iOS-SDK" */;
+			productName = OneSignalLocation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -139,54 +139,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
-  // ── OneSignal push notifications (native iOS + Android only) ────────────
-  // Web Push (PushManager) is unavailable in Capacitor WKWebView, so we use
-  // the OneSignal Capacitor plugin which goes through APNs / FCM natively.
-  // The plugin is lazy-imported so it doesn't crash on web/SSR.
+  // ── OneSignal push notifications (native iOS only) ───────────────────────
+  // OneSignal is initialised natively in AppDelegate.swift (APNs setup).
+  // Here we only link the logged-in user's Supabase UUID as the OneSignal
+  // external_id so the server can target them by user ID when sending pushes.
   useEffect(() => {
-    async function initOneSignal() {
+    async function linkOneSignalUser() {
       try {
         const { Capacitor } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;  // skip on web
 
-        const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-        if (!appId) { console.warn("[OneSignal] NEXT_PUBLIC_ONESIGNAL_APP_ID not set"); return; }
-
-        // webpackIgnore: true prevents Vercel from trying to bundle this —
-        // it only runs on native Capacitor, never on the server or in a browser.
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error — onesignal-cordova-plugin installed via npm install onesignal-cordova-plugin
-        const OneSignal = (await import(/* webpackIgnore: true */ "onesignal-cordova-plugin")).default;
-
-        // Initialise the SDK
-        OneSignal.initialize(appId);
-
-        // Get the logged-in user so we can link their Supabase ID to the device
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // login() sets the external_id on OneSignal — this is how the server
-        // targets this specific user when sending a notification
-        await OneSignal.login(user.id);
-
-        // Ask for permission — shows the system "Allow Notifications?" dialog.
-        // On iOS this can only be shown once; subsequent calls are no-ops.
-        const { value: accepted } = await OneSignal.Notifications.requestPermission(true);
-        console.log("[OneSignal] permission:", accepted ? "granted" : "denied");
-
-        // Handle notification tap — navigate to the relevant screen
-        OneSignal.Notifications.addEventListener("click", (event: any) => {
-          const url = event?.notification?.additionalData?.url as string | undefined;
-          if (url) router.push(url);
-        });
-
+        // Call our thin native Capacitor plugin to set the external_id
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { Plugins } = Capacitor as any;
+        if (Plugins?.OneSignalPlugin?.login) {
+          await Plugins.OneSignalPlugin.login({ userId: user.id });
+          console.log("[OneSignal] linked userId:", user.id);
+        }
       } catch (err) {
-        // Plugin not installed or native bridge not available — safe to ignore
-        console.warn("[OneSignal] init skipped:", err);
+        console.warn("[OneSignal] user link skipped:", err);
       }
     }
 
-    initOneSignal();
+    linkOneSignalUser();
   }, []);
 
   useEffect(() => {
