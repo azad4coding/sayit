@@ -155,8 +155,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         // webpackIgnore: true prevents Vercel from trying to bundle this —
         // it only runs on native Capacitor, never on the server or in a browser.
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error — onesignal-capacitor installed via npm install onesignal-capacitor
-        const OneSignal = (await import(/* webpackIgnore: true */ "onesignal-capacitor")).default;
+        // @ts-expect-error — onesignal-cordova-plugin installed via npm install onesignal-cordova-plugin
+        const OneSignal = (await import(/* webpackIgnore: true */ "onesignal-cordova-plugin")).default;
 
         // Initialise the SDK
         OneSignal.initialize(appId);
