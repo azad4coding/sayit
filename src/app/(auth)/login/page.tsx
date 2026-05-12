@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { Heart, ChevronDown, Search } from "lucide-react";
+import { requestContactsPermission } from "@/lib/contacts";
 
 const COUNTRY_CODES = [
   { code: "+91",  flag: "🇮🇳", name: "India" },
@@ -174,6 +175,8 @@ function LoginInner() {
         body: JSON.stringify({ userId: uid, phone: fullPhone }),
       });
     }
+    // Request contacts permission — no-op if already granted/denied permanently
+    await requestContactsPermission();
     redirectAfterAuth();
   }
 
