@@ -155,8 +155,18 @@ function LoginInner() {
     // Check if user already has a name; if not, show name step
     const uid = data.user?.id;
     if (uid) {
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", uid).single();
+      const { data: profile } = await supabase.from("profiles").select("full_name, phone").eq("id", uid).single();
+
+      // Always sync the phone into the profiles table (login never saved it before)
+      if (!profile?.phone) {
+        await supabase.from("profiles").upsert(
+          { id: uid, phone: fullPhone },
+          { onConflict: "id" },
+        );
+      }
+
       if (!profile?.full_name) { setStep("name"); return; }
+
       // Resolve any pending My Circle requests for this phone number
       await fetch("/api/circle/resolve", {
         method: "POST",
@@ -171,10 +181,20 @@ function LoginInner() {
     const trimmed = nameInput.trim();
     if (!trimmed) { setError("Please enter your name"); return; }
     setLoading(true); setError("");
+    const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, "")}`;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("profiles").upsert({ id: user.id, full_name: trimmed }, { onConflict: "id" });
+      // Save name AND phone together so profiles table is always complete
+      await supabase.from("profiles").upsert(
+        { id: user.id, full_name: trimmed, phone: fullPhone },
+        { onConflict: "id" },
+      );
       await supabase.auth.updateUser({ data: { full_name: trimmed } });
+      await fetch("/api/circle/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, phone: fullPhone }),
+      });
     }
     setLoading(false);
     redirectAfterAuth();

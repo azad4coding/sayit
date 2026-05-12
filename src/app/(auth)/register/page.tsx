@@ -183,14 +183,18 @@ function RegisterInner() {
     const { data, error } = await supabase.auth.verifyOtp({ phone: fullPhone, token, type: "sms" });
     if (error) { setError(error.message); setLoading(false); return; }
 
-    // Save name to profile
+    // Save name + phone to profile
     if (data.user) {
-      await supabase.from("profiles").upsert({
-        id:        data.user.id,
-        full_name: name.trim(),
-        phone:     fullPhone,
-      });
+      // updateUser first so the trigger (if any) fires before our write
       await supabase.auth.updateUser({ data: { full_name: name.trim() } });
+
+      // Upsert profile — explicit onConflict ensures UPDATE path always runs
+      const { error: upsertErr } = await supabase.from("profiles").upsert(
+        { id: data.user.id, full_name: name.trim(), phone: fullPhone },
+        { onConflict: "id" },
+      );
+      if (upsertErr) console.error("[register] profiles upsert failed:", upsertErr.message);
+
       // Resolve any pending My Circle requests for this phone number
       await fetch("/api/circle/resolve", {
         method: "POST",
