@@ -157,9 +157,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         console.log("[OneSignal] current user:", user?.id ?? "none");
         if (!user) return;
 
-        // registerPlugin creates a typed bridge to our native OneSignalPlugin
-        const OneSignalPlugin = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("OneSignalPlugin");
-        await OneSignalPlugin.login({ userId: user.id });
+        // registerPlugin creates a typed bridge to our native SayItOSBridge plugin
+        const SayItOSBridge = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("SayItOSBridge");
+        await SayItOSBridge.login({ userId: user.id });
         console.log("[OneSignal] linked userId:", user.id);
       } catch (err) {
         console.warn("[OneSignal] user link skipped:", err);
