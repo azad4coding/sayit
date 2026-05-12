@@ -152,9 +152,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
         if (!appId) { console.warn("[OneSignal] NEXT_PUBLIC_ONESIGNAL_APP_ID not set"); return; }
 
+        // webpackIgnore: true prevents Vercel from trying to bundle this —
+        // it only runs on native Capacitor, never on the server or in a browser.
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error — onesignal-capacitor installed after npm install
-        const OneSignal = (await import("onesignal-capacitor")).default;
+        // @ts-expect-error — onesignal-capacitor installed via npm install onesignal-capacitor
+        const OneSignal = (await import(/* webpackIgnore: true */ "onesignal-capacitor")).default;
 
         // Initialise the SDK
         OneSignal.initialize(appId);
