@@ -143,15 +143,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // OneSignal is initialised natively in AppDelegate.swift / MainActivity.java.
   // Here we link the logged-in user's Supabase UUID as the OneSignal external_id
   // so the server can target them by user ID when sending pushes.
+  // Run only after auth check completes (checking = false) so user is guaranteed
   useEffect(() => {
+    if (checking) return;  // wait for auth to finish
     async function linkOneSignalUser() {
       try {
         const { Capacitor, registerPlugin } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prefsAvailable = !!(window as any).Capacitor?.Plugins?.Preferences;
-        console.log("[OneSignal] Capacitor.Plugins.Preferences available:", prefsAvailable);
 
         const { data: { user } } = await supabase.auth.getUser();
         console.log("[OneSignal] current user:", user?.id ?? "none");
@@ -165,9 +163,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         console.warn("[OneSignal] user link skipped:", err);
       }
     }
-
     linkOneSignalUser();
-  }, []);
+  }, [checking]);
 
   useEffect(() => {
     async function check() {
