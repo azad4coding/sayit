@@ -304,16 +304,32 @@ function SendPageInner() {
       const myPhone = ensurePlus(user.phone ?? (profile as any)?.phone ?? "") || "";
       const withoutPlus = myPhone.replace(/^\+/, "");
 
-      const { data: recipientSentToMe } = await supabase
-        .from("sent_cards")
-        .select("id")
-        .eq("sender_id", foundUser.id)
-        .or(
-          myPhone
-            ? `recipient_id.eq.${user.id},recipient_phone.eq.${myPhone},recipient_phone.eq.${withoutPlus}`
-            : `recipient_id.eq.${user.id}`
-        )
-        .limit(1);
+      const recipientPhone      = foundUser.phone ?? fullPhone;
+      const recipientPhoneNaked = recipientPhone.replace(/^\+/, "");
+
+      // Check both directions:
+      // 1. Have THEY previously sent to US?
+      // 2. Have WE previously sent to THEM?
+      // Either means we have a history → direct in-app delivery.
+      // Only a true first-ever contact goes via WhatsApp/SMS.
+      const [{ data: theySentToMe }, { data: weSentToThem }] = await Promise.all([
+        supabase
+          .from("sent_cards")
+          .select("id")
+          .eq("sender_id", foundUser.id)
+          .or(
+            myPhone
+              ? `recipient_id.eq.${user.id},recipient_phone.eq.${myPhone},recipient_phone.eq.${withoutPlus}`
+              : `recipient_id.eq.${user.id}`
+          )
+          .limit(1),
+        supabase
+          .from("sent_cards")
+          .select("id")
+          .eq("sender_id", user.id)
+          .or(`recipient_id.eq.${foundUser.id},recipient_phone.eq.${recipientPhone},recipient_phone.eq.${recipientPhoneNaked}`)
+          .limit(1),
+      ]);
 
       // Also check if sender is blocked
       const { data: blockRow } = await supabase
@@ -335,7 +351,9 @@ function SendPageInner() {
         return;
       }
 
-      const isMutual = (recipientSentToMe ?? []).length > 0;
+      const isMutual =
+        (theySentToMe ?? []).length > 0 ||
+        (weSentToThem ?? []).length > 0;
 
       if (!isMutual) {
         // First contact → stage for WhatsApp/SMS, strip recipient_id for privacy.
