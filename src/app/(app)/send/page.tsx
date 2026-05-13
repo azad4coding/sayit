@@ -338,13 +338,27 @@ function SendPageInner() {
       const isMutual = (recipientSentToMe ?? []).length > 0;
 
       if (!isMutual) {
-        // First contact → stage for WhatsApp/SMS, strip recipient_id so no push
+        // First contact → stage for WhatsApp/SMS, strip recipient_id for privacy.
+        // But still fire a push so the recipient knows on their device immediately.
         setSending(false);
         setFirstContactForced(true);
         setPendingPayload({ ...cardPayload, recipient_id: null });
         setPendingCircle(circlePayload);
         setCardSaved(false);
         setShortCode(code);
+        // Fire push in background — recipient is registered so we have their ID
+        supabase.auth.getSession().then(({ data: { session: pushSession } }) => {
+          fetch("/api/push/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pushSession?.access_token ?? ""}` },
+            body: JSON.stringify({
+              recipientId: foundUser.id,
+              senderName:  name,
+              cardCode:    code,
+              firstContact: true,
+            }),
+          }).catch(() => {});
+        });
         return;
       }
 

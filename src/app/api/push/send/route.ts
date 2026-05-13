@@ -25,20 +25,24 @@ export async function POST(req: NextRequest) {
   if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // ── 2. Parse body ───────────────────────────────────────────────────────
-  let body: { recipientId?: string; senderName?: string; cardCode?: string } = {};
+  let body: { recipientId?: string; senderName?: string; cardCode?: string; firstContact?: boolean } = {};
   try { body = await req.json(); } catch { /* empty body */ }
 
-  const { recipientId, senderName, cardCode } = body;
+  const { recipientId, senderName, cardCode, firstContact } = body;
   if (!recipientId) return NextResponse.json({ error: "Missing recipientId" }, { status: 400 });
 
   // Don't send a notification to yourself
   if (recipientId === user.id) return NextResponse.json({ ok: true, reason: "self-send" });
 
   // ── 3. Send via OneSignal ───────────────────────────────────────────────
+  const pushBody = firstContact
+    ? `${senderName || "Someone"} sent you a card 💌 Check WhatsApp or SMS to open it`
+    : "Sent you a card 💌";
+
   const result = await sendPush({
     recipientUserIds: [recipientId],
     title: senderName || "SayIt",
-    body:  "Sent you a card 💌",
+    body:  pushBody,
     data: {
       type:     "card",
       cardCode: cardCode ?? "",
