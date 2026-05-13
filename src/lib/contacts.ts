@@ -95,7 +95,9 @@ export async function checkContactsPermission(): Promise<"granted" | "denied" | 
     const result = await Contacts.checkPermissions();
     return result.contacts as "granted" | "denied" | "prompt";
   } catch {
-    return "denied";
+    // Plugin not available (web browser) or bridge not ready — treat as prompt
+    // so requestContactsPermission is still attempted on native
+    return "prompt";
   }
 }
 
@@ -145,7 +147,8 @@ export async function loadDeviceContacts(force = false): Promise<DeviceContact[]
     _deviceContacts = result;
     return result;
   } catch {
-    _deviceContacts = [];
+    // Don't cache failures — allow retries
+    _deviceContacts = null;
     return [];
   }
 }
@@ -220,7 +223,7 @@ export async function getOrRequestContacts(
 ): Promise<{ granted: boolean; contacts: SayItContact[] }> {
   let status = await checkContactsPermission();
 
-  if (status === "prompt" && !_permissionChecked) {
+  if (status === "prompt") {
     _permissionChecked = true;
     const granted = await requestContactsPermission();
     status = granted ? "granted" : "denied";

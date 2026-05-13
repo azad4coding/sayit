@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>SayIt uses your contacts to help you find friends who are already on the app and to send cards to people in your address book.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SayIt may use your location through third-party SDKs. Your location is never stored or shared by SayIt.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

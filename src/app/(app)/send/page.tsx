@@ -184,12 +184,27 @@ function SendPageInner() {
   const [firstContactForced, setFirstContactForced] = useState(false);
 
   // ── Load device contacts on mount + request permission ───────────────
+  async function loadContacts() {
+    setContactsLoading(true);
+    const { granted, contacts } = await getOrRequestContacts(supabase);
+    setContactsGranted(granted);
+    setSayItContacts(contacts);
+    setContactsLoading(false);
+    // If granted but contacts still empty, retry once after a short delay
+    // (some Android devices need a moment after permission is granted)
+    if (granted && contacts.length === 0) {
+      setTimeout(async () => {
+        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+        clearContactsCache();
+        const device = await loadDeviceContacts(true);
+        const enriched = await matchContactsWithSayIt(device, supabase);
+        setSayItContacts(enriched);
+      }, 800);
+    }
+  }
+
   useEffect(() => {
-    getOrRequestContacts(supabase).then(({ granted, contacts }) => {
-      setContactsGranted(granted);
-      setSayItContacts(contacts);
-      setContactsLoading(false);
-    });
+    loadContacts();
   }, []);
 
   // ── Geo + daily count ─────────────────────────────────────────────────
@@ -857,7 +872,17 @@ function SendPageInner() {
           </div>
         )}
 
-        {/* Contacts permission is requested at registration — no inline banner needed */}
+        {/* Contacts retry banner — shown if permission was denied or contacts failed to load */}
+        {!contactsGranted && !contactsLoading && (
+          <button
+            onClick={loadContacts}
+            className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl mb-3 text-sm font-semibold"
+            style={{ background: "rgba(255,107,138,0.08)", border: "1px solid rgba(255,107,138,0.2)", color: "#FF6B8A" }}
+          >
+            <span>📋</span>
+            <span>Tap to load contacts</span>
+          </button>
+        )}
 
         {/* Recipient search */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
