@@ -182,8 +182,6 @@ function SendPageInner() {
   const [cardSaved,      setCardSaved]      = useState(false);
   // True when registered recipient hasn't received from us before → WhatsApp/SMS forced
   const [firstContactForced, setFirstContactForced] = useState(false);
-  // Set when a non-SayIt contact's phone is linked to a registered user on a different number
-  const [suggestedRegisteredUser, setSuggestedRegisteredUser] = useState<{ id: string; name: string; phone: string } | null>(null);
 
   // ── Load device contacts on mount + request permission ───────────────
   useEffect(() => {
@@ -193,37 +191,6 @@ function SendPageInner() {
       setContactsLoading(false);
     });
   }, []);
-
-  // ── Cross-reference: when a non-SayIt contact is selected, check if their
-  // phone number was previously received as a card and linked to a registered user.
-  // This handles the case where User B registered with number Y but User A has
-  // their WhatsApp number X in contacts.
-  useEffect(() => {
-    if (!selectedContact || foundUser) { setSuggestedRegisteredUser(null); return; }
-    const phone = selectedContact.primaryPhone;
-    if (!phone) return;
-    const phoneNaked = phone.replace(/^\+/, "");
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("sent_cards")
-        .select("recipient_id")
-        .or(`recipient_phone.eq.${phone},recipient_phone.eq.${phoneNaked}`)
-        .not("recipient_id", "is", null)
-        .limit(1)
-        .maybeSingle();
-      if (cancelled || !data?.recipient_id) return;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id, full_name, phone")
-        .eq("id", data.recipient_id)
-        .single();
-      if (cancelled || !prof?.phone) return;
-      setSuggestedRegisteredUser({ id: prof.id, name: prof.full_name ?? "", phone: prof.phone });
-    })();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedContact, foundUser]);
 
   // ── Geo + daily count ─────────────────────────────────────────────────
   useEffect(() => {
@@ -344,23 +311,6 @@ function SendPageInner() {
     setPhone("");
     setSuggestions([]);
     setFirstContactForced(false);
-    setSuggestedRegisteredUser(null);
-  }
-
-  // Accept the auto-suggestion: switch to the registered number and send directly
-  function acceptSuggestion() {
-    if (!suggestedRegisteredUser) return;
-    const reg = suggestedRegisteredUser;
-    setFoundUser({ id: reg.id, name: reg.name, phone: reg.phone });
-    const raw = reg.phone;
-    const matched = COUNTRY_CODES.find(c => raw.startsWith(c.code));
-    if (matched) {
-      setCountryCode(matched.code);
-      setPhone(raw.slice(matched.code.length).replace(/\D/g, ""));
-    } else {
-      setPhone(raw.replace(/\D/g, ""));
-    }
-    setSuggestedRegisteredUser(null);
   }
 
   const cardUrl = shortCode ? `${BASE_URL}/preview/${shortCode}` : "";
@@ -879,53 +829,23 @@ function SendPageInner() {
           <label className="text-xs font-semibold text-gray-500 mb-2 block">Send To</label>
 
           {selectedContact ? (
-            <>
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                style={{ background: "linear-gradient(135deg,#FF6B8A10,#9B59B610)", border: "1px solid #FF6B8A30" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{ background: foundUser ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "linear-gradient(135deg,#9ca3af,#6b7280)" }}>
-                  {selectedContact.displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-800">{selectedContact.displayName}</p>
-                  <p className="text-[11px] font-medium" style={{ color: foundUser ? "#22c55e" : suggestedRegisteredUser ? "#f59e0b" : "#9ca3af" }}>
-                    {foundUser
-                      ? "✓ On SayIt — delivers directly to their app"
-                      : suggestedRegisteredUser
-                        ? "⚠ Different SayIt number found — see below"
-                        : "📱 Not on SayIt — will send via WhatsApp / SMS"}
-                  </p>
-                </div>
-                <button onClick={clearContact}
-                  className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">✕</button>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+              style={{ background: "linear-gradient(135deg,#FF6B8A10,#9B59B610)", border: "1px solid #FF6B8A30" }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                style={{ background: foundUser ? "linear-gradient(135deg,#FF6B8A,#9B59B6)" : "linear-gradient(135deg,#9ca3af,#6b7280)" }}>
+                {selectedContact.displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
               </div>
-
-              {/* ── Auto-suggest: registered number found for this WhatsApp contact ── */}
-              {suggestedRegisteredUser && !foundUser && (
-                <div className="mt-3 rounded-2xl p-4"
-                  style={{ background: "linear-gradient(135deg,#FFF8E1,#FFF3E0)", border: "1px solid #F59E0B40" }}>
-                  <p className="text-xs font-bold text-amber-700 mb-1">
-                    💡 {selectedContact.displayName.split(" ")[0]} is on SayIt!
-                  </p>
-                  <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                    Their registered SayIt number is{" "}
-                    <span className="font-semibold text-gray-800">{suggestedRegisteredUser.phone}</span>.
-                    Send directly to their app instead of WhatsApp?
-                  </p>
-                  <div className="flex gap-2">
-                    <button onClick={acceptSuggestion}
-                      className="flex-1 py-2 rounded-xl text-xs font-bold text-white"
-                      style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
-                      Send via SayIt ✓
-                    </button>
-                    <button onClick={() => setSuggestedRegisteredUser(null)}
-                      className="flex-1 py-2 rounded-xl text-xs font-bold text-gray-600 bg-white border border-gray-200">
-                      Use WhatsApp/SMS
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">{selectedContact.displayName}</p>
+                <p className="text-[11px] font-medium" style={{ color: foundUser ? "#22c55e" : "#9ca3af" }}>
+                  {foundUser
+                    ? "✓ On SayIt — delivers directly to their app"
+                    : "📱 Not on SayIt — will send via WhatsApp / SMS"}
+                </p>
+              </div>
+              <button onClick={clearContact}
+                className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">✕</button>
+            </div>
           ) : (
             <div className="relative">
               <input

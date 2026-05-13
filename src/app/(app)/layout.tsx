@@ -48,9 +48,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showTitleBar,  setShowTitleBar]  = useState(false);
   const lastNavTimeRef  = useRef(0);
 
-  const sentCardIds    = useRef<Set<string>>(new Set());
-  const userIdRef      = useRef<string | null>(null);
-  const cardClaimedRef = useRef(false);
+  const sentCardIds = useRef<Set<string>>(new Set());
+  const userIdRef   = useRef<string | null>(null);
 
   // ── Auth session gate ─────────────────────────────────────────────────────
   // On native iOS, @capacitor/preferences is async. Supabase fires
@@ -206,25 +205,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
 
       setChecking(false);
-
-      // ── Claim unlinked cards sent to this user's phone (runs once per session) ──
-      // When a card is sent to phone X but the recipient later registers as phone Y,
-      // opening the app links X→Y by updating recipient_id on those cards.
-      // This powers the auto-suggest in the send flow.
-      if (!cardClaimedRef.current) {
-        cardClaimedRef.current = true;
-        (async () => {
-          const { data: prof } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
-          const rawPhone = user.phone ?? prof?.phone ?? null;
-          if (!rawPhone) return;
-          const cp = rawPhone.startsWith("+") ? rawPhone : `+${rawPhone}`;
-          const cn = cp.slice(1);
-          await supabase.from("sent_cards")
-            .update({ recipient_id: user.id })
-            .is("recipient_id", null)
-            .or(`recipient_phone.eq.${cp},recipient_phone.eq.${cn}`);
-        })();
-      }
 
       const { data: sent } = await supabase
         .from("sent_cards")
