@@ -21,6 +21,53 @@ const COUNTRY_CODES = [
   { code: "+971", flag: "🇦🇪", name: "UAE" },
   { code: "+65",  flag: "🇸🇬", name: "Singapore" },
   { code: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "+92",  flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+94",  flag: "🇱🇰", name: "Sri Lanka" },
+  { code: "+977", flag: "🇳🇵", name: "Nepal" },
+  { code: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "+62",  flag: "🇮🇩", name: "Indonesia" },
+  { code: "+63",  flag: "🇵🇭", name: "Philippines" },
+  { code: "+66",  flag: "🇹🇭", name: "Thailand" },
+  { code: "+84",  flag: "🇻🇳", name: "Vietnam" },
+  { code: "+81",  flag: "🇯🇵", name: "Japan" },
+  { code: "+82",  flag: "🇰🇷", name: "South Korea" },
+  { code: "+86",  flag: "🇨🇳", name: "China" },
+  { code: "+852", flag: "🇭🇰", name: "Hong Kong" },
+  { code: "+886", flag: "🇹🇼", name: "Taiwan" },
+  { code: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+965", flag: "🇰🇼", name: "Kuwait" },
+  { code: "+974", flag: "🇶🇦", name: "Qatar" },
+  { code: "+973", flag: "🇧🇭", name: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", name: "Oman" },
+  { code: "+962", flag: "🇯🇴", name: "Jordan" },
+  { code: "+20",  flag: "🇪🇬", name: "Egypt" },
+  { code: "+27",  flag: "🇿🇦", name: "South Africa" },
+  { code: "+234", flag: "🇳🇬", name: "Nigeria" },
+  { code: "+254", flag: "🇰🇪", name: "Kenya" },
+  { code: "+233", flag: "🇬🇭", name: "Ghana" },
+  { code: "+255", flag: "🇹🇿", name: "Tanzania" },
+  { code: "+256", flag: "🇺🇬", name: "Uganda" },
+  { code: "+251", flag: "🇪🇹", name: "Ethiopia" },
+  { code: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "+39",  flag: "🇮🇹", name: "Italy" },
+  { code: "+34",  flag: "🇪🇸", name: "Spain" },
+  { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
+  { code: "+46",  flag: "🇸🇪", name: "Sweden" },
+  { code: "+47",  flag: "🇳🇴", name: "Norway" },
+  { code: "+45",  flag: "🇩🇰", name: "Denmark" },
+  { code: "+41",  flag: "🇨🇭", name: "Switzerland" },
+  { code: "+32",  flag: "🇧🇪", name: "Belgium" },
+  { code: "+351", flag: "🇵🇹", name: "Portugal" },
+  { code: "+90",  flag: "🇹🇷", name: "Turkey" },
+  { code: "+7",   flag: "🇷🇺", name: "Russia" },
+  { code: "+55",  flag: "🇧🇷", name: "Brazil" },
+  { code: "+52",  flag: "🇲🇽", name: "Mexico" },
+  { code: "+54",  flag: "🇦🇷", name: "Argentina" },
+  { code: "+57",  flag: "🇨🇴", name: "Colombia" },
+  { code: "+56",  flag: "🇨🇱", name: "Chile" },
 ];
 
 // Expected local digit counts (after the country code) per country
@@ -31,6 +78,50 @@ const DIGIT_RULES: Record<string, { min: number; max: number; label: string }> =
   "+971": { min: 9,  max: 9,  label: "9"  },
   "+65":  { min: 8,  max: 8,  label: "8"  },
   "+61":  { min: 9,  max: 9,  label: "9"  },
+  "+92":  { min: 10, max: 10, label: "10" },
+  "+880": { min: 10, max: 10, label: "10" },
+  "+94":  { min: 9,  max: 9,  label: "9"  },
+  "+977": { min: 9,  max: 10, label: "9–10" },
+  "+60":  { min: 9,  max: 10, label: "9–10" },
+  "+62":  { min: 9,  max: 12, label: "9–12" },
+  "+63":  { min: 10, max: 10, label: "10" },
+  "+66":  { min: 9,  max: 9,  label: "9"  },
+  "+84":  { min: 9,  max: 10, label: "9–10" },
+  "+81":  { min: 10, max: 10, label: "10" },
+  "+82":  { min: 9,  max: 10, label: "9–10" },
+  "+86":  { min: 11, max: 11, label: "11" },
+  "+852": { min: 8,  max: 8,  label: "8"  },
+  "+886": { min: 9,  max: 10, label: "9–10" },
+  "+64":  { min: 8,  max: 10, label: "8–10" },
+  "+966": { min: 9,  max: 9,  label: "9"  },
+  "+965": { min: 8,  max: 8,  label: "8"  },
+  "+974": { min: 8,  max: 8,  label: "8"  },
+  "+973": { min: 8,  max: 8,  label: "8"  },
+  "+968": { min: 8,  max: 8,  label: "8"  },
+  "+962": { min: 9,  max: 9,  label: "9"  },
+  "+20":  { min: 10, max: 10, label: "10" },
+  "+27":  { min: 9,  max: 9,  label: "9"  },
+  "+234": { min: 10, max: 10, label: "10" },
+  "+254": { min: 9,  max: 9,  label: "9"  },
+  "+233": { min: 9,  max: 9,  label: "9"  },
+  "+49":  { min: 10, max: 11, label: "10–11" },
+  "+33":  { min: 9,  max: 9,  label: "9"  },
+  "+39":  { min: 9,  max: 10, label: "9–10" },
+  "+34":  { min: 9,  max: 9,  label: "9"  },
+  "+31":  { min: 9,  max: 9,  label: "9"  },
+  "+46":  { min: 9,  max: 9,  label: "9"  },
+  "+47":  { min: 8,  max: 8,  label: "8"  },
+  "+45":  { min: 8,  max: 8,  label: "8"  },
+  "+41":  { min: 9,  max: 9,  label: "9"  },
+  "+32":  { min: 9,  max: 9,  label: "9"  },
+  "+351": { min: 9,  max: 9,  label: "9"  },
+  "+90":  { min: 10, max: 10, label: "10" },
+  "+7":   { min: 10, max: 10, label: "10" },
+  "+55":  { min: 10, max: 11, label: "10–11" },
+  "+52":  { min: 10, max: 10, label: "10" },
+  "+54":  { min: 10, max: 10, label: "10" },
+  "+57":  { min: 10, max: 10, label: "10" },
+  "+56":  { min: 9,  max: 9,  label: "9"  },
 };
 
 type FoundUser = { id: string; name: string; phone: string };
@@ -714,35 +805,28 @@ function SendPageInner() {
           </div>
 
           <div className="w-full flex flex-col gap-3">
-            <a href={smsHref}
-              onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
+            <button
+              onClick={() => {
+                saveCardNow();
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  navigator.share({ text: shareText })
+                    .then(() => setTimeout(() => setShared(true), 600))
+                    .catch(() => {});
+                } else {
+                  // Fallback for browsers without native share — open WhatsApp
+                  window.open(waHref, "_blank");
+                  setTimeout(() => setShared(true), 600);
+                }
+              }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#34C759,#30D158)", textDecoration: "none" }}>
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
-              <div className="flex-1"><p className="text-sm font-bold">iMessage / SMS</p><p className="text-xs text-white/75">Opens Messages app</p></div>
+              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", border: "none", cursor: "pointer" }}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💌</div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold">Send via WhatsApp / iMessage / SMS</p>
+                <p className="text-xs text-white/75">Choose how to deliver your card</p>
+              </div>
               <span className="text-white/60 text-lg">›</span>
-            </a>
-            <a href={waHref} target="_blank" rel="noopener noreferrer"
-              onClick={() => { saveCardNow(); setTimeout(() => setShared(true), 600); }}
-              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", textDecoration: "none" }}>
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
-              <div className="flex-1"><p className="text-sm font-bold">WhatsApp</p><p className="text-xs text-white/75">Opens WhatsApp to this number</p></div>
-              <span className="text-white/60 text-lg">›</span>
-            </a>
-            {typeof navigator !== "undefined" && !!navigator.share && (
-              <button
-                onClick={() => {
-                  saveCardNow();
-                  navigator.share({ text: shareText }).then(() => setTimeout(() => setShared(true), 600)).catch(() => {});
-                }}
-                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-                style={{ background: "linear-gradient(135deg,#667eea,#764ba2)", border: "none", cursor: "pointer" }}>
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">↗️</div>
-                <div className="flex-1 text-left"><p className="text-sm font-bold">Share via…</p><p className="text-xs text-white/75">Pick any WhatsApp contact or app</p></div>
-                <span className="text-white/60 text-lg">›</span>
-              </button>
-            )}
+            </button>
           </div>
           <button onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
@@ -904,11 +988,11 @@ function SendPageInner() {
                     <ChevronDown className="w-3 h-3 text-gray-400" />
                   </button>
                   {showCCDropdown && (
-                    <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50" style={{ minWidth: 180 }}>
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 overflow-y-auto" style={{ minWidth: 200, maxHeight: 300 }}>
                       {COUNTRY_CODES.map(c => (
                         <button key={c.code} type="button"
                           onClick={() => { setCountryCode(c.code); setShowCCDropdown(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 text-left"
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm active:bg-gray-50 text-left border-b border-gray-50 last:border-0"
                           style={{ fontWeight: c.code === countryCode ? 700 : 400, color: c.code === countryCode ? "#FF6B8A" : "#333" }}>
                           <span>{c.flag}</span><span>{c.name}</span>
                           <span className="ml-auto text-gray-400 text-xs">{c.code}</span>
