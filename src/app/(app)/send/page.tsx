@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { getTemplateById, getCategoryById, type DBTemplate, type DBCategory } from "@/lib/supabase-data";
 import { ensurePlus } from "@/lib/phone";
+import { isValidPhoneNumber } from "libphonenumber-js";
 import { getOrRequestContacts, type SayItContact } from "@/lib/contacts";
 import { ArrowLeft, Sparkles, ChevronDown, CheckCircle2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
@@ -293,6 +294,19 @@ function SendPageInner() {
     } else {
       if (digits.length < 6)  { setPhoneError("Please enter a valid phone number"); return; }
       if (digits.length > 12) { setPhoneError("Phone number is too long"); return; }
+    }
+
+    // Deep validation — catches invalid numbers that pass the digit count check
+    // e.g. +91 1234567890 has 10 digits but is not a real Indian mobile number
+    try {
+      if (!isValidPhoneNumber(`${countryCode}${digits}`)) {
+        setPhoneError("Invalid phone number — please check the number and try again");
+        return;
+      }
+    } catch {
+      // isValidPhoneNumber can throw for unknown/unusual inputs — treat as invalid
+      setPhoneError("Invalid phone number — please check the number and try again");
+      return;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
