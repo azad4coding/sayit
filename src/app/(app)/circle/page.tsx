@@ -67,10 +67,28 @@ export default function CirclePage() {
       }
 
       // ── 2. Cards WE received ─────────────────────────────────────
-      const { data: receivedCards } = await supabase
+      // Must match by recipient_id OR recipient_phone — first-contact cards
+      // are saved with recipient_id = null and only recipient_phone set.
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("phone")
+        .eq("id", user.id)
+        .single();
+      const myPhone      = profileData?.phone ?? user.phone ?? null;
+      const myPhonePlus  = myPhone ? (myPhone.startsWith("+") ? myPhone : `+${myPhone}`) : null;
+      const myPhoneNaked = myPhonePlus ? myPhonePlus.slice(1) : null;
+
+      let receivedQuery = supabase
         .from("sent_cards")
-        .select("sender_id, sender_name, recipient_phone")
-        .eq("recipient_id", user.id);
+        .select("sender_id, sender_name, recipient_phone");
+      if (myPhonePlus && myPhoneNaked) {
+        receivedQuery = receivedQuery.or(
+          `recipient_id.eq.${user.id},recipient_phone.eq.${myPhonePlus},recipient_phone.eq.${myPhoneNaked}`
+        );
+      } else {
+        receivedQuery = receivedQuery.eq("recipient_id", user.id);
+      }
+      const { data: receivedCards } = await receivedQuery;
 
       // Look up sender phones from profiles
       const senderIds = Array.from(new Set((receivedCards ?? []).map((c: any) => c.sender_id).filter(Boolean)));
