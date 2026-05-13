@@ -185,10 +185,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     async function check() {
       // Await INITIAL_SESSION — guarantees @capacitor/preferences has resolved.
       // On web this fires almost instantly; on native it waits for storage I/O.
-      const session = await initialSessionPromise.current;
+      let session = await initialSessionPromise.current;
+
+      // Safety net: on cold start the Capacitor bridge can race with Supabase's
+      // first storage read, causing INITIAL_SESSION to fire with null even though
+      // a valid session exists in storage.  getSession() re-reads current state
+      // and can recover the session if the bridge caught up in the interim.
+      if (!session) {
+        const { data } = await supabase.auth.getSession();
+        session = data.session;
+      }
+
       if (!session) { router.replace("/login"); return; }
-      // Server-validate the token (catches expired/revoked sessions)
-      const { data: { user } } = await supabase.auth.getUser();
+
+      // Server-validate the token (catches expired/revoked sessions).
+      // If getUser() fails (network hiccup or expired token not yet refreshed),
+      // try an explicit refreshSession() before sending the user to login.
+      let { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        user = refreshed.user;
+      }
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
 

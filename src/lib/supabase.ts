@@ -23,27 +23,39 @@ function getPrefs(): CapPrefs | null {
 }
 
 const nativeStorage = {
+  // Read: Preferences first (persistent UserDefaults), then localStorage as backup.
+  // We fall through to localStorage even when Preferences returns null — this covers
+  // the race where the Capacitor bridge isn't ready yet on cold start, so a previous
+  // write landed in localStorage instead of Preferences.
   getItem: async (key: string): Promise<string | null> => {
     const prefs = getPrefs();
     if (prefs) {
       try {
         const { value } = await prefs.get({ key });
-        return value ?? null;
-      } catch { /* fall through to localStorage */ }
+        if (value !== null) return value; // found in Preferences ✓
+        // Preferences returned null — might be a cold-start bridge timing issue;
+        // fall through to check localStorage as a redundant backup.
+      } catch { /* fall through */ }
     }
     try { return localStorage.getItem(key); } catch { return null; }
   },
+
+  // Write: save to BOTH storages so there's always a backup.
+  // If the bridge isn't ready on first write, localStorage ensures the session
+  // survives until the next write (when the bridge is definitely up).
   setItem: async (key: string, value: string): Promise<void> => {
     const prefs = getPrefs();
     if (prefs) {
-      try { await prefs.set({ key, value }); return; } catch { /* fall through */ }
+      try { await prefs.set({ key, value }); } catch { /* non-fatal */ }
     }
     try { localStorage.setItem(key, value); } catch { /* ignore */ }
   },
+
+  // Remove: clean up both storages so stale data doesn't linger.
   removeItem: async (key: string): Promise<void> => {
     const prefs = getPrefs();
     if (prefs) {
-      try { await prefs.remove({ key }); return; } catch { /* fall through */ }
+      try { await prefs.remove({ key }); } catch { /* non-fatal */ }
     }
     try { localStorage.removeItem(key); } catch { /* ignore */ }
   },
