@@ -252,12 +252,15 @@ function SendPageInner() {
       const variants: string[] = [];
       if (digits.length >= 10) {
         variants.push(`+${digits}`);
-        if (!digits.startsWith("1"))   variants.push(`+1${digits}`);
-        if (!digits.startsWith("91"))  variants.push(`+91${digits}`);
-        if (!digits.startsWith("44"))  variants.push(`+44${digits}`);
-        if (!digits.startsWith("971")) variants.push(`+971${digits}`);
+        variants.push(digits);                               // no-+ bare form
+        if (!digits.startsWith("1"))   { variants.push(`+1${digits}`);   variants.push(`1${digits}`); }
+        if (!digits.startsWith("91"))  { variants.push(`+91${digits}`);  variants.push(`91${digits}`); }
+        if (!digits.startsWith("44"))  { variants.push(`+44${digits}`);  variants.push(`44${digits}`); }
+        if (!digits.startsWith("971")) { variants.push(`+971${digits}`); variants.push(`971${digits}`); }
       }
-      variants.push(`${countryCode}${digits}`);
+      const ccDigits = `${countryCode}${digits}`;
+      variants.push(ccDigits);
+      variants.push(ccDigits.replace(/^\+/, ""));            // no-+ form of country+digits
       const unique = Array.from(new Set(variants));
 
       supabase.from("profiles").select("id, full_name, phone")
@@ -424,11 +427,43 @@ function SendPageInner() {
       updated_at:      new Date().toISOString(),
     };
 
+    // ── Resolve recipient SayIt status ───────────────────────────────
+    // If the user typed a number manually (no suggestion tapped), foundUser is
+    // still null even if the recipient IS registered.  Do a fresh lookup now
+    // using all phone variants (with and without + prefix, with country code).
+    let effectiveFoundUser = foundUser;
+    if (!effectiveFoundUser) {
+      const digits = phone.replace(/\D/g, "");
+      const naked  = fullPhone.replace(/^\+/, "");           // "918452910272"
+      const lookupVariants = Array.from(new Set([
+        fullPhone,  // "+918452910272"
+        naked,      // "918452910272"
+        digits,     // "8452910272"
+        `+${digits}`,
+      ]));
+      const { data: lu } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("phone", lookupVariants)
+        .neq("id", user.id)
+        .limit(1);
+      if (lu && lu.length > 0) {
+        effectiveFoundUser = { id: lu[0].id, name: lu[0].full_name ?? lu[0].phone, phone: lu[0].phone };
+        setFoundUser(effectiveFoundUser);
+        // Patch payloads — they were built before this lookup resolved
+        cardPayload.recipient_id   = effectiveFoundUser.id;
+        cardPayload.recipient_name = effectiveFoundUser.name;
+        circlePayload.recipient_id = effectiveFoundUser.id;
+      }
+    }
+
     // ── Privacy: first-contact check ──────────────────────────────────
     // If recipient is on SayIt, check for mutual history.
     // "Mutual" = they have previously sent a card to us.
     // First-timers go via WhatsApp/SMS so recipient decides whether to engage.
-    if (foundUser) {
+    if (effectiveFoundUser) {
+      // alias for readability — use effectiveFoundUser throughout this block
+      const foundUser = effectiveFoundUser;
       const myPhone = ensurePlus(user.phone ?? (profile as any)?.phone ?? "") || "";
       const withoutPlus = myPhone.replace(/^\+/, "");
 
