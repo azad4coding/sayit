@@ -170,12 +170,13 @@ function CardStack({ cards, templateMap }: { cards: CardWithDir[]; templateMap: 
 
 // ── Thread View ────────────────────────────────────────────────────────────────
 function ThreadView({
-  contact, onBack, templateMap, categoryMap,
+  contact, onBack, templateMap, categoryMap, myUserId,
 }: {
   contact: Contact;
   onBack: () => void;
   templateMap: TemplateMap;
   categoryMap: CategoryMap;
+  myUserId?: string | null;
 }) {
   const router = useRouter();
   const sorted = [...contact.cards].sort(
@@ -302,7 +303,7 @@ function ThreadView({
                             background: isSent ? "rgba(245,200,66,0.12)" : "rgba(76,175,80,0.1)",
                             color: isSent ? "#A07820" : "#2A7D2E",
                           }}>
-                            {isSent ? "Sent" : "Received"}
+                            {isSent ? "Sent" : `Received from ${contact.label.split(" ")[0]}`}
                           </span>
                           <span className="text-[9px] font-medium" style={{ color: isSent ? "#C9A84C" : "#66BB6A" }}>
                             · {category}

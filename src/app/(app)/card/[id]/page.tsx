@@ -808,7 +808,7 @@ function CardPageInner() {
         {/* Back arrow — all modes */}
         <button
           onClick={() => backUrl ? router.push(backUrl) : router.back()}
-          style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', zIndex: 30 }}
+          style={{ position: 'absolute', top: 'calc(max(env(safe-area-inset-top, 0px), 24px) + 10px)', left: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', zIndex: 30 }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#6b7280' }}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
         </button>
@@ -846,7 +846,7 @@ function CardPageInner() {
             backUrl ? router.push(backUrl) : router.back();
           }}
           style={{
-            position: 'absolute', top: 'calc(env(safe-area-inset-top, 44px) + 10px)', left: 16,
+            position: 'absolute', top: 'calc(max(env(safe-area-inset-top, 0px), 24px) + 10px)', left: 16,
             width: 36, height: 36, borderRadius: '50%',
             background: 'rgba(255,255,255,0.8)',
             backdropFilter: 'blur(8px)',
@@ -1038,7 +1038,7 @@ function CardPageInner() {
 
         {/* ── Reaction badge — below closed card, touching bottom border ── */}
         <AnimatePresence>
-          {isViewMode && isReceived && reactionLoaded && myCardReaction && !reactionTrayOpen && view === 'front' && (
+          {isViewMode && isReceived && reactionLoaded && myCardReaction && !reactionTrayOpen && (view === 'front' || view === 'open') && (
             <motion.div
               key="card-rx-badge-wrap"
               initial={{ scale: 0, opacity: 0 }}
@@ -1073,7 +1073,7 @@ function CardPageInner() {
 
         {/* ── Reaction badge — sender viewing sent card (read-only, same style as received badge) ── */}
         <AnimatePresence>
-          {isViewMode && !isReceived && reactionLoaded && view === 'front' && Object.values(reactionCounts).some(c => c > 0) && (() => {
+          {isViewMode && !isReceived && reactionLoaded && (view === 'front' || view === 'open') && Object.values(reactionCounts).some(c => c > 0) && (() => {
             // Pick the most-reacted emoji to show in the badge
             const topEmoji = REACTION_EMOJIS.find(e => (reactionCounts[e] ?? 0) > 0) ?? '';
             const totalCount = Object.values(reactionCounts).reduce((s, c) => s + c, 0);
@@ -1108,7 +1108,7 @@ function CardPageInner() {
 
         {/* ── WhatsApp-style floating emoji picker pill ── */}
         <AnimatePresence>
-          {isViewMode && isReceived && reactionLoaded && view === 'front' && (reactionTrayOpen || !myCardReaction) && (
+          {isViewMode && isReceived && reactionLoaded && (view === 'front' || view === 'open') && (reactionTrayOpen || !myCardReaction) && (
             <motion.div
               key="card-rx-picker"
               initial={{ opacity: 0, y: 10, scale: 0.88 }}
@@ -1151,7 +1151,7 @@ function CardPageInner() {
                       animate={{ scale: isMine ? 1.18 : 1 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                       style={{
-                        width: 46, height: 46, borderRadius: '50%',
+                        width: 40, height: 40, borderRadius: '50%',
                         background: isMine ? 'rgba(255,107,138,0.1)' : 'transparent',
                         border: isMine ? '2px solid rgba(255,107,138,0.35)' : '2px solid transparent',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1160,7 +1160,7 @@ function CardPageInner() {
                         transition: 'background 0.15s, border 0.15s',
                       }}
                     >
-                      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
+                      <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
                     </motion.button>
                   );
                 })}
@@ -1283,13 +1283,13 @@ function CardPageInner() {
                 onClick={() => setView('open')}
                 style={{
                   marginTop: 14,
-                  padding: '10px 28px',
+                  padding: '9px 24px',
                   borderRadius: 20,
                   background: 'rgba(255,255,255,0.7)',
                   border: '1px solid rgba(255,255,255,0.5)',
                   backdropFilter: 'blur(4px)',
                   color: isPawMoments ? '#6B3F1F' : '#5C3317',
-                  fontSize: 12,
+                  fontSize: 11,
                   letterSpacing: 2,
                   textTransform: 'uppercase',
                   cursor: 'pointer',
@@ -1306,7 +1306,7 @@ function CardPageInner() {
                   onClick={() => router.push(sayitBackUrl)}
                   style={{
                     marginTop: 10,
-                    padding: '13px 32px',
+                    padding: '11px 28px',
                     borderRadius: 30,
                     border: 'none',
                     background: 'linear-gradient(135deg,#FF6B8A,#9B59B6)',
@@ -1330,7 +1330,7 @@ function CardPageInner() {
                   onClick={() => router.push(sayitBackUrl)}
                   style={{
                     marginTop: 10,
-                    padding: '13px 32px',
+                    padding: '11px 28px',
                     borderRadius: 30,
                     border: 'none',
                     background: 'linear-gradient(135deg,#FF6B8A,#9B59B6)',

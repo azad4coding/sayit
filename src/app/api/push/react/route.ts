@@ -56,9 +56,10 @@ export async function POST(req: NextRequest) {
     data: {
       type:     "reaction",
       cardCode: cardCode ?? "",
-      url: cardCode
-        ? `/card/${cardCode}?view=true&cardId=${cardId}&direction=sent`
-        : "/wishes",
+      // Use /preview/[short_code] — short_code is NOT a template ID,
+      // so /card/[id] would 404.  The preview page shows reaction badges
+      // and "Say it Again" correctly for the sender.
+      url: cardCode ? `/preview/${cardCode}?back=/wishes` : "/wishes",
     },
   });
 

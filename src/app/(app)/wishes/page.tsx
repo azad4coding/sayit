@@ -159,7 +159,7 @@ export default function NotificationsPage() {
       notifs.push({
         id: `received-${card.id}`,
         type: "received",
-        title: isGift ? `${from} sent you a gift card 🎁` : `${from} sent you a card`,
+        title: isGift ? `You received a gift card from ${from} 🎁` : `You received a card from ${from}`,
         subtitle: isGift ? (gcVendor ? `${gcVendor} Gift Card — Tap to redeem` : "Tap to open") : isPaw ? "Paw Moments 🐾" : receivedCategoryName ? `${receivedCategoryName} card — Tap to open` : "Tap to open",
         time: timeAgo(card.created_at),
         rawTime: card.created_at,
@@ -334,10 +334,12 @@ export default function NotificationsPage() {
   function handleTap(n: Notification) {
     if (n.href) { router.push(n.href); return; }
     if (n.templateId && n.cardId) {
+      // "received" notifications are cards the user received; everything else (sent, viewed, reacted) is sender-side
+      const direction = n.type === "received" ? "received" : "sent";
       const params = new URLSearchParams({
         view: "true", cardId: n.cardId,
         message: n.message ?? "", sender: n.senderName ?? "",
-        back: "/wishes",
+        back: "/wishes", direction,
       });
       router.push(`/card/${n.templateId}?${params.toString()}`);
       return;

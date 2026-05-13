@@ -139,6 +139,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
+  // ── Handle in-app navigation from native notification tap ────────────────
+  // Both Android (MainActivity.java) and iOS (AppDelegate.swift) call
+  // window.__sayitHandleNav(url) after the user taps a push notification.
+  // If the WebView wasn't ready yet, they also set window.__sayitNavPending
+  // which we drain here once the layout mounts (auth already resolved).
+  useEffect(() => {
+    if (checking) return; // wait until auth is confirmed
+    if (typeof window === "undefined") return;
+
+    // Register the handler so native code can call it any time
+    (window as any).__sayitHandleNav = (url: string) => {
+      if (url) router.push(url);
+    };
+
+    // Drain any URL that arrived before the handler was registered
+    const pending = (window as any).__sayitNavPending as string | undefined;
+    if (pending) {
+      (window as any).__sayitNavPending = null;
+      router.push(pending);
+    }
+
+    return () => {
+      // Clean up so stale handler doesn't linger after unmount
+      delete (window as any).__sayitHandleNav;
+    };
+  }, [checking, router]);
+
   // ── OneSignal push notifications (native iOS + Android) ──────────────────
   // OneSignal is initialised natively in AppDelegate.swift / MainActivity.java.
   // Here we link the logged-in user's Supabase UUID as the OneSignal external_id
@@ -233,20 +260,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         try { return localStorage.getItem(`lastSeenChats_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
       })();
-      const { count: unreadCount } = await supabase
+      // Fetch phone once and reuse for both incomingDot + wishesDot queries
+      const authPhone2 = user.phone ?? null;
+      const { data: profData2 } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
+      const myPhone2 = profData2?.phone ?? authPhone2;
+      // incomingDot: cards received by user (by recipient_id OR phone)
+      let incomingQ = supabase
         .from("sent_cards")
         .select("id", { count: "exact", head: true })
-        .eq("recipient_id", user.id)
-        .gt("created_at", lastSeenChats);
+        .gt("created_at", lastSeenChats)
+        .neq("sender_id", user.id);
+      if (myPhone2) {
+        const wpI = myPhone2.startsWith("+") ? myPhone2 : `+${myPhone2}`;
+        const wopI = myPhone2.startsWith("+") ? myPhone2.slice(1) : myPhone2;
+        incomingQ = incomingQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wpI},recipient_phone.eq.${wopI}`);
+      } else {
+        incomingQ = incomingQ.eq("recipient_id", user.id);
+      }
+      const { count: unreadCount } = await incomingQ;
       if ((unreadCount ?? 0) > 0 && pathname !== "/history") setIncomingDot(unreadCount ?? 0);
 
       const lastSeenWishes = (() => {
         try { return localStorage.getItem(`lastSeenWishes_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
       })();
-      const authPhone2 = user.phone ?? null;
-      const { data: profData2 } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
-      const myPhone2 = profData2?.phone ?? authPhone2;
       let newRecvQ = supabase.from("sent_cards").select("id", { count: "exact", head: true })
         .gt("created_at", lastSeenWishes).neq("sender_id", user.id);
       if (myPhone2) {

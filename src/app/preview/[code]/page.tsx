@@ -455,7 +455,7 @@ function PreviewInner() {
 
         {/* Circle back button — consistent with revealed state */}
         {backParam && (
-          <a href={backParam} style={{ position: "absolute", top: 48, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30, WebkitTapHighlightColor: "transparent" }}>
+          <a href={backParam} style={{ position: "absolute", top: "calc(max(env(safe-area-inset-top, 0px), 24px) + 14px)", left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30, WebkitTapHighlightColor: "transparent" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#6b7280" }}><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           </a>
         )}
@@ -594,7 +594,7 @@ function PreviewInner() {
 
       {/* Back button — shown whenever there's a back destination */}
       {backParam && (
-        <div className="px-5 pt-10 pb-5">
+        <div className="px-5 pb-5" style={{ paddingTop: "calc(max(env(safe-area-inset-top, 0px), 24px) + 14px)" }}>
           <Link href={backParam}
             className="w-9 h-9 rounded-full bg-white/80 shadow-sm flex items-center justify-center"
             style={{ border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
@@ -1055,7 +1055,7 @@ function PreviewInner() {
                     animate={{ scale: isMine ? 1.18 : 1 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                     style={{
-                      width: 46, height: 46, borderRadius: "50%",
+                      width: 40, height: 40, borderRadius: "50%",
                       background: isMine ? "rgba(255,107,138,0.1)" : "transparent",
                       border: isMine ? "2px solid rgba(255,107,138,0.35)" : "2px solid transparent",
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -1063,7 +1063,7 @@ function PreviewInner() {
                       transition: "background 0.15s, border 0.15s",
                     }}
                   >
-                    <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
+                    <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
                   </motion.button>
                 );
               })}

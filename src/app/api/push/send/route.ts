@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   // ── 3. Send via OneSignal ───────────────────────────────────────────────
   const pushBody = firstContact
     ? `${senderName || "Someone"} sent you a card 💌 Check WhatsApp or SMS to open it`
-    : "Sent you a card 💌";
+    : `You received a card from ${senderName || "Someone"} 💌`;
 
   const result = await sendPush({
     recipientUserIds: [recipientId],
@@ -46,9 +46,11 @@ export async function POST(req: NextRequest) {
     data: {
       type:     "card",
       cardCode: cardCode ?? "",
-      url: cardCode
-        ? `/card/${cardCode}?view=true&startEnvelope=true&direction=received`
-        : "/history",
+      // Use /preview/[short_code] — works for all card types and handles
+      // auth-aware display (recipient sees envelope + reaction tray,
+      // sender sees "Say it Again").  /card/[id] requires a template UUID
+      // which is NOT the same as the short_code, so do not use that here.
+      url: cardCode ? `/preview/${cardCode}?back=/wishes` : "/wishes",
     },
   });
 

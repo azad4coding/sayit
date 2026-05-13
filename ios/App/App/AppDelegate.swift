@@ -12,6 +12,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         OneSignal.initialize("6c42b899-7188-4e29-9056-b9c316bc0c74", withLaunchOptions: launchOptions)
         OneSignal.Notifications.requestPermission({ _ in }, fallbackToSettings: true)
+        // Register notification tap handler — navigates WebView to in-app URL
+        OneSignal.Notifications.addClickListener(self)
         return true
     }
 
@@ -68,6 +70,39 @@ extension AppDelegate: WKScriptMessageHandler {
         case "logoutOneSignal":
             OneSignal.logout()
         default: break
+        }
+    }
+}
+
+// ── OneSignal notification tap → in-app navigation ────────────────────────────
+// When the user taps a push notification, read the "url" field from
+// additionalData and navigate the Capacitor WebView to that in-app route.
+extension AppDelegate: OSNotificationClickListener {
+    func onClick(event: OSNotificationClickEvent) {
+        guard let data = event.notification.additionalData,
+              let url  = data["url"] as? String, !url.isEmpty
+        else { return }
+
+        print("[OneSignal] Notification tapped → navigating to:", url)
+
+        // Delay 1.5 s so the WebView has time to finish loading after the
+        // app is foregrounded (cold-start or background wakeup).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            guard let bridgeVC = self.window?.rootViewController as? CAPBridgeViewController,
+                  let webView  = bridgeVC.bridge?.webView
+            else {
+                print("[OneSignal] WebView not ready for navigation")
+                return
+            }
+            // Escape single quotes to keep the JS string literal safe
+            let safeUrl = url.replacingOccurrences(of: "'", with: "\\'")
+            let js = """
+                window.__sayitNavPending = '\(safeUrl)';
+                if (typeof window.__sayitHandleNav === 'function') {
+                    window.__sayitHandleNav('\(safeUrl)');
+                }
+                """
+            webView.evaluateJavaScript(js, completionHandler: nil)
         }
     }
 }
