@@ -9,6 +9,7 @@ import com.onesignal.debug.LogLevel;
 import com.onesignal.Continue;
 import com.onesignal.notifications.INotificationClickEvent;
 import com.onesignal.notifications.INotificationClickListener;
+import getcapacitor.community.contacts.ContactsPlugin;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
@@ -20,8 +21,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Register OneSignal plugin before super.onCreate
+        // Register plugins before super.onCreate
         registerPlugin(OneSignalPlugin.class);
+        registerPlugin(ContactsPlugin.class);
 
         super.onCreate(savedInstanceState);
 

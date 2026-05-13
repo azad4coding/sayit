@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSContactsUsageDescription</key>
 	<string>SayIt uses your contacts to help you find friends who are already on the app and to send cards to people in your address book.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
