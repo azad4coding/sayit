@@ -608,9 +608,22 @@ function SendPageInner() {
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
               style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", textDecoration: "none" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💚</div>
-              <div className="flex-1"><p className="text-sm font-bold">WhatsApp</p><p className="text-xs text-white/75">Opens WhatsApp chat</p></div>
+              <div className="flex-1"><p className="text-sm font-bold">WhatsApp</p><p className="text-xs text-white/75">Opens WhatsApp to this number</p></div>
               <span className="text-white/60 text-lg">›</span>
             </a>
+            {typeof navigator !== "undefined" && !!navigator.share && (
+              <button
+                onClick={() => {
+                  saveCardNow();
+                  navigator.share({ text: shareText }).then(() => setTimeout(() => setShared(true), 600)).catch(() => {});
+                }}
+                className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+                style={{ background: "linear-gradient(135deg,#667eea,#764ba2)", border: "none", cursor: "pointer" }}>
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">↗️</div>
+                <div className="flex-1 text-left"><p className="text-sm font-bold">Share via…</p><p className="text-xs text-white/75">Pick any WhatsApp contact or app</p></div>
+                <span className="text-white/60 text-lg">›</span>
+              </button>
+            )}
           </div>
           <button onClick={() => { cancelSend(); router.push("/home"); }}
             className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
