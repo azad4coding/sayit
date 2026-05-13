@@ -22,6 +22,16 @@ const COUNTRY_CODES = [
   { code: "+61",  flag: "🇦🇺", name: "Australia" },
 ];
 
+// Expected local digit counts (after the country code) per country
+const DIGIT_RULES: Record<string, { min: number; max: number; label: string }> = {
+  "+91":  { min: 10, max: 10, label: "10" },
+  "+1":   { min: 10, max: 10, label: "10" },
+  "+44":  { min: 9,  max: 10, label: "9–10" },
+  "+971": { min: 9,  max: 9,  label: "9"  },
+  "+65":  { min: 8,  max: 8,  label: "8"  },
+  "+61":  { min: 9,  max: 9,  label: "9"  },
+};
+
 type FoundUser = { id: string; name: string; phone: string };
 
 function SendPageInner() {
@@ -270,7 +280,20 @@ function SendPageInner() {
       return;
     }
     const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) { setPhoneError("Please enter a valid phone number"); return; }
+    const rule = DIGIT_RULES[countryCode];
+    if (rule) {
+      if (digits.length < rule.min) {
+        setPhoneError(`Too short — enter ${rule.label} digits for ${countryCode}`);
+        return;
+      }
+      if (digits.length > rule.max) {
+        setPhoneError(`Too long — enter ${rule.label} digits for ${countryCode}`);
+        return;
+      }
+    } else {
+      if (digits.length < 6)  { setPhoneError("Please enter a valid phone number"); return; }
+      if (digits.length > 12) { setPhoneError("Phone number is too long"); return; }
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
@@ -813,12 +836,15 @@ function SendPageInner() {
                 value={searchQuery}
                 onChange={e => {
                   const v = e.target.value;
-                  setSearchQuery(v);
                   setPhoneError(null);
                   if (/^\+?[\d\s\-()]+$/.test(v)) {
-                    setPhone(v.replace(/\D/g, ""));
+                    const raw = v.replace(/\D/g, "");
+                    const maxDigits = DIGIT_RULES[countryCode]?.max ?? 12;
+                    if (raw.length > maxDigits) return; // hard cap — ignore extra digits
+                    setPhone(raw);
                     setFoundUser(null);
                   }
+                  setSearchQuery(v);
                 }}
                 onFocus={() => searchQuery && setShowSuggestions(true)}
                 className="w-full px-4 py-3.5 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200 bg-gray-50"
@@ -879,7 +905,11 @@ function SendPageInner() {
                 </div>
                 <div className="flex-1 px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-600">{phone}</div>
               </div>
-              <p className="text-xs text-gray-400 mt-2 px-1">👋 Not on SayIt yet — you can invite them via WhatsApp or SMS</p>
+              <p className="text-xs text-gray-400 mt-2 px-1">
+                {DIGIT_RULES[countryCode]
+                  ? `Enter ${DIGIT_RULES[countryCode].label} digits for ${countryCode} · ${phone.length}/${DIGIT_RULES[countryCode].max}`
+                  : "Enter the local number without country code"}
+              </p>
             </div>
           )}
         </div>
