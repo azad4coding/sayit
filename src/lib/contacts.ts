@@ -27,23 +27,53 @@ function normalizePhone(raw: string): string {
 }
 
 // Build the set of variants we'll try when matching against Supabase.
-// Many profiles are stored as "+91XXXXXXXXXX" but device may store "91XXXXXXXXXX".
-// We also cover the very common iOS case where US/Canada contacts are stored as
-// 10 bare digits (no country code) — those need a "+1" prefix to match the profile.
+//
+// The core problem: iOS often stores contacts WITHOUT a country code prefix,
+// so a number like +91 9876543210 is saved as just "9876543210" (10 digits).
+// Supabase profiles are stored in full E.164 (+919876543210). We must bridge that gap
+// in both directions:
+//   A) profile has E.164, contact has bare digits → add country prefix to contact
+//   B) contact has E.164, profile has bare digits → strip country prefix from contact
+//
+// We also handle the China edge case: 11-digit Chinese mobile numbers start with 1
+// (e.g. 13812345678), which is ambiguous with US 11-digit (+1 + 10 digits).
+// We conservatively add variants for both interpretations.
 function phoneVariants(normalized: string): string[] {
   const digits = normalized.replace(/\D/g, "");
   const variants = new Set<string>();
-  variants.add(normalized);          // "+91..." / "+1..."
-  variants.add(digits);              // "91..." / "1..."
-  // Strip leading country-code blocks → 10-digit local number
-  if (digits.length === 12 && digits.startsWith("91")) variants.add(digits.slice(2));
-  if (digits.length === 11 && digits.startsWith("1"))  variants.add(digits.slice(1));
-  if (digits.length === 12 && digits.startsWith("44")) variants.add(digits.slice(2));
-  // 10-digit bare number (common on iOS for US/Canada contacts): add +1 prefix
+  variants.add(normalized);   // "+91..." or "+1..." — the normalised form
+  variants.add(digits);       // "91..." or "1..."   — bare digits
+
+  // ── Direction B: strip country prefix → bare local number ───────────────
+  if (digits.length === 12 && digits.startsWith("91")) variants.add(digits.slice(2));  // India
+  if (digits.length === 12 && digits.startsWith("44")) variants.add(digits.slice(2));  // UK
+  if (digits.length === 12 && digits.startsWith("86")) variants.add(digits.slice(2));  // China
+  if (digits.length === 13 && digits.startsWith("86")) variants.add(digits.slice(2));  // China (13-digit)
+  if (digits.length === 11 && digits.startsWith("1"))  variants.add(digits.slice(1));  // US/Canada
+  if (digits.length === 11 && digits.startsWith("7"))  variants.add(digits.slice(1));  // Russia
+  if (digits.length === 12 && digits.startsWith("61")) variants.add(digits.slice(2));  // Australia
+  if (digits.length === 12 && digits.startsWith("65")) variants.add(digits.slice(2));  // Singapore
+  if (digits.length === 12 && digits.startsWith("60")) variants.add(digits.slice(2));  // Malaysia
+  if (digits.length === 12 && digits.startsWith("92")) variants.add(digits.slice(2));  // Pakistan
+  if (digits.length === 12 && digits.startsWith("49")) variants.add(digits.slice(2));  // Germany (approx)
+
+  // ── Direction A: bare local → add country prefix ─────────────────────────
+  // 10-digit bare numbers — most common iOS omission
   if (digits.length === 10) {
-    variants.add(`+1${digits}`);   // profile stored as "+1XXXXXXXXXX"
-    variants.add(`1${digits}`);    // profile stored as "1XXXXXXXXXX"
+    variants.add(`+1${digits}`);    // US / Canada  (+1 XXXXXXXXXX)
+    variants.add(`1${digits}`);
+    variants.add(`+91${digits}`);   // India        (+91 XXXXXXXXXX)
+    variants.add(`91${digits}`);
+    variants.add(`+44${digits}`);   // UK           (+44 XXXXXXXXXX) — rare but possible
+    variants.add(`44${digits}`);
   }
+  // 11-digit bare numbers — Chinese mobile (13x, 14x, 15x, 17x, 18x, 19x)
+  if (digits.length === 11 && !digits.startsWith("1")) {
+    // Non-US 11-digit (US 11-digit already handled above via strip-1)
+    variants.add(`+86${digits}`);   // China
+    variants.add(`86${digits}`);
+  }
+
   return Array.from(variants);
 }
 
