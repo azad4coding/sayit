@@ -20,11 +20,11 @@ public class ContactsPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // ── Permission check ─────────────────────────────────────────────────────
 
-    @objc func checkPermissions(_ call: CAPPluginCall) {
+    @objc public override func checkPermissions(_ call: CAPPluginCall) {
         call.resolve(["contacts": statusString(CNContactStore.authorizationStatus(for: .contacts))])
     }
 
-    @objc func requestPermissions(_ call: CAPPluginCall) {
+    @objc public override func requestPermissions(_ call: CAPPluginCall) {
         CNContactStore().requestAccess(for: .contacts) { granted, _ in
             call.resolve(["contacts": granted ? "granted" : "denied"])
         }
@@ -32,7 +32,7 @@ public class ContactsPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // ── Fetch contacts ───────────────────────────────────────────────────────
 
-    @objc func getContacts(_ call: CAPPluginCall) {
+    @objc public func getContacts(_ call: CAPPluginCall) {
         guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
             call.resolve(["contacts": []])
             return
