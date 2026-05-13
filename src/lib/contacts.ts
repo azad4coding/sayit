@@ -28,15 +28,22 @@ function normalizePhone(raw: string): string {
 
 // Build the set of variants we'll try when matching against Supabase.
 // Many profiles are stored as "+91XXXXXXXXXX" but device may store "91XXXXXXXXXX".
+// We also cover the very common iOS case where US/Canada contacts are stored as
+// 10 bare digits (no country code) — those need a "+1" prefix to match the profile.
 function phoneVariants(normalized: string): string[] {
   const digits = normalized.replace(/\D/g, "");
   const variants = new Set<string>();
-  variants.add(normalized);          // "+91..."
-  variants.add(digits);              // "91..."
-  // Also add without leading country-code digit blocks (10-digit local)
+  variants.add(normalized);          // "+91..." / "+1..."
+  variants.add(digits);              // "91..." / "1..."
+  // Strip leading country-code blocks → 10-digit local number
   if (digits.length === 12 && digits.startsWith("91")) variants.add(digits.slice(2));
   if (digits.length === 11 && digits.startsWith("1"))  variants.add(digits.slice(1));
   if (digits.length === 12 && digits.startsWith("44")) variants.add(digits.slice(2));
+  // 10-digit bare number (common on iOS for US/Canada contacts): add +1 prefix
+  if (digits.length === 10) {
+    variants.add(`+1${digits}`);   // profile stored as "+1XXXXXXXXXX"
+    variants.add(`1${digits}`);    // profile stored as "1XXXXXXXXXX"
+  }
   return Array.from(variants);
 }
 
