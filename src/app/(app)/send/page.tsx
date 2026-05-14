@@ -194,11 +194,14 @@ function SendPageInner() {
     // (some Android devices need a moment after permission is granted)
     if (granted && contacts.length === 0) {
       setTimeout(async () => {
-        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-        clearContactsCache();
-        const device = await loadDeviceContacts(true);
-        const enriched = await matchContactsWithSayIt(device, supabase);
-        setSayItContacts(enriched);
+        try {
+          const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+          clearContactsCache();
+          const device = await loadDeviceContacts(true);
+          let enriched: SayItContact[] = [];
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          setSayItContacts(enriched.length > 0 ? enriched : device);
+        } catch (e) { console.warn("[sayit] contacts retry error", e); }
       }, 800);
     }
   }
@@ -206,12 +209,15 @@ function SendPageInner() {
   useEffect(() => {
     // Callback registered for when Java injects contacts AFTER JS mounts
     (window as any).__sayitContactsReady = async () => {
-      const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-      clearContactsCache();
-      const device = await loadDeviceContacts(true);
-      const enriched = await matchContactsWithSayIt(device, supabase);
-      setContactsGranted(true);
-      setSayItContacts(enriched);
+      try {
+        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+        clearContactsCache();
+        const device = await loadDeviceContacts(true);
+        let enriched: SayItContact[] = [];
+        try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+        setContactsGranted(true);
+        setSayItContacts(enriched.length > 0 ? enriched : device);
+      } catch (e) { console.warn("[sayit] __sayitContactsReady error", e); }
     };
 
     // Fast-path: if Java already injected before JS mounted, mark as granted so
@@ -229,26 +235,30 @@ function SendPageInner() {
     // has injected __sayitNativeContacts but the callback was missed.
     const t3 = setTimeout(async () => {
       if ((window as any).__sayitNativeContacts?.length > 0) {
-        (window as any).__sayitContactsGranted = true;
-        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-        clearContactsCache();
-        const device = await loadDeviceContacts(true);
-        const enriched = await matchContactsWithSayIt(device, supabase);
-        setContactsGranted(true);
-        // Always update — even if Supabase profile match fails, device contacts
-        // should still appear in name search with onSayIt: false
-        setSayItContacts(enriched);
+        try {
+          (window as any).__sayitContactsGranted = true;
+          const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+          clearContactsCache();
+          const device = await loadDeviceContacts(true);
+          let enriched: SayItContact[] = [];
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          setContactsGranted(true);
+          setSayItContacts(enriched.length > 0 ? enriched : device);
+        } catch (e) { console.warn("[sayit] t3 contacts error", e); }
       }
     }, 3000);
     const t5 = setTimeout(async () => {
       if ((window as any).__sayitNativeContacts?.length > 0) {
-        (window as any).__sayitContactsGranted = true;
-        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-        clearContactsCache();
-        const device = await loadDeviceContacts(true);
-        const enriched = await matchContactsWithSayIt(device, supabase);
-        setContactsGranted(true);
-        setSayItContacts(enriched);
+        try {
+          (window as any).__sayitContactsGranted = true;
+          const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+          clearContactsCache();
+          const device = await loadDeviceContacts(true);
+          let enriched: SayItContact[] = [];
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          setContactsGranted(true);
+          setSayItContacts(enriched.length > 0 ? enriched : device);
+        } catch (e) { console.warn("[sayit] t5 contacts error", e); }
       }
     }, 5000);
 
@@ -258,14 +268,16 @@ function SendPageInner() {
       if ((window as any).__sayitNativeContacts?.length > 0) {
         pollDone = true;
         clearInterval(pollTimer);
-        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-        clearContactsCache();
-        const device = await loadDeviceContacts(true);
-        const enriched = await matchContactsWithSayIt(device, supabase);
-        // Always update state regardless of enriched.length — device contacts
-        // with onSayIt:false are still valid for name search
-        setContactsGranted(true);
-        setSayItContacts(enriched);
+        try {
+          const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+          clearContactsCache();
+          const device = await loadDeviceContacts(true);
+          let enriched: SayItContact[] = [];
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          // Always update state — device contacts with onSayIt:false are still valid for name search
+          setContactsGranted(true);
+          setSayItContacts(enriched.length > 0 ? enriched : device);
+        } catch (e) { console.warn("[sayit] poll contacts error", e); }
       }
     }, 600);
     const pollStop = setTimeout(() => { pollDone = true; clearInterval(pollTimer); }, 8000);
@@ -886,56 +898,29 @@ function SendPageInner() {
           </div>
 
           <div className="w-full flex flex-col gap-3">
-            {/* WhatsApp — always works on Android */}
+            {/* SMS / iMessage — first */}
             <button
-              onClick={() => { saveCardNow(); window.open(waHref, "_blank"); setTimeout(() => setShared(true), 800); }}
+              onClick={() => { saveCardNow(); window.open(smsHref); setTimeout(() => setShared(true), 800); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", border: "none", cursor: "pointer" }}>
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+              style={{ background: "linear-gradient(135deg,#007AFF,#0055CC)", border: "none", cursor: "pointer" }}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">📱</div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-bold">Send via WhatsApp</p>
-                <p className="text-xs text-white/75">Opens WhatsApp with your card link</p>
+                <p className="text-sm font-bold">Send via iMessage / SMS</p>
+                <p className="text-xs text-white/75">Opens Messages with your card link</p>
               </div>
               <span className="text-white/60 text-lg">›</span>
             </button>
 
-            {/* SMS */}
+            {/* WhatsApp — second */}
             <button
-              onClick={() => { saveCardNow(); window.open(smsHref); setTimeout(() => setShared(true), 800); }}
+              onClick={() => { saveCardNow(); window.open(waHref, "_blank"); setTimeout(() => setShared(true), 800); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
               style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#007AFF20,#007AFF10)" }}>📱</div>
+                style={{ background: "linear-gradient(135deg,#25D36620,#128C7E10)" }}>💬</div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-gray-800">Send via SMS / iMessage</p>
-                <p className="text-xs text-gray-400">Works with any messaging app</p>
-              </div>
-              <span className="text-gray-300 text-lg">›</span>
-            </button>
-
-            {/* Copy link */}
-            <button
-              onClick={() => {
-                saveCardNow();
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(cardUrl).then(() => {
-                    alert("Link copied! Paste it anywhere to share.");
-                    setTimeout(() => setShared(true), 400);
-                  }).catch(() => {
-                    // Fallback: prompt user to copy
-                    prompt("Copy this link:", cardUrl);
-                  });
-                } else {
-                  prompt("Copy this link:", cardUrl);
-                }
-              }}
-              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
-              style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#9B59B620,#9B59B610)" }}>🔗</div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-gray-800">Copy Link</p>
-                <p className="text-xs text-gray-400">Paste it anywhere — email, Notes, etc.</p>
+                <p className="text-sm font-bold text-gray-800">Send via WhatsApp</p>
+                <p className="text-xs text-gray-400">Opens WhatsApp with your card link</p>
               </div>
               <span className="text-gray-300 text-lg">›</span>
             </button>
