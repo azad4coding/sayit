@@ -283,15 +283,15 @@ function ThreadView({
                       borderRadius: 18,
                       background: "white",
                       boxShadow: isSent
-                        ? "0 3px 20px rgba(245,200,66,0.18), 0 1px 6px rgba(0,0,0,0.06)"
-                        : "0 3px 20px rgba(76,175,80,0.15), 0 1px 6px rgba(0,0,0,0.06)",
-                      border: `1.5px solid ${isSent ? "rgba(245,200,66,0.45)" : "rgba(76,175,80,0.35)"}`,
+                        ? "0 3px 20px rgba(255,107,138,0.18), 0 1px 6px rgba(0,0,0,0.06)"
+                        : "0 3px 20px rgba(155,89,182,0.15), 0 1px 6px rgba(0,0,0,0.06)",
+                      border: `1.5px solid ${isSent ? "rgba(255,107,138,0.35)" : "rgba(155,89,182,0.3)"}`,
                     }}>
                     <div style={{
                       height: 3,
                       background: isSent
-                        ? "linear-gradient(90deg,#F5C842,#E8A800)"
-                        : "linear-gradient(90deg,#4CAF50,#2E7D32)",
+                        ? "linear-gradient(90deg,#FF6B8A,#E84C6A)"
+                        : "linear-gradient(90deg,#9B59B6,#7D3C98)",
                       opacity: 0.75,
                     }} />
 
@@ -300,12 +300,12 @@ function ThreadView({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{
-                            background: isSent ? "rgba(245,200,66,0.12)" : "rgba(76,175,80,0.1)",
-                            color: isSent ? "#A07820" : "#2A7D2E",
+                            background: isSent ? "rgba(255,107,138,0.1)" : "rgba(155,89,182,0.1)",
+                            color: isSent ? "#D4366A" : "#7D3C98",
                           }}>
                             {isSent ? "Sent" : `Received from ${contact.label.split(" ")[0]}`}
                           </span>
-                          <span className="text-[9px] font-medium" style={{ color: isSent ? "#C9A84C" : "#66BB6A" }}>
+                          <span className="text-[9px] font-medium" style={{ color: isSent ? "#FF6B8A" : "#9B59B6" }}>
                             · {category}
                           </span>
                           {isSent && card.viewed_at && (
@@ -659,8 +659,8 @@ function ChatsPageInner() {
                   background: isGiftCard
                     ? gcStrip
                     : isSent
-                      ? "linear-gradient(90deg,#F5C842,#E8A800)"
-                      : "linear-gradient(90deg,#4CAF50,#2E7D32)",
+                      ? "linear-gradient(90deg,#FF6B8A,#E84C6A)"
+                      : "linear-gradient(90deg,#9B59B6,#7D3C98)",
                   opacity: 0.9,
                 }} />
 
@@ -688,7 +688,7 @@ function ChatsPageInner() {
                       )}
                       <p className="font-bold text-gray-900 text-sm truncate">{contact.label}</p>
                     </div>
-                    <p className="text-[11px] truncate" style={{ color: isGiftCard ? gcText : "#C9A84C" }}>
+                    <p className="text-[11px] truncate" style={{ color: isGiftCard ? gcText : "#FF6B8A" }}>
                       {isGiftCard
                         ? `${gc.vendorName ?? "Gift"} · $${gc.amount ?? "—"}`
                         : `${contact.cards.length} card${contact.cards.length !== 1 ? "s" : ""}`}

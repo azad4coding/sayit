@@ -204,7 +204,7 @@ function SendPageInner() {
   }
 
   useEffect(() => {
-    // Register callback so native (Android) contacts injection triggers a reload
+    // Callback registered for when Java injects contacts AFTER JS mounts
     (window as any).__sayitContactsReady = async () => {
       const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
       clearContactsCache();
@@ -214,9 +214,41 @@ function SendPageInner() {
       setSayItContacts(enriched);
     };
 
+    // Fast-path: if Java already injected before JS mounted, mark as granted so
+    // getOrRequestContacts() skips the (unreliable) Capacitor bridge on Android.
+    if (typeof window !== "undefined" && (window as any).__sayitNativeContacts?.length > 0) {
+      (window as any).__sayitContactsGranted = true;
+    }
+
     loadContacts();
 
-    return () => { delete (window as any).__sayitContactsReady; };
+    // Android polling fallback: covers the case where Java fires __sayitContactsReady
+    // before this useEffect runs (callback not yet registered → silently skipped).
+    // Poll every 600 ms; stop as soon as native contacts appear, or after 8 s.
+    let pollDone = false;
+    const pollTimer = setInterval(async () => {
+      if (pollDone) return;
+      if ((window as any).__sayitNativeContacts?.length > 0) {
+        pollDone = true;
+        clearInterval(pollTimer);
+        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+        clearContactsCache();
+        const device = await loadDeviceContacts(true);
+        const enriched = await matchContactsWithSayIt(device, supabase);
+        if (enriched.length > 0) {
+          setContactsGranted(true);
+          setSayItContacts(enriched);
+        }
+      }
+    }, 600);
+    const pollStop = setTimeout(() => { pollDone = true; clearInterval(pollTimer); }, 8000);
+
+    return () => {
+      delete (window as any).__sayitContactsReady;
+      pollDone = true;
+      clearInterval(pollTimer);
+      clearTimeout(pollStop);
+    };
   }, []);
 
   // ── Geo + daily count ─────────────────────────────────────────────────
@@ -938,8 +970,7 @@ function SendPageInner() {
                     if (raw.length > maxDigits) return; // hard cap — ignore extra digits
                     setPhone(raw);
                     setFoundUser(null);
-                    // Auto-open country code dropdown on first digit if none selected
-                    if (!countryCode && !showCCDropdown) setShowCCDropdown(true);
+                    // Do NOT auto-open the country code dropdown — user must tap it explicitly
                   } else {
                     setPhone(""); // not phone mode — typing a name
                   }
