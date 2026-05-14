@@ -204,7 +204,40 @@ function LoginInner() {
   }
 
   async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}/home` } });
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        // Native: must use system browser (SFSafariViewController / Chrome Custom Tab)
+        // because Google blocks OAuth inside embedded WebViews since 2021.
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: "com.azad.sayit://home",
+            skipBrowserRedirect: true,   // don't let Supabase navigate the WebView
+          },
+        });
+        if (error) { setError(error.message); return; }
+        if (data?.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url });
+          // The OAuth callback (com.azad.sayit://home?code=…) is handled by
+          // the appUrlOpen listener in (app)/layout.tsx, which exchanges the
+          // code for a session and navigates to /home.
+        }
+      } else {
+        // Web: standard redirect flow
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: `${location.origin}/home` },
+        });
+      }
+    } catch {
+      // Fallback for non-Capacitor environments (e.g. SSR, older browsers)
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${location.origin}/home` },
+      });
+    }
   }
 
   return (
