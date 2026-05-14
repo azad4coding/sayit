@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     ? `${senderName || "Someone"} sent you a card 💌 Check WhatsApp or SMS to open it`
     : `You received a card from ${senderName || "Someone"} 💌`;
 
+  console.log("[push/send] sending to recipientId:", recipientId, "from sender:", user.id);
+
   const result = await sendPush({
     recipientUserIds: [recipientId],
     title: senderName || "SayIt",
@@ -54,5 +56,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  console.log("[push/send] OneSignal result:", JSON.stringify(result));
   return NextResponse.json({ ok: result.ok, error: result.error });
 }

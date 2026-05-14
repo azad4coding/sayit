@@ -161,6 +161,10 @@ public class MainActivity extends BridgeActivity {
             String js =
                 "window.__sayitContactsGranted = true;" +
                 "window.__sayitNativeContacts = " + json + ";" +
+                // Persist to localStorage so contacts survive in-app page reloads
+                // (version check in layout.tsx can trigger window.location.reload(),
+                //  which wipes all globals but leaves localStorage intact).
+                "(function(){try{localStorage.setItem('__sayitContactsCache',JSON.stringify(window.__sayitNativeContacts));}catch(e){}})();" +
                 "if (typeof window.__sayitContactsReady === 'function') {" +
                 "  window.__sayitContactsReady();" +
                 "}";

@@ -58,10 +58,12 @@ export async function sendPush(payload: PushPayload): Promise<{ ok: boolean; err
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      console.error("[OneSignal] send failed:", json);
+      console.error("[OneSignal] send failed:", JSON.stringify(json));
       return { ok: false, error: JSON.stringify(json) };
     }
 
+    // Log recipients count — "0" means no subscribed devices matched the external_id
+    console.log("[OneSignal] send ok — recipients:", json.recipients, "id:", json.id, "errors:", JSON.stringify(json.errors));
     return { ok: true };
   } catch (err: any) {
     console.error("[OneSignal] fetch error:", err);
