@@ -785,15 +785,6 @@ function SendPageInner() {
         </div>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800">Card sent! 🎉</h2>
-          <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-            Your card is on its way to <span className="font-semibold text-gray-700">{displayName}</span>.<br />
-            They&apos;ll see it as soon as they tap the link 💌
-          </p>
-          {firstContactForced && (
-            <p className="text-xs text-purple-400 mt-2">
-              Once they&apos;re on SayIt and connect back, future cards will arrive directly in-app ✨
-            </p>
-          )}
         </div>
         {template && (
           <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 w-full">
