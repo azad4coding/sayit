@@ -73,6 +73,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // ensures contacts are always injected into the live JS context.
     if (typeof window !== "undefined") {
       (window as any).__sayitPageReady = true;
+
+      // ── Restore contacts from localStorage after any page reload ─────────
+      // window.location.reload() (version check) wipes all globals but leaves
+      // localStorage intact. Restore __sayitNativeContacts immediately so the
+      // send page never shows "Loading contacts..." after a reload.
+      if (!((window as any).__sayitNativeContacts?.length > 0)) {
+        try {
+          const cached = localStorage.getItem("__sayitContactsCache");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              (window as any).__sayitNativeContacts = parsed;
+              (window as any).__sayitContactsGranted = true;
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
       // If Java already read contacts and is waiting for the page, notify it now.
       if (typeof (window as any).__sayitInjectPending === "function") {
         (window as any).__sayitInjectPending();
