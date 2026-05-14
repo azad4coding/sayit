@@ -214,7 +214,7 @@ function SendPageInner() {
         clearContactsCache();
         const device = await loadDeviceContacts(true);
         let enriched: SayItContact[] = [];
-        try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+        try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })); }
         setContactsGranted(true);
         setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
       } catch (e) { console.warn("[sayit] __sayitContactsReady error", e); }
