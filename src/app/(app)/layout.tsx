@@ -198,14 +198,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (!user) return;
 
       if (Capacitor.getPlatform() === "ios") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wk = (window as any).webkit?.messageHandlers?.sayitBridge;
-        if (wk) {
-          wk.postMessage({ action: "linkOneSignal", userId: user.id });
-          console.log("[OneSignal] WK message sent, userId:", user.id);
-        } else {
-          console.warn("[OneSignal] sayitBridge handler not available");
-        }
+        // sayitBridge is registered asynchronously in AppDelegate.setupBridge().
+        // Retry up to 10 times (5 s total) to handle the race where auth resolves
+        // before the WKScriptMessageHandler registration completes.
+        let attempts = 0;
+        const tryLink = () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const wk = (window as any).webkit?.messageHandlers?.sayitBridge;
+          if (wk) {
+            wk.postMessage({ action: "linkOneSignal", userId: user.id });
+            console.log("[OneSignal] WK message sent, userId:", user.id);
+          } else if (attempts < 10) {
+            attempts++;
+            console.log("[OneSignal] sayitBridge not ready, retry", attempts);
+            setTimeout(tryLink, 500);
+          } else {
+            console.warn("[OneSignal] sayitBridge unavailable after retries");
+          }
+        };
+        tryLink();
       } else {
         const { registerPlugin } = await import("@capacitor/core");
         const OSPlugin = registerPlugin<{ login: (opts: { userId: string }) => Promise<void> }>("OneSignalPlugin");

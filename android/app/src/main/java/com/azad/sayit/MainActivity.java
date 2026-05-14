@@ -133,6 +133,44 @@ public class MainActivity extends BridgeActivity {
         }, 500);
     }
 
+    // ── Cached contacts JSON — built once, served instantly on every resume ──
+    private String cachedContactsJson = null;
+
+    // ── onResume: re-inject contacts every time app comes to foreground ──────
+    // This covers: page reloads (cache-bust), client-side navigation, and
+    // returning from WhatsApp/SMS. Uses cached JSON after the first build so
+    // subsequent injections are instant (no ContentResolver query needed).
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (cachedContactsJson != null) {
+                    pushContactsToWebView(cachedContactsJson);
+                } else {
+                    injectContactsIntoWebView();
+                }
+            }, 400);
+        }
+    }
+
+    // ── Push already-built JSON into the WebView (instant, no I/O) ───────────
+    private void pushContactsToWebView(String json) {
+        try {
+            String js =
+                "window.__sayitContactsGranted = true;" +
+                "window.__sayitNativeContacts = " + json + ";" +
+                "if (typeof window.__sayitContactsReady === 'function') {" +
+                "  window.__sayitContactsReady();" +
+                "}";
+            getBridge().getWebView().evaluateJavascript(js, null);
+            android.util.Log.d("SayIt", "Re-injected contacts from cache");
+        } catch (Exception ex) {
+            android.util.Log.e("SayIt", "pushContactsToWebView error", ex);
+        }
+    }
+
     // ── Load contacts from Android ContentResolver and inject into WebView ──
     // This bypasses the Capacitor JS bridge entirely, which can be unreliable
     // when the app loads from a remote Vercel URL.
@@ -174,22 +212,11 @@ public class MainActivity extends BridgeActivity {
 
                 final String json = contactsArray.toString();
                 final int count = contactsArray.length();
+                cachedContactsJson = json; // cache for instant re-injection on resume
 
                 // Switch back to main thread to call evaluateJavascript
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    try {
-                        String js =
-                            "window.__sayitContactsGranted = true;" +
-                            "window.__sayitNativeContacts = " + json + ";" +
-                            "if (typeof window.__sayitContactsReady === 'function') {" +
-                            "  window.__sayitContactsReady();" +
-                            "}";
-                        getBridge().getWebView().evaluateJavascript(js, null);
-                        android.util.Log.d("SayIt", "Injected " + count + " contacts into WebView");
-                    } catch (Exception ex) {
-                        android.util.Log.e("SayIt", "evaluateJavascript (contacts) error", ex);
-                    }
-                });
+                new Handler(Looper.getMainLooper()).post(() -> pushContactsToWebView(json));
+                android.util.Log.d("SayIt", "Built contacts cache: " + count + " contacts");
 
             } catch (Exception e) {
                 android.util.Log.e("SayIt", "Error reading contacts", e);
