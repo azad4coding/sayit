@@ -81,7 +81,7 @@ public class MainActivity extends BridgeActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 == PackageManager.PERMISSION_GRANTED) {
             // Already granted from a previous launch — inject contacts once WebView has loaded
-            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 2500);
+            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 800);
         } else {
             // Ask for permission — result handled in onRequestPermissionsResult
             ActivityCompat.requestPermissions(this,
@@ -99,7 +99,7 @@ public class MainActivity extends BridgeActivity {
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             android.util.Log.d("SayIt", "Contacts permission granted — injecting contacts");
             // Short delay so the WebView JS is ready to receive the callback
-            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 1500);
+            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 800);
         }
     }
 
