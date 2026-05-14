@@ -182,80 +182,84 @@ function SendPageInner() {
   const [cardSaved,      setCardSaved]      = useState(false);
   // True when registered recipient hasn't received from us before → WhatsApp/SMS forced
   const [firstContactForced, setFirstContactForced] = useState(false);
-  // True once user has tapped a share button (but not yet confirmed they sent it)
-  const [shareLaunched, setShareLaunched] = useState(false);
 
-  // Helper: map raw DeviceContact[] → SayItContact[] without Supabase lookup
-  function toRawSayItContacts(device: import("@/lib/contacts").DeviceContact[]): SayItContact[] {
-    return device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" }));
-  }
+  // ── Parse __sayitNativeContacts directly (no dynamic import, no intermediate fn) ──
+  // Phase 1: show contacts instantly for name search
+  // Phase 2: enrich with Supabase in background for "On SayIt" badges
+  function applyNativeContacts() {
+    const native: any[] = (window as any).__sayitNativeContacts;
+    if (!Array.isArray(native) || native.length === 0) return;
 
-  // Helper: load raw contacts fast, then enrich with Supabase in background
-  async function loadAndShowContacts(forceReload = false) {
-    try {
-      const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
-      if (forceReload) clearContactsCache();
-      const device = await loadDeviceContacts(forceReload);
-      if (device.length === 0) return;
-      // Phase 1 — show raw contacts immediately so name search works right away
-      setContactsGranted(true);
-      setSayItContacts(toRawSayItContacts(device));
-      setContactsLoading(false);
-      // Phase 2 — enrich with SayIt status in background (updates "On SayIt" badges)
-      matchContactsWithSayIt(device, supabase)
-        .then(enriched => { if (enriched.length > 0) setSayItContacts(enriched); })
-        .catch(() => {});
-    } catch (e) { console.warn("[sayit] loadAndShowContacts error", e); }
+    const raw: SayItContact[] = native
+      .filter((c: any) => c.displayName && Array.isArray(c.phones) && c.phones.length > 0)
+      .map((c: any) => {
+        const phones = c.phones
+          .map((p: string) => { const d = String(p).replace(/\D/g, ""); return d.length >= 6 ? `+${d}` : ""; })
+          .filter(Boolean) as string[];
+        return { displayName: c.displayName, phones, userId: null as null, onSayIt: false, primaryPhone: phones[0] ?? "" };
+      })
+      .filter((c: SayItContact) => c.phones.length > 0);
+
+    if (raw.length === 0) return;
+
+    // Phase 1 — immediately available for name search
+    setContactsGranted(true);
+    setSayItContacts(raw);
+    setContactsLoading(false);
+
+    // Phase 2 — Supabase match in background (adds "On SayIt" indicator)
+    import("@/lib/contacts").then(({ clearContactsCache, loadDeviceContacts, matchContactsWithSayIt }) => {
+      clearContactsCache();
+      return loadDeviceContacts(true).then(device => matchContactsWithSayIt(device, supabase));
+    }).then(enriched => {
+      if (enriched.length > 0) setSayItContacts(enriched);
+    }).catch(() => {}); // enrichment failure is non-fatal
   }
 
   // ── Load device contacts on mount + request permission ───────────────
   async function loadContacts() {
     setContactsLoading(true);
-    const { granted, contacts } = await getOrRequestContacts(supabase);
-    setContactsGranted(granted);
-    if (contacts.length > 0) {
-      // iOS / Android with bridge working: contacts are already enriched
-      setSayItContacts(contacts);
-      setContactsLoading(false);
-    } else if (!granted) {
-      // No permission granted — stop loading immediately
-      setContactsLoading(false);
-    }
-    // If granted but empty: Android native injection hasn't arrived yet.
-    // Keep contactsLoading=true — the poll below will load contacts and set it false.
+    try {
+      const { granted, contacts } = await getOrRequestContacts(supabase);
+      setContactsGranted(granted);
+      if (contacts.length > 0) {
+        setSayItContacts(contacts);
+        setContactsLoading(false);
+        return;
+      }
+      if (!granted) { setContactsLoading(false); return; }
+      // granted but empty → Android native injection not arrived yet; poll will handle it
+    } catch { setContactsLoading(false); }
   }
 
   useEffect(() => {
-    // Callback registered for when Java injects contacts AFTER JS mounts.
-    // Uses two-phase load: show raw contacts immediately (fast), Supabase in background.
-    (window as any).__sayitContactsReady = () => { loadAndShowContacts(true); };
+    // Callback: Java calls this after injecting __sayitNativeContacts
+    (window as any).__sayitContactsReady = applyNativeContacts;
 
-    // Fast-path: if Java already injected before JS mounted, mark as granted so
-    // getOrRequestContacts() skips the (unreliable) Capacitor bridge on Android.
-    if (typeof window !== "undefined" && (window as any).__sayitNativeContacts?.length > 0) {
+    // Fast-path: if Java already injected before JS mounted
+    if ((window as any).__sayitNativeContacts?.length > 0) {
       (window as any).__sayitContactsGranted = true;
+      applyNativeContacts();
     }
 
     loadContacts();
 
-    // Android polling fallback: covers the case where Java fires __sayitContactsReady
-    // before this useEffect runs (callback not yet registered → silently skipped).
-    // Polls every 400 ms; stops as soon as native contacts appear, or after 8 s.
+    // Poll every 400 ms for up to 10 s — catches the case where Java fires before
+    // the callback was registered, or fires and the callback silently failed.
     let pollDone = false;
     const pollTimer = setInterval(() => {
       if (pollDone) return;
       if ((window as any).__sayitNativeContacts?.length > 0) {
         pollDone = true;
         clearInterval(pollTimer);
-        loadAndShowContacts(true);
+        applyNativeContacts();
       }
     }, 400);
-    // After 8 s give up — clear loading state so UI isn't stuck on spinner
     const pollStop = setTimeout(() => {
       pollDone = true;
       clearInterval(pollTimer);
-      setContactsLoading(false);
-    }, 8000);
+      setContactsLoading(false); // give up waiting
+    }, 10000);
 
     return () => {
       delete (window as any).__sayitContactsReady;
@@ -824,19 +828,23 @@ function SendPageInner() {
       ? `${senderName} sent you a card on SayIt 💌 Open it here: ${cardUrl}\n\nDownload SayIt to send cards back!`
       : `${senderName} sent you a card 💌 Open it here: ${cardUrl}`;
 
-    // Build full international phone number for SMS + WhatsApp
-    const intlPhone = (() => {
-      if (selectedContact?.primaryPhone) return selectedContact.primaryPhone.replace(/\D/g, "");
-      const digits = phone.replace(/\D/g, "");
-      if (countryCode) return `${countryCode.replace("+", "")}${digits}`;
-      if (digits.length === 10) return `91${digits}`; // India fallback
-      return digits;
-    })();
+    // Full international phone for WhatsApp (wa.me needs digits only, no +)
+    let rawPhone = phone.replace(/\D/g, "");
+    if (rawPhone.length === 10) rawPhone = "91" + rawPhone; // India fallback for bare 10-digit
+    // If contact selected, prefer their stored number
+    const waPhone = selectedContact?.primaryPhone
+      ? selectedContact.primaryPhone.replace(/\D/g, "")
+      : rawPhone;
 
-    // sms: URI — full number with & body separator (works on iOS; Android handles it too)
-    const smsPhone = `+${intlPhone}`;
-    const smsHref  = `sms:${smsPhone}&body=${encodeURIComponent(shareText)}`;
-    const waHref   = `https://wa.me/${intlPhone}?text=${encodeURIComponent(shareText)}`;
+    // Full international phone for SMS (E.164 with +)
+    const smsPhone = selectedContact?.primaryPhone
+      ? selectedContact.primaryPhone
+      : countryCode
+        ? `${countryCode}${phone.replace(/\D/g, "")}`
+        : `+${rawPhone}`;
+
+    const smsHref = `sms:${smsPhone}&body=${encodeURIComponent(shareText)}`;
+    const waHref  = `https://wa.me/${waPhone}?text=${encodeURIComponent(shareText)}`;
 
     return (
       <div className="flex flex-col min-h-dvh" style={{ background: "linear-gradient(160deg,#FFF5F7,#F8F0FF)" }}>
@@ -881,13 +889,9 @@ function SendPageInner() {
           </div>
 
           <div className="w-full flex flex-col gap-3">
-            {/* SMS / iMessage — first */}
+            {/* iMessage / SMS — first */}
             <button
-              onClick={() => {
-                // Open SMS app — user composes and sends themselves
-                window.open(smsHref, "_system");
-                setShareLaunched(true);
-              }}
+              onClick={() => { saveCardNow(); window.open(smsHref); setTimeout(() => setShared(true), 800); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
               style={{ background: "linear-gradient(135deg,#007AFF,#0055CC)", border: "none", cursor: "pointer" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">📱</div>
@@ -900,11 +904,7 @@ function SendPageInner() {
 
             {/* WhatsApp — second */}
             <button
-              onClick={() => {
-                // Open WhatsApp — user composes and sends themselves
-                window.open(waHref, "_system");
-                setShareLaunched(true);
-              }}
+              onClick={() => { saveCardNow(); window.open(waHref, "_blank"); setTimeout(() => setShared(true), 800); }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
               style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
@@ -915,24 +915,12 @@ function SendPageInner() {
               </div>
               <span className="text-gray-300 text-lg">›</span>
             </button>
-
-            {/* Confirm button — only appears after user has opened a share app */}
-            {shareLaunched && (
-              <button
-                onClick={() => { saveCardNow(); setShared(true); }}
-                className="w-full py-4 rounded-2xl text-white font-bold shadow-md text-sm mt-1"
-                style={{ background: "linear-gradient(135deg,#22c55e,#16a34a)" }}>
-                ✓ Done — I sent it!
-              </button>
-            )}
           </div>
 
-          {!shareLaunched && (
-            <button onClick={() => { cancelSend(); router.push("/home"); }}
-              className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
-              Cancel
-            </button>
-          )}
+          <button onClick={() => { cancelSend(); router.push("/home"); }}
+            className="w-full py-4 rounded-2xl bg-white border border-gray-100 text-gray-500 font-semibold text-sm shadow-sm mt-1">
+            Cancel
+          </button>
         </div>
       </div>
     );
