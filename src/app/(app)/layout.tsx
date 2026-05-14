@@ -359,6 +359,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const barTitle = PAGE_TITLES[pathname] ?? "";
 
+  // Full-screen routes own their entire viewport — no bottom nav, no 84px padding.
+  // Adding the padding would make the page 84px taller than the viewport and create
+  // a scrollable blank space below card/send content.
+  const isFullscreen = pathname.startsWith("/card/") ||
+                       pathname.startsWith("/send") ||
+                       pathname.startsWith("/create") ||
+                       pathname.startsWith("/schedule") ||
+                       pathname.startsWith("/custom-card/") ||
+                       pathname.startsWith("/meme-cards") ||
+                       pathname.startsWith("/category/");
+
   return (
     <>
       {/* ── Safe area spacer (transparent — gradient headers fill behind status bar) ── */}
@@ -370,7 +381,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* the element literally does not exist in the DOM at scroll=0.    */}
       {/* This is bulletproof: no CSS trick can make a non-existent node  */}
       {/* visible on any browser or platform.                             */}
-      {barTitle && showTitleBar && (
+      {barTitle && showTitleBar && !isFullscreen && (
         <div className="sticky-title-bar">
           <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.2px" }}>
             {barTitle}
@@ -380,10 +391,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Push permission is requested by OneSignal natively — no banner needed */}
 
-      <main className="page-content">{children}</main>
+      {/* Full-screen pages render without the 84 px bottom-nav padding. */}
+      <main className={isFullscreen ? "" : "page-content"}>{children}</main>
 
-      {/* ── Bottom Navigation ── */}
-      <nav className="bottom-nav">
+      {/* ── Bottom Navigation (hidden on full-screen pages) ── */}
+      {!isFullscreen && <nav className="bottom-nav">
         <div className="flex items-center px-2">
           {NAV.map(({ href, label, Icon }) => {
             const active   = pathname === href;
@@ -418,7 +430,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </div>
-      </nav>
+      </nav>}
     </>
   );
 }

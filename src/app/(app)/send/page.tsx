@@ -225,6 +225,33 @@ function SendPageInner() {
     // Android polling fallback: covers the case where Java fires __sayitContactsReady
     // before this useEffect runs (callback not yet registered → silently skipped).
     // Poll every 600 ms; stop as soon as native contacts appear, or after 8 s.
+    // Also retry loadContacts at 3 s and 5 s to cover the window where Java
+    // has injected __sayitNativeContacts but the callback was missed.
+    const t3 = setTimeout(async () => {
+      if ((window as any).__sayitNativeContacts?.length > 0) {
+        (window as any).__sayitContactsGranted = true;
+        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+        clearContactsCache();
+        const device = await loadDeviceContacts(true);
+        const enriched = await matchContactsWithSayIt(device, supabase);
+        setContactsGranted(true);
+        // Always update — even if Supabase profile match fails, device contacts
+        // should still appear in name search with onSayIt: false
+        setSayItContacts(enriched);
+      }
+    }, 3000);
+    const t5 = setTimeout(async () => {
+      if ((window as any).__sayitNativeContacts?.length > 0) {
+        (window as any).__sayitContactsGranted = true;
+        const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+        clearContactsCache();
+        const device = await loadDeviceContacts(true);
+        const enriched = await matchContactsWithSayIt(device, supabase);
+        setContactsGranted(true);
+        setSayItContacts(enriched);
+      }
+    }, 5000);
+
     let pollDone = false;
     const pollTimer = setInterval(async () => {
       if (pollDone) return;
@@ -235,10 +262,10 @@ function SendPageInner() {
         clearContactsCache();
         const device = await loadDeviceContacts(true);
         const enriched = await matchContactsWithSayIt(device, supabase);
-        if (enriched.length > 0) {
-          setContactsGranted(true);
-          setSayItContacts(enriched);
-        }
+        // Always update state regardless of enriched.length — device contacts
+        // with onSayIt:false are still valid for name search
+        setContactsGranted(true);
+        setSayItContacts(enriched);
       }
     }, 600);
     const pollStop = setTimeout(() => { pollDone = true; clearInterval(pollTimer); }, 8000);
@@ -248,6 +275,8 @@ function SendPageInner() {
       pollDone = true;
       clearInterval(pollTimer);
       clearTimeout(pollStop);
+      clearTimeout(t3);
+      clearTimeout(t5);
     };
   }, []);
 
@@ -857,34 +886,58 @@ function SendPageInner() {
           </div>
 
           <div className="w-full flex flex-col gap-3">
+            {/* WhatsApp — always works on Android */}
+            <button
+              onClick={() => { saveCardNow(); window.open(waHref, "_blank"); setTimeout(() => setShared(true), 800); }}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
+              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", border: "none", cursor: "pointer" }}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💬</div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold">Send via WhatsApp</p>
+                <p className="text-xs text-white/75">Opens WhatsApp with your card link</p>
+              </div>
+              <span className="text-white/60 text-lg">›</span>
+            </button>
+
+            {/* SMS */}
+            <button
+              onClick={() => { saveCardNow(); window.open(smsHref); setTimeout(() => setShared(true), 800); }}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
+              style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#007AFF20,#007AFF10)" }}>📱</div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-gray-800">Send via SMS / iMessage</p>
+                <p className="text-xs text-gray-400">Works with any messaging app</p>
+              </div>
+              <span className="text-gray-300 text-lg">›</span>
+            </button>
+
+            {/* Copy link */}
             <button
               onClick={() => {
                 saveCardNow();
-                if (typeof navigator !== "undefined" && navigator.share) {
-                  // Include url to force Android to show the full share sheet
-                  // instead of auto-routing to a single app
-                  navigator.share({ title: "SayIt Card 💌", text: shareText, url: cardUrl })
-                    .then(() => setTimeout(() => setShared(true), 600))
-                    .catch((err: any) => {
-                      if (err?.name === "AbortError") return; // user cancelled — do nothing
-                      // Share API failed — fall back to WhatsApp
-                      window.open(waHref, "_blank");
-                      setTimeout(() => setShared(true), 600);
-                    });
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(cardUrl).then(() => {
+                    alert("Link copied! Paste it anywhere to share.");
+                    setTimeout(() => setShared(true), 400);
+                  }).catch(() => {
+                    // Fallback: prompt user to copy
+                    prompt("Copy this link:", cardUrl);
+                  });
                 } else {
-                  // Fallback for browsers/WebViews without native share
-                  window.open(waHref, "_blank");
-                  setTimeout(() => setShared(true), 600);
+                  prompt("Copy this link:", cardUrl);
                 }
               }}
-              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
-              style={{ background: "linear-gradient(135deg,#25D366,#128C7E)", border: "none", cursor: "pointer" }}>
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">💌</div>
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
+              style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#9B59B620,#9B59B610)" }}>🔗</div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-bold">Send via WhatsApp / iMessage / SMS</p>
-                <p className="text-xs text-white/75">Choose how to deliver your card</p>
+                <p className="text-sm font-bold text-gray-800">Copy Link</p>
+                <p className="text-xs text-gray-400">Paste it anywhere — email, Notes, etc.</p>
               </div>
-              <span className="text-white/60 text-lg">›</span>
+              <span className="text-gray-300 text-lg">›</span>
             </button>
           </div>
           <button onClick={() => { cancelSend(); router.push("/home"); }}
@@ -980,6 +1033,13 @@ function SendPageInner() {
                 className="w-full px-4 py-3.5 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200 bg-gray-50"
                 autoFocus
               />
+              {/* Loading hint while contacts are still being fetched on Android */}
+              {contactsLoading && searchQuery && !selectedContact && !/^\+?[\d\s\-()]{4,}$/.test(searchQuery) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 px-4 py-3 z-50 flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-pink-200 border-t-pink-400 rounded-full animate-spin flex-shrink-0" />
+                  <p className="text-sm text-gray-400">Loading contacts…</p>
+                </div>
+              )}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
                   {suggestions.map((s, i) => (
