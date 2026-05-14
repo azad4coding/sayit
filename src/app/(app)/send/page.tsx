@@ -891,7 +891,25 @@ function SendPageInner() {
           <div className="w-full flex flex-col gap-3">
             {/* iMessage / SMS — first */}
             <button
-              onClick={() => { saveCardNow(); window.open(smsHref); setTimeout(() => setShared(true), 800); }}
+              onClick={() => {
+                saveCardNow();
+                // Use visibilitychange to detect when user returns from SMS app.
+                // This works on both iOS and Android: app goes hidden → user sends → comes back → visible.
+                let wentHidden = false;
+                let done = false;
+                const onVis = () => {
+                  if (document.visibilityState === "hidden") { wentHidden = true; return; }
+                  if (document.visibilityState === "visible" && wentHidden && !done) {
+                    done = true;
+                    document.removeEventListener("visibilitychange", onVis);
+                    setShared(true);
+                  }
+                };
+                document.addEventListener("visibilitychange", onVis);
+                // Fallback: mark sent after 60 s (in case visibility never fires)
+                setTimeout(() => { if (!done) { done = true; document.removeEventListener("visibilitychange", onVis); setShared(true); } }, 60000);
+                window.location.href = smsHref;
+              }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-white font-semibold shadow-lg"
               style={{ background: "linear-gradient(135deg,#007AFF,#0055CC)", border: "none", cursor: "pointer" }}>
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">📱</div>
@@ -904,7 +922,22 @@ function SendPageInner() {
 
             {/* WhatsApp — second */}
             <button
-              onClick={() => { saveCardNow(); window.open(waHref, "_blank"); setTimeout(() => setShared(true), 800); }}
+              onClick={() => {
+                saveCardNow();
+                let wentHidden = false;
+                let done = false;
+                const onVis = () => {
+                  if (document.visibilityState === "hidden") { wentHidden = true; return; }
+                  if (document.visibilityState === "visible" && wentHidden && !done) {
+                    done = true;
+                    document.removeEventListener("visibilitychange", onVis);
+                    setShared(true);
+                  }
+                };
+                document.addEventListener("visibilitychange", onVis);
+                setTimeout(() => { if (!done) { done = true; document.removeEventListener("visibilitychange", onVis); setShared(true); } }, 60000);
+                window.open(waHref, "_blank");
+              }}
               className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-semibold shadow-sm"
               style={{ background: "white", border: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"

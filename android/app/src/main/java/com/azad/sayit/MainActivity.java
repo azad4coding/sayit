@@ -77,11 +77,12 @@ public class MainActivity extends BridgeActivity {
             }
         }));
 
-        // Contacts permission: request if not granted, or inject immediately if already granted
+        // Contacts permission: request if not granted, or wait for page-ready then inject
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 == PackageManager.PERMISSION_GRANTED) {
-            // Already granted from a previous launch — inject contacts once WebView has loaded
-            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 800);
+            // Permission already granted — wait for the JS page to signal readiness,
+            // then inject. This avoids injecting into an unloaded WebView context.
+            waitForPageReadyAndInject(0);
         } else {
             // Ask for permission — result handled in onRequestPermissionsResult
             ActivityCompat.requestPermissions(this,
@@ -97,10 +98,39 @@ public class MainActivity extends BridgeActivity {
         if (requestCode == CONTACTS_PERMISSION_REQUEST
                 && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            android.util.Log.d("SayIt", "Contacts permission granted — injecting contacts");
-            // Short delay so the WebView JS is ready to receive the callback
-            new Handler(Looper.getMainLooper()).postDelayed(this::injectContactsIntoWebView, 800);
+            android.util.Log.d("SayIt", "Contacts permission granted — waiting for page ready");
+            waitForPageReadyAndInject(0);
         }
+    }
+
+    // ── Poll until window.__sayitPageReady is true, then inject contacts ──
+    // This ensures contacts are always injected into the live JS context,
+    // not into an empty WebView before the Next.js page has loaded.
+    private void waitForPageReadyAndInject(int attempt) {
+        if (attempt > 40) {
+            // Gave up after ~20 s — try injecting anyway as last resort
+            android.util.Log.w("SayIt", "Page-ready timeout, injecting anyway");
+            injectContactsIntoWebView();
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                getBridge().getWebView().evaluateJavascript(
+                    "!!window.__sayitPageReady",
+                    result -> {
+                        if ("true".equals(result)) {
+                            android.util.Log.d("SayIt", "Page ready after " + attempt + " polls — injecting contacts");
+                            injectContactsIntoWebView();
+                        } else {
+                            waitForPageReadyAndInject(attempt + 1);
+                        }
+                    }
+                );
+            } catch (Exception ex) {
+                android.util.Log.e("SayIt", "waitForPageReadyAndInject error", ex);
+                waitForPageReadyAndInject(attempt + 1);
+            }
+        }, 500);
     }
 
     // ── Load contacts from Android ContentResolver and inject into WebView ──

@@ -68,6 +68,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
+    // Signal to Android MainActivity that the page JS is loaded and ready.
+    // MainActivity polls for this flag before injecting contacts, so this
+    // ensures contacts are always injected into the live JS context.
+    if (typeof window !== "undefined") {
+      (window as any).__sayitPageReady = true;
+      // If Java already read contacts and is waiting for the page, notify it now.
+      if (typeof (window as any).__sayitInjectPending === "function") {
+        (window as any).__sayitInjectPending();
+      }
+    }
+
     (async () => {
       try {
         const { Capacitor } = await import("@capacitor/core");
