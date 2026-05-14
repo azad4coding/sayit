@@ -34,6 +34,24 @@ const FALLBACK: Pick<DBCategory, "id" | "name" | "icon" | "gradient_from" | "gra
   id: "", name: "Greeting", icon: "💌", gradient_from: "#C9A84C", gradient_to: "#B8892A", slug: "occasions",
 };
 
+// ── Left-panel mood quotes by category slug ───────────────────────────────────
+const CUSTOM_QUOTES: Record<string, string[]> = {
+  romance:          ["Some feelings\ndefy all words. 💕", "You are\nmy favourite thought. ❤️", "Love, quietly\nand completely. 🌹"],
+  occasions:        ["Thinking of you,\nwith warmth. 💌", "A little love,\nsent your way. 🌸", "Because you matter\nmore than you know. ✨"],
+  holidays:         ["Wishing you warmth\nand wonder. ✨", "The best moments\nare shared ones. 🌟", "Joy to you\nand all you love. 💌"],
+  birthday:         ["Another year\nof being wonderful. 🎂", "Today belongs\nentirely to you. 🎉", "Celebrating you,\nnow and always. ✨"],
+  vibes:            ["Good energy,\nalways. ✨", "This one's\nfor you. 💫", "You are\nthe vibe. 🌟"],
+  "thank-you":      ["Gratitude is\nthe warmest feeling. 🙏", "Thank you,\nfrom the heart. 💛", "What you did\nmeant everything. 🌸"],
+  "morning-wishes": ["A new day,\njust for you. ☀️", "Rise softly.\nThis day is yours. 🌅", "Morning sunshine,\nsent with love. ☀️"],
+  invitations:      ["Something special\nis happening. 🎉", "You're invited\nto a moment. ✨", "Come celebrate\nwith us. 💌"],
+  "paw-moments":    ["Not all angels\nhave wings. 🐾", "Home is where\nthe paw prints are.", "A pet is\na heartbeat at your feet."],
+};
+
+function getCustomQuote(slug: string): string {
+  const pool = CUSTOM_QUOTES[slug] ?? CUSTOM_QUOTES["occasions"];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export default function CustomCardPage() {
   const params   = useParams();
   const router   = useRouter();
@@ -55,6 +73,7 @@ export default function CustomCardPage() {
   const [view,     setView]     = useState<CardView>('front');
   const [message,  setMessage]  = useState("");
   const [sender,   setSender]   = useState("");
+  const [moodQuote] = useState(() => getCustomQuote(slug));
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -142,13 +161,39 @@ export default function CustomCardPage() {
             onClick={() => view === 'open' && setView('front')}
           >
             <div style={{ position: "absolute", inset: 0, backgroundImage: linesBg, backgroundSize: "100% 24px", backgroundPosition: "0 40px", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 16px", gap: 10 }}>
-              <p style={{ fontSize: 8, letterSpacing: 3, color: "#C9A84C", opacity: 0.7, textTransform: "uppercase", margin: 0 }}>{cat.name}</p>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px 12px", gap: 8 }}>
+              <p style={{ fontSize: view === "open" ? 11 : 8, letterSpacing: 2.5, color: "#C9A84C", opacity: 0.7, textTransform: "uppercase", textAlign: "center", margin: 0, transition: "font-size 0.3s" }}>{cat.name}</p>
+              {moodQuote && (
+                <p style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: "italic",
+                  fontSize: view === "open" ? 10 : 8,
+                  lineHeight: 1.65,
+                  color: "#8B6347",
+                  textAlign: "center",
+                  whiteSpace: "pre-line",
+                  opacity: 0.82,
+                  margin: "2px 4px",
+                  transition: "font-size 0.3s",
+                }}>
+                  {moodQuote}
+                </p>
+              )}
               <OrnamentLine color="#C9A84C" />
-              <div style={{ width: 110, height: 140, borderRadius: "50%", overflow: "hidden", border: "3px solid #C9A84C", boxShadow: "0 0 0 4px rgba(201,168,76,0.1),0 4px 16px rgba(0,0,0,0.12)", background: "#C9A84C" }}>
+              <div style={{
+                width: view === "open" ? 152 : 110,
+                height: view === "open" ? 152 : 110,
+                borderRadius: "50%",
+                overflow: "hidden",
+                border: "3px solid #C9A84C",
+                boxShadow: "0 0 0 5px rgba(201,168,76,0.12),0 6px 20px rgba(0,0,0,0.14)",
+                flexShrink: 0,
+                background: gradFrom,
+                transition: "width 0.3s, height 0.3s",
+              }}>
                 {bgPhoto
                   ? <img src={bgPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,rgba(201,168,76,0.3),rgba(201,168,76,0.1))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{cat.icon}</div>
+                  : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg,${gradFrom}55,${gradFrom}22)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{cat.icon}</div>
                 }
               </div>
               <OrnamentLine color="#C9A84C" />
