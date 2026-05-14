@@ -2,9 +2,10 @@
 // Wraps @capacitor-community/contacts with permission handling, phone
 // normalisation, and SayIt-profile matching.
 //
-// The plugin is loaded dynamically so the web/SSR build never touches it.
-// All functions fail gracefully (return []/false) if permission is denied
-// or the plugin isn't available (web browser).
+// On Android, the Capacitor JS bridge can be unreliable when loading from a
+// remote Vercel URL. As a fallback, MainActivity.java reads contacts natively
+// and injects them via window.__sayitNativeContacts + window.__sayitContactsGranted.
+// This file checks those globals first before falling back to the bridge.
 
 export interface DeviceContact {
   displayName: string;
@@ -26,25 +27,12 @@ function normalizePhone(raw: string): string {
   return `+${digits}`;
 }
 
-// Build the set of variants we'll try when matching against Supabase.
-//
-// The core problem: iOS often stores contacts WITHOUT a country code prefix,
-// so a number like +91 9876543210 is saved as just "9876543210" (10 digits).
-// Supabase profiles are stored in full E.164 (+919876543210). We must bridge that gap
-// in both directions:
-//   A) profile has E.164, contact has bare digits → add country prefix to contact
-//   B) contact has E.164, profile has bare digits → strip country prefix from contact
-//
-// We also handle the China edge case: 11-digit Chinese mobile numbers start with 1
-// (e.g. 13812345678), which is ambiguous with US 11-digit (+1 + 10 digits).
-// We conservatively add variants for both interpretations.
 function phoneVariants(normalized: string): string[] {
   const digits = normalized.replace(/\D/g, "");
   const variants = new Set<string>();
-  variants.add(normalized);   // "+91..." or "+1..." — the normalised form
-  variants.add(digits);       // "91..." or "1..."   — bare digits
+  variants.add(normalized);
+  variants.add(digits);
 
-  // ── Direction B: strip country prefix → bare local number ───────────────
   if (digits.length === 12 && digits.startsWith("91")) variants.add(digits.slice(2));  // India
   if (digits.length === 12 && digits.startsWith("44")) variants.add(digits.slice(2));  // UK
   if (digits.length === 12 && digits.startsWith("86")) variants.add(digits.slice(2));  // China
@@ -57,20 +45,16 @@ function phoneVariants(normalized: string): string[] {
   if (digits.length === 12 && digits.startsWith("92")) variants.add(digits.slice(2));  // Pakistan
   if (digits.length === 12 && digits.startsWith("49")) variants.add(digits.slice(2));  // Germany (approx)
 
-  // ── Direction A: bare local → add country prefix ─────────────────────────
-  // 10-digit bare numbers — most common iOS omission
   if (digits.length === 10) {
-    variants.add(`+1${digits}`);    // US / Canada  (+1 XXXXXXXXXX)
+    variants.add(`+1${digits}`);
     variants.add(`1${digits}`);
-    variants.add(`+91${digits}`);   // India        (+91 XXXXXXXXXX)
+    variants.add(`+91${digits}`);
     variants.add(`91${digits}`);
-    variants.add(`+44${digits}`);   // UK           (+44 XXXXXXXXXX) — rare but possible
+    variants.add(`+44${digits}`);
     variants.add(`44${digits}`);
   }
-  // 11-digit bare numbers — Chinese mobile (13x, 14x, 15x, 17x, 18x, 19x)
   if (digits.length === 11 && !digits.startsWith("1")) {
-    // Non-US 11-digit (US 11-digit already handled above via strip-1)
-    variants.add(`+86${digits}`);   // China
+    variants.add(`+86${digits}`);
     variants.add(`86${digits}`);
   }
 
@@ -90,13 +74,19 @@ export function clearContactsCache() {
 // ── Permission ────────────────────────────────────────────────────────────
 
 export async function checkContactsPermission(): Promise<"granted" | "denied" | "prompt"> {
+  // Fast-path: check the native flag injected by MainActivity (Android).
+  // This bypasses the Capacitor JS bridge which can be unreliable for remote URLs.
+  if (typeof window !== "undefined" && (window as any).__sayitContactsGranted === true) {
+    return "granted";
+  }
   try {
     const { Contacts } = await import("@capacitor-community/contacts");
     const result = await Contacts.checkPermissions();
+    if (result.contacts === "granted" && typeof window !== "undefined") {
+      (window as any).__sayitContactsGranted = true;
+    }
     return result.contacts as "granted" | "denied" | "prompt";
   } catch {
-    // Plugin not available (web browser) or bridge not ready — treat as prompt
-    // so requestContactsPermission is still attempted on native
     return "prompt";
   }
 }
@@ -105,6 +95,9 @@ export async function requestContactsPermission(): Promise<boolean> {
   try {
     const { Contacts } = await import("@capacitor-community/contacts");
     const result = await Contacts.requestPermissions();
+    if (result.contacts === "granted" && typeof window !== "undefined") {
+      (window as any).__sayitContactsGranted = true;
+    }
     return result.contacts === "granted";
   } catch {
     return false;
@@ -112,12 +105,34 @@ export async function requestContactsPermission(): Promise<boolean> {
 }
 
 // ── Load device contacts ──────────────────────────────────────────────────
-// Returns all contacts that have at least one valid phone number.
-// Result is cached in memory for the session.
+// Checks for natively-injected contacts first (Android fallback),
+// then falls back to the Capacitor bridge (iOS + Android when bridge works).
 
 export async function loadDeviceContacts(force = false): Promise<DeviceContact[]> {
   if (_deviceContacts && !force) return _deviceContacts;
 
+  // ── Android native fallback: contacts injected by MainActivity.java ──────
+  if (typeof window !== "undefined") {
+    const native = (window as any).__sayitNativeContacts;
+    if (Array.isArray(native) && native.length > 0) {
+      const result: DeviceContact[] = [];
+      for (const c of native) {
+        const name = c.displayName || "";
+        if (!name) continue;
+        const phones = Array.from(new Set(
+          (c.phones || [])
+            .map((p: string) => normalizePhone(p))
+            .filter((p: string) => p.length >= 8)
+        )) as string[];
+        if (phones.length === 0) continue;
+        result.push({ displayName: name, phones });
+      }
+      _deviceContacts = result;
+      return result;
+    }
+  }
+
+  // ── Capacitor bridge (iOS + Android when bridge is available) ────────────
   try {
     const { Contacts } = await import("@capacitor-community/contacts");
     const { contacts } = await Contacts.getContacts({
@@ -147,15 +162,12 @@ export async function loadDeviceContacts(force = false): Promise<DeviceContact[]
     _deviceContacts = result;
     return result;
   } catch {
-    // Don't cache failures — allow retries
     _deviceContacts = null;
     return [];
   }
 }
 
 // ── Match device contacts against SayIt profiles ─────────────────────────
-// Batch-queries Supabase with all unique phone variants.
-// Returns contacts enriched with SayIt registration info.
 
 export async function matchContactsWithSayIt(
   deviceContacts: DeviceContact[],
@@ -164,7 +176,6 @@ export async function matchContactsWithSayIt(
 ): Promise<SayItContact[]> {
   if (deviceContacts.length === 0) return [];
 
-  // Collect every variant of every phone number
   const allVariants = new Set<string>();
   for (const c of deviceContacts) {
     for (const p of c.phones) {
@@ -172,14 +183,12 @@ export async function matchContactsWithSayIt(
     }
   }
 
-  // Batch lookup — Supabase IN clause handles up to ~1000 values fine
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, phone, full_name")
     .in("phone", Array.from(allVariants))
     .not("phone", "is", null);
 
-  // Build phone → profile map
   const profileMap = new Map<string, { id: string; name: string }>();
   for (const p of (profiles ?? [])) {
     if (!p.phone) continue;
@@ -188,7 +197,6 @@ export async function matchContactsWithSayIt(
     }
   }
 
-  // Merge
   return deviceContacts.map((contact): SayItContact => {
     let matchedProfile: { id: string; name: string } | null = null;
     let primaryPhone = contact.phones[0] ?? "";
@@ -215,7 +223,6 @@ export async function matchContactsWithSayIt(
 }
 
 // ── Convenience: permission → load → match in one call ───────────────────
-// Used by the send page on first open.
 
 export async function getOrRequestContacts(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
