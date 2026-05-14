@@ -1,8 +1,13 @@
 package com.azad.sayit;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.onesignal.OneSignal;
 import com.onesignal.debug.LogLevel;
@@ -75,5 +80,13 @@ public class MainActivity extends BridgeActivity {
                 android.util.Log.d("OneSignal", "Push permission granted");
             }
         }));
+
+        // Request contacts permission natively — more reliable than going through JS bridge
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                new String[]{ Manifest.permission.READ_CONTACTS },
+                1001);
+        }
     }
 }
