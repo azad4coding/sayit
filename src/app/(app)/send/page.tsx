@@ -199,8 +199,8 @@ function SendPageInner() {
           clearContactsCache();
           const device = await loadDeviceContacts(true);
           let enriched: SayItContact[] = [];
-          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
-          setSayItContacts(enriched.length > 0 ? enriched : device);
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })); }
+          setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
         } catch (e) { console.warn("[sayit] contacts retry error", e); }
       }, 800);
     }
@@ -216,7 +216,7 @@ function SendPageInner() {
         let enriched: SayItContact[] = [];
         try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
         setContactsGranted(true);
-        setSayItContacts(enriched.length > 0 ? enriched : device);
+        setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
       } catch (e) { console.warn("[sayit] __sayitContactsReady error", e); }
     };
 
@@ -241,9 +241,9 @@ function SendPageInner() {
           clearContactsCache();
           const device = await loadDeviceContacts(true);
           let enriched: SayItContact[] = [];
-          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })); }
           setContactsGranted(true);
-          setSayItContacts(enriched.length > 0 ? enriched : device);
+          setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
         } catch (e) { console.warn("[sayit] t3 contacts error", e); }
       }
     }, 3000);
@@ -255,9 +255,9 @@ function SendPageInner() {
           clearContactsCache();
           const device = await loadDeviceContacts(true);
           let enriched: SayItContact[] = [];
-          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })); }
           setContactsGranted(true);
-          setSayItContacts(enriched.length > 0 ? enriched : device);
+          setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
         } catch (e) { console.warn("[sayit] t5 contacts error", e); }
       }
     }, 5000);
@@ -273,10 +273,10 @@ function SendPageInner() {
           clearContactsCache();
           const device = await loadDeviceContacts(true);
           let enriched: SayItContact[] = [];
-          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device; }
+          try { enriched = await matchContactsWithSayIt(device, supabase); } catch { enriched = device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })); }
           // Always update state — device contacts with onSayIt:false are still valid for name search
           setContactsGranted(true);
-          setSayItContacts(enriched.length > 0 ? enriched : device);
+          setSayItContacts(enriched.length > 0 ? enriched : device.map(c => ({ ...c, userId: null, onSayIt: false, primaryPhone: c.phones[0] ?? "" })));
         } catch (e) { console.warn("[sayit] poll contacts error", e); }
       }
     }, 600);
