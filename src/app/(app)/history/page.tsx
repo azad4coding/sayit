@@ -180,7 +180,7 @@ function ThreadView({
 }) {
   const router = useRouter();
   const sorted = [...contact.cards].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   const [reactionMap, setReactionMap] = useState<Record<string, Record<string, number>>>({});
 
@@ -281,18 +281,20 @@ function ThreadView({
                     className="w-[90%] text-left overflow-hidden active:scale-[0.985] transition-transform"
                     style={{
                       borderRadius: 18,
-                      background: "white",
+                      background: isSent
+                        ? "linear-gradient(135deg,#F0FDF4,#DCFCE7)"
+                        : "linear-gradient(135deg,#F0F9FF,#E0F2FE)",
                       boxShadow: isSent
-                        ? "0 3px 20px rgba(255,107,138,0.18), 0 1px 6px rgba(0,0,0,0.06)"
-                        : "0 3px 20px rgba(155,89,182,0.15), 0 1px 6px rgba(0,0,0,0.06)",
-                      border: `1.5px solid ${isSent ? "rgba(255,107,138,0.35)" : "rgba(155,89,182,0.3)"}`,
+                        ? "0 3px 20px rgba(34,197,94,0.15), 0 1px 6px rgba(0,0,0,0.05)"
+                        : "0 3px 20px rgba(14,165,233,0.15), 0 1px 6px rgba(0,0,0,0.05)",
+                      border: `1.5px solid ${isSent ? "rgba(34,197,94,0.3)" : "rgba(14,165,233,0.3)"}`,
                     }}>
                     <div style={{
                       height: 3,
                       background: isSent
-                        ? "linear-gradient(90deg,#FF6B8A,#E84C6A)"
-                        : "linear-gradient(90deg,#9B59B6,#7D3C98)",
-                      opacity: 0.75,
+                        ? "linear-gradient(90deg,#22C55E,#16A34A)"
+                        : "linear-gradient(90deg,#38BDF8,#0284C7)",
+                      opacity: 0.85,
                     }} />
 
                     <div className="flex items-start gap-3 px-3.5 py-3">
@@ -300,12 +302,12 @@ function ThreadView({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                           <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{
-                            background: isSent ? "rgba(255,107,138,0.1)" : "rgba(155,89,182,0.1)",
-                            color: isSent ? "#D4366A" : "#7D3C98",
+                            background: isSent ? "rgba(34,197,94,0.12)" : "rgba(14,165,233,0.12)",
+                            color: isSent ? "#15803D" : "#0369A1",
                           }}>
                             {isSent ? "Sent" : `Received from ${contact.label.split(" ")[0]}`}
                           </span>
-                          <span className="text-[9px] font-medium" style={{ color: isSent ? "#FF6B8A" : "#9B59B6" }}>
+                          <span className="text-[9px] font-medium" style={{ color: isSent ? "#16A34A" : "#0EA5E9" }}>
                             · {category}
                           </span>
                           {isSent && card.viewed_at && (
@@ -646,11 +648,15 @@ function ChatsPageInner() {
                 className="w-full text-left active:scale-[0.985] transition-transform"
                 style={{
                   borderRadius: 20,
-                  background: isGiftCard ? "linear-gradient(135deg,#FFF5FB 0%,#F8F0FF 100%)" : "white",
+                  background: isGiftCard
+                    ? "linear-gradient(135deg,#FFF5FB 0%,#F8F0FF 100%)"
+                    : "linear-gradient(135deg,#FFFDE7 0%,#FFFBCC 100%)",
                   boxShadow: isGiftCard
                     ? "0 4px 20px rgba(196,181,253,0.25), 0 1px 4px rgba(0,0,0,0.04)"
-                    : "0 2px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
-                  border: isGiftCard ? `1px solid ${gcBorder}` : "1px solid rgba(0,0,0,0.05)",
+                    : "0 2px 16px rgba(251,191,36,0.18), 0 1px 4px rgba(0,0,0,0.04)",
+                  border: isGiftCard
+                    ? `1px solid ${gcBorder}`
+                    : "1px solid rgba(251,191,36,0.35)",
                   overflow: "hidden",
                 }}>
 
@@ -658,9 +664,7 @@ function ChatsPageInner() {
                   height: 3,
                   background: isGiftCard
                     ? gcStrip
-                    : isSent
-                      ? "linear-gradient(90deg,#FF6B8A,#E84C6A)"
-                      : "linear-gradient(90deg,#9B59B6,#7D3C98)",
+                    : "linear-gradient(90deg,#F59E0B,#FBBF24)",
                   opacity: 0.9,
                 }} />
 
