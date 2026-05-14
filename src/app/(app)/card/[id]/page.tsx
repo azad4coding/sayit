@@ -804,7 +804,7 @@ function CardPageInner() {
 
   if (stage === 'envelope') {
     return (
-      <div style={{ minHeight: '100vh', background: isPawMoments ? 'linear-gradient(160deg,#F5EDE0,#EDD9C0,#E8CFA8)' : 'linear-gradient(160deg,#FDF6EE,#F7EBE0,#F0DDD0)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, fontFamily: 'Georgia,serif', position: 'relative' }}>
+      <div style={{ minHeight: '100vh', background: isPawMoments ? 'linear-gradient(160deg,#F5EDE0,#EDD9C0,#E8CFA8)' : 'linear-gradient(160deg,#FDF6EE,#F7EBE0,#F0DDD0)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, fontFamily: 'Georgia,serif', position: 'relative', paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 24px) + 56px)', paddingBottom: 24 }}>
         {/* Back arrow — all modes */}
         <button
           onClick={() => backUrl ? router.push(backUrl) : router.back()}
@@ -833,7 +833,7 @@ function CardPageInner() {
 
   if (stage === 'card') {
     return (
-      <div style={{ minHeight: '100vh', position: 'relative', background: isPawMoments ? 'radial-gradient(ellipse at 50% 40%,#F0E4D0,#E8D5BA,#DFC8A8)' : 'radial-gradient(ellipse at 50% 40%,#FDF6EE,#F7EBE0,#F0DDD0)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 8px', fontFamily: 'Georgia,serif' }}>
+      <div style={{ minHeight: '100vh', position: 'relative', background: isPawMoments ? 'radial-gradient(ellipse at 50% 40%,#F0E4D0,#E8D5BA,#DFC8A8)' : 'radial-gradient(ellipse at 50% 40%,#FDF6EE,#F7EBE0,#F0DDD0)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 24px) + 56px)', paddingBottom: 24, paddingLeft: 8, paddingRight: 8, fontFamily: 'Georgia,serif' }}>
 
         {/* ── Top-left back arrow ──
              • view='back'  → close SayIt panel, go to open card

@@ -163,7 +163,7 @@ function SendPageInner() {
 
   // Phone input (for manual entry when no contact selected)
   const [phone,          setPhone]          = useState("");
-  const [countryCode,    setCountryCode]    = useState("+1");
+  const [countryCode,    setCountryCode]    = useState<string | null>(null);
   const [showCCDropdown, setShowCCDropdown] = useState(false);
 
   // Send state
@@ -204,7 +204,19 @@ function SendPageInner() {
   }
 
   useEffect(() => {
+    // Register callback so native (Android) contacts injection triggers a reload
+    (window as any).__sayitContactsReady = async () => {
+      const { clearContactsCache, loadDeviceContacts, matchContactsWithSayIt } = await import("@/lib/contacts");
+      clearContactsCache();
+      const device = await loadDeviceContacts(true);
+      const enriched = await matchContactsWithSayIt(device, supabase);
+      setContactsGranted(true);
+      setSayItContacts(enriched);
+    };
+
     loadContacts();
+
+    return () => { delete (window as any).__sayitContactsReady; };
   }, []);
 
   // ── Geo + daily count ─────────────────────────────────────────────────
@@ -273,7 +285,7 @@ function SendPageInner() {
         if (!digits.startsWith("44"))  { variants.push(`+44${digits}`);  variants.push(`44${digits}`); }
         if (!digits.startsWith("971")) { variants.push(`+971${digits}`); variants.push(`971${digits}`); }
       }
-      const ccDigits = `${countryCode}${digits}`;
+      const ccDigits = countryCode ? `${countryCode}${digits}` : `+${digits}`;
       variants.push(ccDigits);
       variants.push(ccDigits.replace(/^\+/, ""));            // no-+ form of country+digits
       const unique = Array.from(new Set(variants));
@@ -327,6 +339,7 @@ function SendPageInner() {
     setFoundUser(null);
     setSearchQuery("");
     setPhone("");
+    setCountryCode(null);
     setSuggestions([]);
     setFirstContactForced(false);
   }
@@ -335,37 +348,42 @@ function SendPageInner() {
 
   async function handleSend() {
     setPhoneError(null);
-    if (!phone.trim() && !selectedContact) {
+    if (!selectedContact && !phone.trim()) {
       setPhoneError("Please enter a phone number or select a contact");
       return;
     }
-    const digits = phone.replace(/\D/g, "");
-    const rule = DIGIT_RULES[countryCode];
-    if (rule) {
-      if (digits.length < rule.min) {
-        setPhoneError(`Too short — enter ${rule.label} digits for ${countryCode}`);
-        return;
-      }
-      if (digits.length > rule.max) {
-        setPhoneError(`Too long — enter ${rule.label} digits for ${countryCode}`);
-        return;
-      }
-    } else {
-      if (digits.length < 6)  { setPhoneError("Please enter a valid phone number"); return; }
-      if (digits.length > 12) { setPhoneError("Phone number is too long"); return; }
-    }
 
-    // Deep validation — catches invalid numbers that pass the digit count check
-    // e.g. +91 1234567890 has 10 digits but is not a real Indian mobile number
-    try {
-      if (!isValidPhoneNumber(`${countryCode}${digits}`)) {
+    // Only validate manual phone entry — skip for selected contacts (trust their stored number)
+    if (!selectedContact) {
+      if (!countryCode) {
+        setPhoneError("Please select a country code");
+        return;
+      }
+      const digits = phone.replace(/\D/g, "");
+      const rule = DIGIT_RULES[countryCode];
+      if (rule) {
+        if (digits.length < rule.min) {
+          setPhoneError(`Too short — enter ${rule.label} digits for ${countryCode}`);
+          return;
+        }
+        if (digits.length > rule.max) {
+          setPhoneError(`Too long — enter ${rule.label} digits for ${countryCode}`);
+          return;
+        }
+      } else {
+        if (digits.length < 6)  { setPhoneError("Please enter a valid phone number"); return; }
+        if (digits.length > 12) { setPhoneError("Phone number is too long"); return; }
+      }
+      // Deep validation — catches invalid numbers that pass the digit count check
+      try {
+        if (!isValidPhoneNumber(`${countryCode}${digits}`)) {
+          setPhoneError("Invalid phone number — please check the number and try again");
+          return;
+        }
+      } catch {
         setPhoneError("Invalid phone number — please check the number and try again");
         return;
       }
-    } catch {
-      // isValidPhoneNumber can throw for unknown/unusual inputs — treat as invalid
-      setPhoneError("Invalid phone number — please check the number and try again");
-      return;
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -394,7 +412,9 @@ function SendPageInner() {
     }
 
     const code = uuidv4().slice(0, 8);
-    const fullPhone = `${countryCode}${phone.replace(/\D/g, "")}`;
+    const fullPhone = selectedContact?.primaryPhone
+      ? ensurePlus(selectedContact.primaryPhone)
+      : `${countryCode ?? ""}${phone.replace(/\D/g, "")}`;
 
     let pawPhotos: string[] | null = null;
     let pawFrame: string | null = null;
@@ -809,11 +829,18 @@ function SendPageInner() {
               onClick={() => {
                 saveCardNow();
                 if (typeof navigator !== "undefined" && navigator.share) {
-                  navigator.share({ text: shareText })
+                  // Include url to force Android to show the full share sheet
+                  // instead of auto-routing to a single app
+                  navigator.share({ title: "SayIt Card 💌", text: shareText, url: cardUrl })
                     .then(() => setTimeout(() => setShared(true), 600))
-                    .catch(() => {});
+                    .catch((err: any) => {
+                      if (err?.name === "AbortError") return; // user cancelled — do nothing
+                      // Share API failed — fall back to WhatsApp
+                      window.open(waHref, "_blank");
+                      setTimeout(() => setShared(true), 600);
+                    });
                 } else {
-                  // Fallback for browsers without native share — open WhatsApp
+                  // Fallback for browsers/WebViews without native share
                   window.open(waHref, "_blank");
                   setTimeout(() => setShared(true), 600);
                 }
@@ -872,17 +899,6 @@ function SendPageInner() {
           </div>
         )}
 
-        {/* Contacts retry banner — shown if permission was denied or contacts failed to load */}
-        {!contactsGranted && !contactsLoading && (
-          <button
-            onClick={loadContacts}
-            className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl mb-3 text-sm font-semibold"
-            style={{ background: "rgba(255,107,138,0.08)", border: "1px solid rgba(255,107,138,0.2)", color: "#FF6B8A" }}
-          >
-            <span>📋</span>
-            <span>Tap to load contacts</span>
-          </button>
-        )}
 
         {/* Recipient search */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -910,17 +926,22 @@ function SendPageInner() {
             <div className="relative">
               <input
                 type="text"
-                placeholder={contactsGranted ? "Search contacts or enter phone number" : "Enter phone number"}
+                placeholder="Search contacts or enter phone number"
                 value={searchQuery}
                 onChange={e => {
                   const v = e.target.value;
                   setPhoneError(null);
-                  if (/^\+?[\d\s\-()]+$/.test(v)) {
+                  const looksLikePhone = /^\+?[\d\s\-()]+$/.test(v) && v.trim().length > 0;
+                  if (looksLikePhone) {
                     const raw = v.replace(/\D/g, "");
-                    const maxDigits = DIGIT_RULES[countryCode]?.max ?? 12;
+                    const maxDigits = countryCode ? (DIGIT_RULES[countryCode]?.max ?? 15) : 15;
                     if (raw.length > maxDigits) return; // hard cap — ignore extra digits
                     setPhone(raw);
                     setFoundUser(null);
+                    // Auto-open country code dropdown on first digit if none selected
+                    if (!countryCode && !showCCDropdown) setShowCCDropdown(true);
+                  } else {
+                    setPhone(""); // not phone mode — typing a name
                   }
                   setSearchQuery(v);
                 }}
@@ -957,14 +978,20 @@ function SendPageInner() {
           )}
 
           {/* Manual phone display when typing a number */}
-          {!selectedContact && phone.length >= 6 && (
+          {!selectedContact && /^\+?[\d\s\-()]+$/.test(searchQuery) && searchQuery.trim().length > 0 && (
             <div className="mt-3">
               <div className="flex gap-2">
                 <div className="relative">
                   <button type="button" onClick={() => setShowCCDropdown(v => !v)}
                     className="h-full px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap">
-                    <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
-                    <span className="text-gray-700">{countryCode}</span>
+                    {countryCode ? (
+                      <>
+                        <span>{COUNTRY_CODES.find(c => c.code === countryCode)?.flag}</span>
+                        <span className="text-gray-700">{countryCode}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-xs">🌐 Code</span>
+                    )}
                     <ChevronDown className="w-3 h-3 text-gray-400" />
                   </button>
                   {showCCDropdown && (
@@ -984,9 +1011,11 @@ function SendPageInner() {
                 <div className="flex-1 px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-600">{phone}</div>
               </div>
               <p className="text-xs text-gray-400 mt-2 px-1">
-                {DIGIT_RULES[countryCode]
-                  ? `Enter ${DIGIT_RULES[countryCode].label} digits for ${countryCode} · ${phone.length}/${DIGIT_RULES[countryCode].max}`
-                  : "Enter the local number without country code"}
+                {!countryCode
+                  ? "Select a country code first"
+                  : DIGIT_RULES[countryCode]
+                    ? `Enter ${DIGIT_RULES[countryCode].label} digits for ${countryCode} · ${phone.length}/${DIGIT_RULES[countryCode].max}`
+                    : "Enter the local number without country code"}
               </p>
             </div>
           )}
@@ -1023,7 +1052,7 @@ function SendPageInner() {
         ) : (
           <button
             onClick={handleSend}
-            disabled={(!phone.trim() && !selectedContact) || sending}
+            disabled={(!selectedContact && (!phone.trim() || !countryCode)) || sending}
             className="w-full py-4 text-white font-bold disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", borderRadius: 30, boxShadow: "0 4px 18px rgba(255,107,138,0.35)", fontSize: 15 }}>
             {sending
