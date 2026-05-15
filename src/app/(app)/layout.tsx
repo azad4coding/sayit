@@ -335,26 +335,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         catch { return new Date(0).toISOString(); }
       })();
 
-      // Build query helpers (phone variants for OR filter)
-      const phoneOrFilter = (q: ReturnType<typeof supabase.from>, phone: string, userId: string) => {
-        const wp  = phone.startsWith("+") ? phone : `+${phone}`;
-        const wop = phone.startsWith("+") ? phone.slice(1) : phone;
-        return q.or(`recipient_id.eq.${userId},recipient_phone.eq.${wp},recipient_phone.eq.${wop}`);
-      };
+      // Build phone variants once for both badge queries
+      const wpI  = myPhone ? (myPhone.startsWith("+") ? myPhone : `+${myPhone}`) : null;
+      const wopI = myPhone ? (myPhone.startsWith("+") ? myPhone.slice(1) : myPhone) : null;
 
       let incomingQ = supabase
         .from("sent_cards")
         .select("id", { count: "exact", head: true })
         .gt("created_at", lastSeenChats)
         .neq("sender_id", user.id);
-      incomingQ = myPhone ? phoneOrFilter(incomingQ, myPhone, user.id) : incomingQ.eq("recipient_id", user.id);
+      if (myPhone && wpI && wopI) {
+        incomingQ = incomingQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wpI},recipient_phone.eq.${wopI}`);
+      } else {
+        incomingQ = incomingQ.eq("recipient_id", user.id);
+      }
 
       let newRecvQ = supabase
         .from("sent_cards")
         .select("id", { count: "exact", head: true })
         .gt("created_at", lastSeenWishes)
         .neq("sender_id", user.id);
-      newRecvQ = myPhone ? phoneOrFilter(newRecvQ, myPhone, user.id) : newRecvQ.eq("recipient_id", user.id);
+      if (myPhone && wpI && wopI) {
+        newRecvQ = newRecvQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wpI},recipient_phone.eq.${wopI}`);
+      } else {
+        newRecvQ = newRecvQ.eq("recipient_id", user.id);
+      }
 
       // Step 2: Run all three badge count queries in parallel.
       const [incomingResult, newRecvResult, rxResult] = await Promise.all([
