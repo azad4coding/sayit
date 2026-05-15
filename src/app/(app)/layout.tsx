@@ -139,6 +139,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") {
         resolveInitialSession.current?.(session);
+      } else if (event === "SIGNED_IN") {
+        // Also resolve the promise if SIGNED_IN arrives after INITIAL_SESSION fired with null.
+        // This handles the race where the OAuth exchange completes just after INITIAL_SESSION.
+        resolveInitialSession.current?.(session);
+        // Clear the resolver so future SIGNED_IN events don't re-trigger check() logic
+        resolveInitialSession.current = null;
       } else if (event === "SIGNED_OUT") {
         router.replace("/login");
       }

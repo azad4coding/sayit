@@ -34,14 +34,24 @@ export function OAuthCallbackHandler() {
             return;
           }
 
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          console.log("[SayIt OAuth] exchangeCodeForSession:", error ? "ERROR: " + error.message : "OK, user=" + data?.user?.email);
+          try {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+            console.log("[SayIt OAuth] exchangeCodeForSession:", error ? "ERROR: " + error.message : "OK, user=" + data?.user?.email);
 
-          if (!error) {
-            router.replace("/home");
-          } else {
-            // Show error so we can debug
-            alert("[SayIt OAuth] Exchange failed: " + error.message);
+            if (!error) {
+              // Use a full page reload so Supabase re-reads the persisted session
+              // from storage on the new page — avoids any React Router / INITIAL_SESSION
+              // race where the in-memory session isn't picked up by (app)/layout's check().
+              console.log("[SayIt OAuth] navigating to /home via full reload");
+              window.location.href = "/home";
+            } else {
+              console.error("[SayIt OAuth] Exchange failed:", error.message);
+              window.location.href = "/login?oauthError=" + encodeURIComponent(error.message);
+            }
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("[SayIt OAuth] exchangeCodeForSession threw:", msg);
+            window.location.href = "/login?oauthError=" + encodeURIComponent(msg);
           }
         });
         cleanup = () => handle.remove();
