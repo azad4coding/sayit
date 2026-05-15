@@ -66,32 +66,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
 
-  // ── Handle Google OAuth deep-link callback (native only) ─────────────────
-  // After the user completes Google sign-in in SFSafariViewController /
-  // Chrome Custom Tab, the system fires com.azad.sayit://home?code=… which
-  // Capacitor delivers as an appUrlOpen event.  We close the in-app browser,
-  // exchange the PKCE code for a Supabase session, then navigate to /home.
-  useEffect(() => {
-    let cleanup: (() => void) | undefined;
-    (async () => {
-      try {
-        const { Capacitor } = await import("@capacitor/core");
-        if (!Capacitor.isNativePlatform()) return;
-        const { App: CapApp } = await import("@capacitor/app");
-        const { Browser } = await import("@capacitor/browser");
-        const handle = await CapApp.addListener("appUrlOpen", async ({ url }) => {
-          if (!url.startsWith("com.azad.sayit://")) return;
-          // Close the in-app browser (SFSafariViewController / Custom Tab)
-          await Browser.close().catch(() => {});
-          // Exchange the PKCE authorization code for a Supabase session
-          const { error } = await supabase.auth.exchangeCodeForSession(url);
-          if (!error) router.replace("/home");
-        });
-        cleanup = () => handle.remove();
-      } catch { /* not in Capacitor context */ }
-    })();
-    return () => cleanup?.();
-  }, []);
+  // NOTE: Google OAuth appUrlOpen listener moved to src/app/oauth-handler.tsx
+  // (root layout) so it fires even when the user is on the login page.
 
   // ── Capacitor: init status bar + force-reload if stale cache ────────────
   useEffect(() => {
