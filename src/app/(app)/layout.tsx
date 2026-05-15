@@ -284,14 +284,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
 
-      if (!user.phone && pathname !== "/add-phone") {
+      if (pathname !== "/add-phone") {
         const { data: profile } = await supabase
           .from("profiles")
           .select("phone")
           .eq("id", user.id)
           .single();
         console.log("[SayIt check] profile phone:", profile?.phone ?? "null");
-        if (!profile?.phone) {
+
+        if (!profile) {
+          // Profile row is completely missing (e.g. manually deleted).
+          // If we have a phone in auth, recreate the profile row automatically.
+          // Otherwise sign out so the user can register cleanly.
+          if (user.phone) {
+            await supabase.from("profiles").upsert(
+              { id: user.id, phone: user.phone },
+              { onConflict: "id" }
+            );
+          } else {
+            console.log("[SayIt check] → no profile row, signing out");
+            await supabase.auth.signOut();
+            router.replace("/login");
+            return;
+          }
+        } else if (!profile.phone) {
           console.log("[SayIt check] → redirecting to /add-phone");
           router.replace(`/add-phone?next=${encodeURIComponent(pathname)}`);
           return;
