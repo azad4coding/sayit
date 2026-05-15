@@ -39,14 +39,12 @@ export function OAuthCallbackHandler() {
           // across Supabase client versions and custom URL schemes.
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (!error) {
-            // Short delay: lets nativeStorage async write complete before
-            // the reload triggers (app)/layout.tsx INITIAL_SESSION check.
-            await new Promise(r => setTimeout(r, 400));
-            window.location.href = "/home";
-          } else {
-            // Exchange failed — send back to login so user can try again
-            window.location.href = "/login";
+            // Use client-side navigation (not window.location.href) so the
+            // Supabase singleton keeps the session in memory — avoids the
+            // async storage race condition on page reload.
+            router.replace("/home");
           }
+          // On error: do nothing — user stays on login/register page
         });
         cleanup = () => handle.remove();
       } catch { /* not in a Capacitor context */ }
