@@ -23,14 +23,29 @@ export function OAuthCallbackHandler() {
         const handle = await CapApp.addListener("appUrlOpen", async ({ url }) => {
           if (!url.startsWith("com.azad.sayit://")) return;
           await Browser.close().catch(() => {});
-          const { error } = await supabase.auth.exchangeCodeForSession(url);
+
+          // Extract the PKCE code with regex — avoids URL parsing issues
+          // with custom schemes (new URL("com.azad.sayit://...") can throw).
+          const codeMatch = url.match(/[?&]code=([^&]+)/);
+          const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+
+          if (!code) {
+            // No code in URL — might be an error redirect or unexpected format
+            window.location.href = "/login";
+            return;
+          }
+
+          // Exchange just the code string (not the full URL) — more reliable
+          // across Supabase client versions and custom URL schemes.
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (!error) {
-            // Small delay: lets async nativeStorage finish writing the session
-            // before the page reload triggers (app)/layout.tsx auth check.
-            await new Promise(r => setTimeout(r, 300));
-            // Full page reload instead of router.replace — ensures Supabase
-            // client re-reads fresh session from storage on cold mount.
+            // Short delay: lets nativeStorage async write complete before
+            // the reload triggers (app)/layout.tsx INITIAL_SESSION check.
+            await new Promise(r => setTimeout(r, 400));
             window.location.href = "/home";
+          } else {
+            // Exchange failed — send back to login so user can try again
+            window.location.href = "/login";
           }
         });
         cleanup = () => handle.remove();

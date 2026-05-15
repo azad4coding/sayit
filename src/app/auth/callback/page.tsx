@@ -20,7 +20,8 @@ export default function AuthCallbackPage() {
     if (code) {
       // Hand the PKCE code to the native app via custom URL scheme.
       // iOS/Android intercept com.azad.sayit:// and fire appUrlOpen.
-      window.location.href = `com.azad.sayit://home?code=${encodeURIComponent(code)}`;
+      // Do NOT re-encode — the code is already URL-safe from Supabase.
+      window.location.href = `com.azad.sayit://home?code=${code}`;
     } else {
       // No code and no error — redirect to login
       window.location.href = "/login";
