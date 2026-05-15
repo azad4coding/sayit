@@ -266,16 +266,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         session = data.session;
       }
 
+      console.log("[SayIt check] session:", session ? "found" : "null");
       if (!session) { router.replace("/login"); return; }
 
-      // Server-validate the token (catches expired/revoked sessions).
-      // If getUser() fails (network hiccup or expired token not yet refreshed),
-      // try an explicit refreshSession() before sending the user to login.
       let { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         const { data: refreshed } = await supabase.auth.refreshSession();
         user = refreshed.user;
       }
+      console.log("[SayIt check] user:", user ? user.email : "null");
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
 
@@ -285,7 +284,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           .select("phone")
           .eq("id", user.id)
           .single();
+        console.log("[SayIt check] profile phone:", profile?.phone ?? "null");
         if (!profile?.phone) {
+          console.log("[SayIt check] → redirecting to /add-phone");
           router.replace(`/add-phone?next=${encodeURIComponent(pathname)}`);
           return;
         }

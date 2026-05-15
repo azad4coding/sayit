@@ -22,29 +22,27 @@ export function OAuthCallbackHandler() {
 
         const handle = await CapApp.addListener("appUrlOpen", async ({ url }) => {
           if (!url.startsWith("com.azad.sayit://")) return;
+          console.log("[SayIt OAuth] appUrlOpen fired:", url.slice(0, 80));
           await Browser.close().catch(() => {});
 
-          // Extract the PKCE code with regex — avoids URL parsing issues
-          // with custom schemes (new URL("com.azad.sayit://...") can throw).
           const codeMatch = url.match(/[?&]code=([^&]+)/);
           const code = codeMatch ? decodeURIComponent(codeMatch[1]) : null;
+          console.log("[SayIt OAuth] code extracted:", code ? "YES (" + code.slice(0, 8) + "...)" : "NO");
 
           if (!code) {
-            // No code in URL — might be an error redirect or unexpected format
             window.location.href = "/login";
             return;
           }
 
-          // Exchange just the code string (not the full URL) — more reliable
-          // across Supabase client versions and custom URL schemes.
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          console.log("[SayIt OAuth] exchangeCodeForSession:", error ? "ERROR: " + error.message : "OK, user=" + data?.user?.email);
+
           if (!error) {
-            // Use client-side navigation (not window.location.href) so the
-            // Supabase singleton keeps the session in memory — avoids the
-            // async storage race condition on page reload.
             router.replace("/home");
+          } else {
+            // Show error so we can debug
+            alert("[SayIt OAuth] Exchange failed: " + error.message);
           }
-          // On error: do nothing — user stays on login/register page
         });
         cleanup = () => handle.remove();
       } catch { /* not in a Capacitor context */ }
