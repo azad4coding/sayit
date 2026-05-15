@@ -50,13 +50,15 @@ export default function ProfilePage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, phone, avatar_url")
+        .select("full_name, phone, avatar_url, email")
         .eq("id", user.id)
         .single();
 
       setName(profile?.full_name ?? user.user_metadata?.full_name ?? "");
       if (!rawPhone && profile?.phone) setPhone(profile.phone);
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+      // Fall back to profile.email for phone-registered users who linked Google
+      if (!user.email && profile?.email) setEmail(profile.email);
 
       setLoading(false);
     }

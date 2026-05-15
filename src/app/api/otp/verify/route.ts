@@ -18,7 +18,7 @@ function twilioAuth(): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { phone, code } = await req.json() as { phone?: string; code?: string };
+    const { phone, code, email } = await req.json() as { phone?: string; code?: string; email?: string };
 
     if (!phone || !phone.startsWith("+")) {
       return NextResponse.json(
@@ -89,9 +89,12 @@ export async function POST(req: NextRequest) {
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
+        const profileData: Record<string, string> = { id: user.id, phone };
+        if (email) profileData.email = email;
+
         const { error } = await adminClient
           .from("profiles")
-          .upsert({ id: user.id, phone }, { onConflict: "id" });
+          .upsert(profileData, { onConflict: "id" });
         if (error) {
           // Unique constraint on profiles.phone — this phone belongs to a different account
           if (error.code === "23505" || error.message?.includes("profiles_phone_unique")) {

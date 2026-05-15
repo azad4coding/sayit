@@ -175,6 +175,7 @@ function AddPhoneInner() {
   const [countryCode, setCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [fullPhone,   setFullPhone]   = useState("");   // E.164, set when OTP is sent
+  const [googleEmail, setGoogleEmail] = useState("");   // captured before sign-out in sign-in OTP flow
   const [otp,         setOtp]         = useState(["", "", "", "", "", ""]);
   const [resendSecs,  setResendSecs]  = useState(0);
   const [loading,     setLoading]     = useState(false);
@@ -222,7 +223,11 @@ function AddPhoneInner() {
     // We sign out the Google session first, then verifyOtp() will create a session for the
     // phone account directly, landing them on /home without any extra login step.
     if (data.phoneExists) {
-      // Send OTP via Twilio (reuse the send endpoint but we know phone exists)
+      // Capture the Google email before signing out — we'll save it to the phone profile
+      const { data: { user: googleUser } } = await supabase.auth.getUser();
+      const capturedEmail = googleUser?.email ?? "";
+
+      // Send OTP via Twilio so we can sign them into their existing phone account
       const otpRes = await fetch("/api/otp/send-signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,8 +238,9 @@ function AddPhoneInner() {
         setError("Failed to send sign-in code. Please try signing in with your phone number.");
         return;
       }
-      // Sign out Google session silently — verifyOtp will create the phone session
+      // Sign out Google session — verifySigninOtp will create the phone account session
       await supabase.auth.signOut();
+      setGoogleEmail(capturedEmail);
       setFullPhone(phone);
       setStep("signin-otp");
       setResendSecs(60);
@@ -266,7 +272,15 @@ function AddPhoneInner() {
       return;
     }
 
-    // Session is now the phone account — go straight home
+    // Session is now the phone account — save the Google email to their profile if captured
+    if (googleEmail) {
+      const { data: { user: phoneUser } } = await supabase.auth.getUser();
+      if (phoneUser) {
+        await supabase.from("profiles")
+          .upsert({ id: phoneUser.id, email: googleEmail }, { onConflict: "id" });
+      }
+    }
+
     setLoading(false);
     window.location.href = "/home";
   }
@@ -285,7 +299,7 @@ function AddPhoneInner() {
         "Content-Type": "application/json",
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
-      body: JSON.stringify({ phone: fullPhone, code }),
+      body: JSON.stringify({ phone: fullPhone, code, email: session?.user?.email ?? undefined }),
     });
 
     const data = await res.json() as { ok?: boolean; persistedProfile?: boolean; error?: string; message?: string };
