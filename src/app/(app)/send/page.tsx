@@ -1035,7 +1035,7 @@ function SendPageInner() {
                 autoFocus
               />
               {/* Loading hint while contacts are still being fetched on Android */}
-              {(contactsLoading || sayItContacts.length === 0) && searchQuery && !selectedContact && !/^\+?[\d\s\-()]{4,}$/.test(searchQuery) && (
+              {contactsLoading && searchQuery && !selectedContact && !/^\+?[\d\s\-()]{4,}$/.test(searchQuery) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 px-4 py-3 z-50 flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-pink-200 border-t-pink-400 rounded-full animate-spin flex-shrink-0" />
                   <p className="text-sm text-gray-400">Loading contacts…</p>
