@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-// POST /api/otp/send
+// POST /api/otp/send-signin
 // Body: { phone: "+919876543210" }
 //
-// 1. If the phone already exists in our profiles table → return { ok: true, phoneExists: true }
-//    so the client can skip OTP and route the user to phone-number sign-in directly.
-// 2. Otherwise send a Twilio Verify OTP and return { ok: true }.
+// Sends a Twilio Verify OTP to a phone number that is already registered.
+// Used when a Google-auth user enters a phone that belongs to an existing
+// SayIt account — we sign them in directly via supabase.auth.verifyOtp.
 
 export const dynamic = "force-dynamic";
 
@@ -27,25 +26,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── 1: Check whether this phone is already registered ────────────────
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const { data: existing } = await adminClient
-      .from("profiles")
-      .select("id")
-      .eq("phone", phone)
-      .maybeSingle();
-
-    if (existing) {
-      // Phone is already in our database — no need to send an OTP.
-      // The client will sign the user out and redirect them to phone login.
-      return NextResponse.json({ ok: true, phoneExists: true });
-    }
-
-    // ── 2: New phone — send OTP via Twilio ───────────────────────────────
     const serviceSid = process.env.TWILIO_VERIFY_SERVICE_SID!;
     if (!serviceSid) {
       return NextResponse.json(
@@ -70,14 +50,14 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      console.error("[otp/send] Twilio error:", errData);
-      const msg = (errData as { message?: string }).message ?? "Failed to send OTP";
+      console.error("[otp/send-signin] Twilio error:", errData);
+      const msg = (errData as { message?: string }).message ?? "Failed to send sign-in code";
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("[otp/send] unexpected error:", e);
+    console.error("[otp/send-signin] unexpected error:", e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

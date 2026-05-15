@@ -193,7 +193,15 @@ function RegisterInner() {
         { id: data.user.id, full_name: name.trim(), phone: fullPhone },
         { onConflict: "id" },
       );
-      if (upsertErr) console.error("[register] profiles upsert failed:", upsertErr.message);
+      if (upsertErr) {
+        // profiles_phone_unique violation — phone already belongs to another account
+        if (upsertErr.code === "23505" || upsertErr.message?.includes("profiles_phone_unique")) {
+          setError("This phone number is already registered with SayIt. Please sign in instead.");
+          setLoading(false);
+          return;
+        }
+        console.error("[register] profiles upsert failed:", upsertErr.message);
+      }
 
       // Resolve any pending My Circle requests for this phone number
       await fetch("/api/circle/resolve", {

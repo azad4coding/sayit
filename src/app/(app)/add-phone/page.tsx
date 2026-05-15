@@ -170,7 +170,8 @@ function AddPhoneInner() {
   const next     = params.get("next") ?? "/home";
   const accent   = "#FF6B8A";
 
-  const [step,        setStep]        = useState<"phone" | "otp">("phone");
+  const [step,        setStep]        = useState<"phone" | "otp" | "signin-otp">("phone");
+  const [status,      setStatus]      = useState<"idle" | "phone-exists">("idle");
   const [countryCode, setCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [fullPhone,   setFullPhone]   = useState("");   // E.164, set when OTP is sent
@@ -209,17 +210,65 @@ function AddPhoneInner() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-    const data = await res.json() as { ok?: boolean; error?: string };
+    const data = await res.json() as { ok?: boolean; phoneExists?: boolean; error?: string };
 
-    setLoading(false);
     if (!res.ok || !data.ok) {
+      setLoading(false);
       setError(data.error ?? "Failed to send OTP. Please try again.");
       return;
     }
 
+    // Phone is already registered — send a sign-in OTP to get them into their existing account.
+    // We sign out the Google session first, then verifyOtp() will create a session for the
+    // phone account directly, landing them on /home without any extra login step.
+    if (data.phoneExists) {
+      // Send OTP via Twilio (reuse the send endpoint but we know phone exists)
+      const otpRes = await fetch("/api/otp/send-signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      setLoading(false);
+      if (!otpRes.ok) {
+        setError("Failed to send sign-in code. Please try signing in with your phone number.");
+        return;
+      }
+      // Sign out Google session silently — verifyOtp will create the phone session
+      await supabase.auth.signOut();
+      setFullPhone(phone);
+      setStep("signin-otp");
+      setResendSecs(60);
+      return;
+    }
+
+    setLoading(false);
     setFullPhone(phone);
     setStep("otp");
     setResendSecs(60);
+  }
+
+  // Sign-in OTP for an existing phone account (after Google login detected same phone).
+  // Calls supabase.auth.verifyOtp which creates a session for the phone user directly.
+  async function verifySigninOtp() {
+    const code = otp.join("");
+    if (code.length !== 6) { setError("Enter the 6-digit code"); return; }
+    setLoading(true); setError("");
+
+    const { error } = await supabase.auth.verifyOtp({
+      phone: fullPhone,
+      token: code,
+      type: "sms",
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Session is now the phone account — go straight home
+    setLoading(false);
+    window.location.href = "/home";
   }
 
   async function verifyOtp() {
@@ -239,9 +288,21 @@ function AddPhoneInner() {
       body: JSON.stringify({ phone: fullPhone, code }),
     });
 
-    const data = await res.json() as { ok?: boolean; persistedProfile?: boolean; error?: string };
+    const data = await res.json() as { ok?: boolean; persistedProfile?: boolean; error?: string; message?: string };
 
     if (!res.ok || !data.ok) {
+      if (res.status === 409 || data.error === "PHONE_TAKEN") {
+        // This phone already belongs to an existing SayIt account.
+        // The OTP proved they own this number, so they're the same person —
+        // sign out the current (Google) session and send them to sign in with phone.
+        setError("This phone is already registered with SayIt. Signing you out — please sign in with your phone number instead.");
+        setLoading(false);
+        setTimeout(async () => {
+          await supabase.auth.signOut();
+          router.replace("/login");
+        }, 2500);
+        return;
+      }
       setError(data.error ?? "Invalid code. Please try again.");
       setLoading(false);
       return;
@@ -270,10 +331,12 @@ function AddPhoneInner() {
         <img src="/Sayit.png" alt="SayIt" className="w-24 h-24 mb-1" style={{ borderRadius: 22 }} />
         <h1 className="text-2xl font-bold"
           style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          One last step
+          {step === "signin-otp" ? "Welcome back!" : "One last step"}
         </h1>
         <p className="text-gray-400 text-sm text-center leading-relaxed px-4">
-          {userName ? `Hey ${userName}! Add` : "Add"} your phone number so friends can find you and send you cards 💌
+          {step === "signin-otp"
+            ? "We found your existing SayIt account 🎉"
+            : `${userName ? `Hey ${userName}! Add` : "Add"} your phone number so friends can find you and send you cards 💌`}
         </p>
       </div>
 
@@ -305,8 +368,37 @@ function AddPhoneInner() {
         </div>
       )}
 
+      {/* ── Sign-in OTP step (existing phone account detected) ── */}
+      {step === "signin-otp" && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-1 mb-2">
+            <p className="text-sm font-semibold text-gray-800">Enter your sign-in code</p>
+            <p className="text-xs text-gray-400 text-center px-4">
+              We found your existing SayIt account linked to {fullPhone}. Enter the code we just sent to sign you in.
+            </p>
+          </div>
+
+          <OtpBoxes value={otp} onChange={setOtp} accent={accent} />
+
+          {error && <div className="bg-red-50 text-red-500 text-xs px-4 py-3 rounded-2xl text-center">{error}</div>}
+
+          <button onClick={verifySigninOtp} disabled={loading || otp.join("").length !== 6}
+            className="w-full py-4 rounded-2xl text-white font-semibold text-sm shadow-md disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg,#FF6B8A,#9B59B6)" }}>
+            {loading ? "Signing in…" : "Sign In →"}
+          </button>
+
+          <div className="text-center">
+            {resendSecs > 0
+              ? <p className="text-xs text-gray-400">Resend in <span className="font-semibold" style={{ color: accent }}>{resendSecs}s</span></p>
+              : <button onClick={() => { setStep("phone"); setOtp(["","","","","",""]); setError(""); }}
+                  disabled={loading} className="text-xs font-semibold" style={{ color: accent }}>Use a different number</button>}
+          </div>
+        </div>
+      )}
+
       {/* ── OTP step ── */}
-      {step === "otp" && (
+      {status === "idle" && step === "otp" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col items-center gap-1 mb-2">
             <p className="text-sm font-semibold text-gray-800">Enter the 6-digit code</p>

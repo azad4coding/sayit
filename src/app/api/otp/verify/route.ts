@@ -93,6 +93,13 @@ export async function POST(req: NextRequest) {
           .from("profiles")
           .upsert({ id: user.id, phone }, { onConflict: "id" });
         if (error) {
+          // Unique constraint on profiles.phone — this phone belongs to a different account
+          if (error.code === "23505" || error.message?.includes("profiles_phone_unique")) {
+            return NextResponse.json(
+              { error: "PHONE_TAKEN", message: "This phone number is already linked to a SayIt account. Please sign in with your phone number instead." },
+              { status: 409 }
+            );
+          }
           console.error("[otp/verify] profile upsert failed:", error.message);
           return NextResponse.json({ ok: true, persistedProfile: false });
         }
