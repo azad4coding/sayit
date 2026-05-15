@@ -7,7 +7,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { getTemplateById, getCategoryById, type DBTemplate, type DBCategory } from "@/lib/supabase-data";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Home, Heart, MessageSquare, Gift, Users, User } from "lucide-react";
+
+// ── Bottom nav shown for logged-in users on the preview page ──────────────────
+// /preview/[code] is outside the (app) layout so it has no built-in nav bar.
+// We render our own here so users can explore the app after viewing a card.
+const PREVIEW_NAV = [
+  { href: "/home",       label: "Home",    Icon: Home          },
+  { href: "/wishes",     label: "Wishes",  Icon: Heart         },
+  { href: "/history",    label: "Chats",   Icon: MessageSquare },
+  { href: "/gift-cards", label: "Gifts",   Icon: Gift          },
+  { href: "/circle",     label: "Circle",  Icon: Users         },
+  { href: "/profile",    label: "Profile", Icon: User          },
+];
+
+function PreviewBottomNav() {
+  return (
+    <nav className="bottom-nav">
+      <div className="flex items-center px-2">
+        {PREVIEW_NAV.map(({ href, label, Icon }) => (
+          <Link key={href} href={href}
+            className="flex-1 flex flex-col items-center py-1.5 gap-0.5">
+            <Icon className="w-[18px] h-[18px]" style={{ color: "#b0b0b0" }} strokeWidth={1.8} />
+            <span className="text-[9px] font-semibold" style={{ color: "#b0b0b0", letterSpacing: "0.1px" }}>
+              {label}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
 
 const REACTION_EMOJIS = ["❤️", "😭", "😍", "🔥", "🤗"];
 
@@ -589,7 +619,12 @@ function PreviewInner() {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, ease: "easeIn" }}
-      className="flex flex-col min-h-dvh pb-10" style={{ background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)" }}
+      className="flex flex-col min-h-dvh"
+      style={{
+        background: "linear-gradient(160deg,#FFF5F7 0%,#F8F0FF 100%)",
+        // When logged in the bottom nav is fixed, so add padding to keep content above it
+        paddingBottom: isLoggedIn ? "calc(env(safe-area-inset-bottom, 0px) + 84px)" : 40,
+      }}
     >
 
       {/* Back button — shown whenever there's a back destination */}
@@ -1074,15 +1109,10 @@ function PreviewInner() {
 
       {/* ── CTA buttons — logged-in recipient only ── */}
       {isLoggedIn && !isSender && (
-        <div className="flex flex-col items-center gap-3 px-8 pb-2 mt-4">
+        <div className="flex justify-center px-8 pb-2 mt-4">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Link href={sayitBackUrl} style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 30, background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", color: "white", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, boxShadow: "0 4px 18px rgba(255,107,138,0.35)", textDecoration: "none", WebkitTapHighlightColor: "transparent" }}>
               ✨ Say it Back
-            </Link>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <Link href="/home" style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 24px", borderRadius: 30, background: "rgba(255,255,255,0.7)", border: "1px solid rgba(0,0,0,0.08)", color: "#6b7280", fontSize: 13, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", WebkitTapHighlightColor: "transparent" }}>
-              Explore SayIt →
             </Link>
           </motion.div>
         </div>
@@ -1098,6 +1128,9 @@ function PreviewInner() {
           </motion.div>
         </div>
       )}
+
+      {/* ── Bottom nav — logged-in users only ── */}
+      {isLoggedIn && <PreviewBottomNav />}
 
       {/* ── Guest CTA — prominent card below the card ── */}
       {!isLoggedIn && (
