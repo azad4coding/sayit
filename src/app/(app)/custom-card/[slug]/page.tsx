@@ -221,9 +221,6 @@ export default function CustomCardPage() {
                     maxLength={300}
                     style={{ flex: 1, background: "transparent", border: "none", outline: "none", resize: "none", fontFamily: "Georgia,serif", fontSize: 11, lineHeight: "24px", color: "#5C3D2E", padding: "4px 14px" }}
                   />
-                  <p style={{ textAlign: "right", fontSize: 8, color: message.length > 270 ? "#C9A84C" : "rgba(201,168,76,0.35)", paddingRight: 14, paddingBottom: 4, margin: 0 }}>
-                    {message.length}/300
-                  </p>
                   <div style={{ borderTop: "1px solid rgba(201,168,76,0.35)", paddingTop: 8, opacity: 0.7, margin: "0 14px" }}>
                     <input
                       value={sender}
