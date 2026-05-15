@@ -30,14 +30,30 @@ export default function CirclePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
 
-      // ── 1. Cards WE sent ─────────────────────────────────────────
-      const { data: sentCards } = await supabase
-        .from("sent_cards")
-        .select("recipient_phone, recipient_name, recipient_id")
-        .eq("sender_id", user.id)
-        .not("recipient_phone", "is", null)
-        .order("created_at", { ascending: false });
+      // ── 1 + profile + blocked — fetch all three in parallel ─────
+      const [
+        { data: sentCards },
+        { data: profileData },
+        { data: blocked },
+      ] = await Promise.all([
+        supabase
+          .from("sent_cards")
+          .select("recipient_phone, recipient_name, recipient_id")
+          .eq("sender_id", user.id)
+          .not("recipient_phone", "is", null)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("blocked_contacts")
+          .select("blocked_phone")
+          .eq("blocker_id", user.id),
+      ]);
 
+      // ── 1b. Build sent-card phone map ────────────────────────────
       const phoneMap = new Map<string, CircleMember>();
       for (const card of (sentCards ?? [])) {
         const key = card.recipient_phone as string;
@@ -69,11 +85,6 @@ export default function CirclePage() {
       // ── 2. Cards WE received ─────────────────────────────────────
       // Must match by recipient_id OR recipient_phone — first-contact cards
       // are saved with recipient_id = null and only recipient_phone set.
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("phone")
-        .eq("id", user.id)
-        .single();
       const myPhone      = profileData?.phone ?? user.phone ?? null;
       const myPhonePlus  = myPhone ? (myPhone.startsWith("+") ? myPhone : `+${myPhone}`) : null;
       const myPhoneNaked = myPhonePlus ? myPhonePlus.slice(1) : null;
@@ -124,11 +135,7 @@ export default function CirclePage() {
         }
       }
 
-      // ── 3. Load blocked contacts ──────────────────────────────────
-      const { data: blocked } = await supabase
-        .from("blocked_contacts")
-        .select("blocked_phone")
-        .eq("blocker_id", user.id);
+      // ── 3. Blocked contacts (already fetched in parallel above) ──
       const blockedPhones = new Set((blocked ?? []).map((b: any) => b.blocked_phone));
 
       // ── 4. Finalise: mark isNew, isBlocked; filter out blocked ───

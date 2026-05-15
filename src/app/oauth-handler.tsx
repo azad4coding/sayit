@@ -46,12 +46,14 @@ export function OAuthCallbackHandler() {
               window.location.href = "/home";
             } else {
               console.error("[SayIt OAuth] Exchange failed:", error.message);
-              window.location.href = "/login?oauthError=" + encodeURIComponent(error.message);
+              // Use a generic error code — never reflect raw internal error messages
+              // into the URL (avoids accidental PII exposure or reflected-XSS risk).
+              window.location.href = "/login?oauthError=1";
             }
           } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error("[SayIt OAuth] exchangeCodeForSession threw:", msg);
-            window.location.href = "/login?oauthError=" + encodeURIComponent(msg);
+            window.location.href = "/login?oauthError=1";
           }
         });
         cleanup = () => handle.remove();

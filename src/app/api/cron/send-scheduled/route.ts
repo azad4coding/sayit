@@ -71,48 +71,68 @@ export async function GET(req: NextRequest) {
   }
 
   const results: string[] = [];
+  const pending = schedules ?? [];
+  if (pending.length === 0) return NextResponse.json({ processed: 0, results });
 
-  for (const schedule of schedules ?? []) {
+  // ── Pre-batch all DB lookups to eliminate N+1 queries ────────────────────
+
+  // 1. Sender profiles (one query for all schedules)
+  const senderIds = Array.from(new Set(pending.map((s: any) => s.user_id).filter(Boolean)));
+  const { data: senderProfiles } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", senderIds);
+  const senderNameMap: Record<string, string> = {};
+  for (const p of (senderProfiles ?? [])) {
+    senderNameMap[p.id] = p.full_name ?? "Someone";
+  }
+
+  // 2. Recipient profiles (one query for all schedules that have a recipient_id)
+  const recipientIds = Array.from(new Set(pending.map((s: any) => s.recipient_id).filter(Boolean)));
+  const { data: recipientProfiles } = recipientIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name").in("id", recipientIds)
+    : { data: [] };
+  const recipientNameMap: Record<string, string | null> = {};
+  for (const p of (recipientProfiles ?? [])) {
+    recipientNameMap[p.id] = p.full_name ?? null;
+  }
+
+  // 3. Templates per category (one query covering all category_ids that need random picks)
+  const categoryIds = Array.from(new Set(
+    pending.filter((s: any) => !s.template_id && s.category_id).map((s: any) => s.category_id)
+  ));
+  const templatesByCat: Record<string, Array<{ id: string; front_image_url: string | null }>> = {};
+  if (categoryIds.length > 0) {
+    const { data: allTemplates } = await supabase
+      .from("templates")
+      .select("id, front_image_url, category_id")
+      .in("category_id", categoryIds)
+      .limit(500);
+    for (const t of (allTemplates ?? [])) {
+      if (!templatesByCat[t.category_id]) templatesByCat[t.category_id] = [];
+      templatesByCat[t.category_id].push({ id: t.id, front_image_url: t.front_image_url ?? null });
+    }
+  }
+
+  // ── Process each schedule using pre-fetched data ──────────────────────────
+  for (const schedule of pending) {
     try {
-      // Pick a template: use pinned template_id OR pick random from category
+      // Pick a template: use pinned template_id OR pick random from pre-fetched category pool
       let templateId: string | null = schedule.template_id ?? null;
       let frontImageUrl: string | null = null;
 
       if (!templateId && schedule.category_id) {
-        // Pick a random template from the category
-        const { data: templates } = await supabase
-          .from("templates")
-          .select("id, front_image_url")
-          .eq("category_id", schedule.category_id)
-          .limit(50);
-
-        if (templates && templates.length > 0) {
+        const templates = templatesByCat[schedule.category_id] ?? [];
+        if (templates.length > 0) {
           const pick = templates[Math.floor(Math.random() * templates.length)];
           templateId    = pick.id;
-          frontImageUrl = pick.front_image_url ?? null;
+          frontImageUrl = pick.front_image_url;
         }
       }
 
-      // Get sender name
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", schedule.user_id)
-        .single();
-
-      const senderName = profile?.full_name ?? "Someone";
-      const shortCode  = uuidv4().replace(/-/g, "").slice(0, 8);
-
-      // Resolve recipient name from profiles if we have their id
-      let recipientName: string | null = null;
-      if (schedule.recipient_id) {
-        const { data: rp } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", schedule.recipient_id)
-          .single();
-        recipientName = rp?.full_name ?? null;
-      }
+      const senderName    = senderNameMap[schedule.user_id] ?? "Someone";
+      const shortCode     = uuidv4().replace(/-/g, "").slice(0, 8);
+      const recipientName = schedule.recipient_id ? (recipientNameMap[schedule.recipient_id] ?? null) : null;
 
       // Insert into sent_cards
       const { error: insertErr } = await supabase.from("sent_cards").insert({

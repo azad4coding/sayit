@@ -24,7 +24,7 @@ export default function HomePage() {
       if (data.user) {
         const metaName = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? "";
         if (metaName) setProfile(prev => prev ?? ({ full_name: metaName } as Profile));
-        supabase.from("profiles").select("*").eq("id", data.user.id).single()
+        supabase.from("profiles").select("full_name, phone, avatar_url, email").eq("id", data.user.id).single()
           .then(({ data: p }) => { if (p) setProfile(p); });
       }
     });

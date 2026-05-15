@@ -535,18 +535,31 @@ function ChatsPageInner() {
     if (match) setSelected(match);
   }, [contacts, contactParam]);
 
-  // Realtime reaction updates
+  // Realtime reaction updates — use payload delta to avoid an extra DB query per event.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel("chats-reactions")
-      .on("postgres_changes", { event: "*", schema: "public", table: "card_reactions" }, (payload) => {
-        const row = (payload.new || payload.old) as { card_id: string; emoji: string };
-        if (!row?.card_id) return;
-        supabase.from("card_reactions").select("emoji").eq("card_id", row.card_id).then(({ data }) => {
-          if (!data) return;
-          const counts: Record<string, number> = {};
-          for (const r of data) counts[r.emoji] = (counts[r.emoji] || 0) + 1;
-          setListReactions(prev => ({ ...prev, [row.card_id]: counts }));
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "card_reactions" }, (payload) => {
+        const row = payload.new as { card_id: string; emoji: string };
+        if (!row?.card_id || !row?.emoji) return;
+        setListReactions(prev => {
+          const cardMap = { ...(prev[row.card_id] ?? {}) };
+          cardMap[row.emoji] = (cardMap[row.emoji] ?? 0) + 1;
+          return { ...prev, [row.card_id]: cardMap };
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "card_reactions" }, (payload) => {
+        const row = payload.old as { card_id: string; emoji: string };
+        if (!row?.card_id || !row?.emoji) return;
+        setListReactions(prev => {
+          const cardMap = { ...(prev[row.card_id] ?? {}) };
+          const newCount = (cardMap[row.emoji] ?? 1) - 1;
+          if (newCount <= 0) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [row.emoji]: _removed, ...rest } = cardMap;
+            return { ...prev, [row.card_id]: rest };
+          }
+          return { ...prev, [row.card_id]: { ...cardMap, [row.emoji]: newCount } };
         });
       })
       .subscribe();

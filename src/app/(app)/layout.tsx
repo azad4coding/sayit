@@ -280,6 +280,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (!user) { router.replace("/login"); return; }
       userIdRef.current = user.id;
 
+      // Hoist profilePhone so badge queries can reuse it without a 2nd DB round-trip.
+      let profilePhone: string | null = null;
       if (pathname !== "/add-phone") {
         const { data: profile } = await supabase
           .from("profiles")
@@ -308,58 +310,68 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           router.replace(`/add-phone?next=${encodeURIComponent(pathname)}`);
           return;
         }
+        profilePhone = profile?.phone ?? null;
       }
 
       setChecking(false);
 
+      // ── Badge queries ─────────────────────────────────────────────
+      // Step 1: sentCardIds (needed for card_reactions filter below).
       const { data: sent } = await supabase
         .from("sent_cards")
         .select("id")
         .eq("sender_id", user.id);
       sentCardIds.current = new Set((sent ?? []).map((c: { id: string }) => c.id));
 
+      // Reuse the profile phone fetched above — avoids a duplicate round-trip.
+      const myPhone = profilePhone ?? user.phone ?? null;
+
       const lastSeenChats = (() => {
         try { return localStorage.getItem(`lastSeenChats_${user.id}`) ?? new Date(0).toISOString(); }
         catch { return new Date(0).toISOString(); }
       })();
-      // Fetch phone once and reuse for both incomingDot + wishesDot queries
-      const authPhone2 = user.phone ?? null;
-      const { data: profData2 } = await supabase.from("profiles").select("phone").eq("id", user.id).single();
-      const myPhone2 = profData2?.phone ?? authPhone2;
-      // incomingDot: cards received by user (by recipient_id OR phone)
+      const lastSeenWishes = (() => {
+        try { return localStorage.getItem(`lastSeenWishes_${user.id}`) ?? new Date(0).toISOString(); }
+        catch { return new Date(0).toISOString(); }
+      })();
+
+      // Build query helpers (phone variants for OR filter)
+      const phoneOrFilter = (q: ReturnType<typeof supabase.from>, phone: string, userId: string) => {
+        const wp  = phone.startsWith("+") ? phone : `+${phone}`;
+        const wop = phone.startsWith("+") ? phone.slice(1) : phone;
+        return q.or(`recipient_id.eq.${userId},recipient_phone.eq.${wp},recipient_phone.eq.${wop}`);
+      };
+
       let incomingQ = supabase
         .from("sent_cards")
         .select("id", { count: "exact", head: true })
         .gt("created_at", lastSeenChats)
         .neq("sender_id", user.id);
-      if (myPhone2) {
-        const wpI = myPhone2.startsWith("+") ? myPhone2 : `+${myPhone2}`;
-        const wopI = myPhone2.startsWith("+") ? myPhone2.slice(1) : myPhone2;
-        incomingQ = incomingQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wpI},recipient_phone.eq.${wopI}`);
-      } else {
-        incomingQ = incomingQ.eq("recipient_id", user.id);
-      }
-      const { count: unreadCount } = await incomingQ;
-      if ((unreadCount ?? 0) > 0 && pathname !== "/history") setIncomingDot(unreadCount ?? 0);
+      incomingQ = myPhone ? phoneOrFilter(incomingQ, myPhone, user.id) : incomingQ.eq("recipient_id", user.id);
 
-      const lastSeenWishes = (() => {
-        try { return localStorage.getItem(`lastSeenWishes_${user.id}`) ?? new Date(0).toISOString(); }
-        catch { return new Date(0).toISOString(); }
-      })();
-      let newRecvQ = supabase.from("sent_cards").select("id", { count: "exact", head: true })
-        .gt("created_at", lastSeenWishes).neq("sender_id", user.id);
-      if (myPhone2) {
-        const wp = myPhone2.startsWith("+") ? myPhone2 : `+${myPhone2}`;
-        const wop = myPhone2.startsWith("+") ? myPhone2.slice(1) : myPhone2;
-        newRecvQ = newRecvQ.or(`recipient_id.eq.${user.id},recipient_phone.eq.${wp},recipient_phone.eq.${wop}`);
-      } else {
-        newRecvQ = newRecvQ.eq("recipient_id", user.id);
-      }
-      const { count: newRecvCount } = await newRecvQ;
-      const { count: newRxCount } = await supabase.from("card_reactions")
+      let newRecvQ = supabase
+        .from("sent_cards")
         .select("id", { count: "exact", head: true })
-        .in("card_id", Array.from(sentCardIds.current))
-        .gt("created_at", lastSeenWishes);
+        .gt("created_at", lastSeenWishes)
+        .neq("sender_id", user.id);
+      newRecvQ = myPhone ? phoneOrFilter(newRecvQ, myPhone, user.id) : newRecvQ.eq("recipient_id", user.id);
+
+      // Step 2: Run all three badge count queries in parallel.
+      const [incomingResult, newRecvResult, rxResult] = await Promise.all([
+        incomingQ,
+        newRecvQ,
+        supabase
+          .from("card_reactions")
+          .select("id", { count: "exact", head: true })
+          .in("card_id", Array.from(sentCardIds.current))
+          .gt("created_at", lastSeenWishes),
+      ]);
+
+      const { count: unreadCount } = incomingResult;
+      const { count: newRecvCount } = newRecvResult;
+      const { count: newRxCount }   = rxResult;
+
+      if ((unreadCount ?? 0) > 0 && pathname !== "/history") setIncomingDot(unreadCount ?? 0);
       const wishesTotal = (newRecvCount ?? 0) + (newRxCount ?? 0);
       if (wishesTotal > 0 && pathname !== "/wishes") setWishesDot(wishesTotal);
 
