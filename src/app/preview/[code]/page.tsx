@@ -1074,10 +1074,15 @@ function PreviewInner() {
 
       {/* ── CTA buttons — logged-in recipient only ── */}
       {isLoggedIn && !isSender && (
-        <div className="flex justify-center px-8 pb-2 mt-4">
+        <div className="flex flex-col items-center gap-3 px-8 pb-2 mt-4">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <Link href={sayitBackUrl} style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 32px", borderRadius: 30, background: "linear-gradient(135deg,#FF6B8A,#9B59B6)", color: "white", fontSize: 14, fontWeight: 700, letterSpacing: 0.5, boxShadow: "0 4px 18px rgba(255,107,138,0.35)", textDecoration: "none", WebkitTapHighlightColor: "transparent" }}>
               ✨ Say it Back
+            </Link>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <Link href="/home" style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 24px", borderRadius: 30, background: "rgba(255,255,255,0.7)", border: "1px solid rgba(0,0,0,0.08)", color: "#6b7280", fontSize: 13, fontWeight: 600, textDecoration: "none", backdropFilter: "blur(8px)", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", WebkitTapHighlightColor: "transparent" }}>
+              Explore SayIt →
             </Link>
           </motion.div>
         </div>

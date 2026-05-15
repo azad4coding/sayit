@@ -434,8 +434,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                        pathname.startsWith("/create") ||
                        pathname.startsWith("/schedule") ||
                        pathname.startsWith("/custom-card/") ||
-                       pathname.startsWith("/meme-cards") ||
-                       pathname.startsWith("/category/");
+                       pathname.startsWith("/meme-cards");
 
   return (
     <>
