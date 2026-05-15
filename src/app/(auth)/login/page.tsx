@@ -212,8 +212,11 @@ function LoginInner() {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: "com.azad.sayit://home",
-            skipBrowserRedirect: true,   // don't let Supabase navigate the WebView
+            // Use an HTTPS URL — always in Supabase's allowed list.
+            // The callback page forwards the PKCE code to com.azad.sayit://home
+            // which iOS/Android intercept as a deep link → appUrlOpen.
+            redirectTo: "https://sayit-gamma.vercel.app/auth/callback",
+            skipBrowserRedirect: true,
           },
         });
         if (error) { setError(error.message); return; }

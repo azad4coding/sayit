@@ -219,7 +219,7 @@ function RegisterInner() {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: "com.azad.sayit://home",
+            redirectTo: "https://sayit-gamma.vercel.app/auth/callback",
             skipBrowserRedirect: true,
           },
         });
