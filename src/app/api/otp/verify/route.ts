@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 // POST /api/otp/verify
 // Body:    { phone: "+919876543210", code: "123456" }
@@ -74,22 +74,31 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Use the access token to look up the user and upsert the profile
-      const supabase = createBrowserClient(
+      // Use an anon client just to validate the JWT and extract the user ID
+      const anonClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-
-      const { data: { user } } = await supabase.auth.getUser(accessToken);
+      const { data: { user } } = await anonClient.auth.getUser(accessToken);
 
       if (user) {
-        await supabase
+        // Use service role key to bypass RLS — same pattern as all other API routes.
+        // The anon client's upsert fails silently because no user JWT is passed
+        // with the query, so RLS blocks the write.
+        const adminClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { error } = await adminClient
           .from("profiles")
           .upsert({ id: user.id, phone }, { onConflict: "id" });
+        if (error) {
+          console.error("[otp/verify] profile upsert failed:", error.message);
+          return NextResponse.json({ ok: true, persistedProfile: false });
+        }
       }
     } catch (e) {
-      console.error("[otp/verify] profile upsert failed:", e);
-      // Non-fatal — client can write the profile itself
+      console.error("[otp/verify] profile upsert error:", e);
       return NextResponse.json({ ok: true, persistedProfile: false });
     }
 
