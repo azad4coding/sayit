@@ -33,19 +33,36 @@ export async function POST(req: NextRequest) {
   const { cardId, emoji } = body;
   if (!cardId || !emoji) return NextResponse.json({ error: "Missing cardId or emoji" }, { status: 400 });
 
-  // ── 3. Look up card sender + reactor name in parallel ──────────────────
+  // ── 3. Look up card + reactor profile in parallel ──────────────────────
   const [cardRes, reactorRes] = await Promise.all([
-    supabase.from("sent_cards").select("sender_id, short_code").eq("id", cardId).single(),
-    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    supabase
+      .from("sent_cards")
+      .select("sender_id, short_code, recipient_id, recipient_phone")
+      .eq("id", cardId)
+      .single(),
+    supabase.from("profiles").select("full_name, phone").eq("id", user.id).single(),
   ]);
 
-  const senderId    = cardRes.data?.sender_id;
-  const cardCode    = cardRes.data?.short_code;
-  const reactorName = reactorRes.data?.full_name?.trim() || "Someone";
+  const senderId      = cardRes.data?.sender_id;
+  const cardCode      = cardRes.data?.short_code;
+  const recipientId   = cardRes.data?.recipient_id;
+  const recipientPhone = cardRes.data?.recipient_phone;
+  const reactorName   = reactorRes.data?.full_name?.trim() || "Someone";
+  const reactorPhone  = reactorRes.data?.phone ?? null;
 
   // Don't notify if the reactor IS the sender
   if (!senderId || senderId === user.id) {
     return NextResponse.json({ ok: true, reason: "self-reaction or no sender" });
+  }
+
+  // Verify the reactor is the actual recipient of the card
+  const normalize = (p: string | null | undefined) => (p ?? "").replace(/^\+/, "");
+  const isRecipientById    = recipientId && recipientId === user.id;
+  const isRecipientByPhone = recipientPhone && reactorPhone &&
+    normalize(reactorPhone) === normalize(recipientPhone);
+
+  if (!isRecipientById && !isRecipientByPhone) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // ── 4. Send via OneSignal ───────────────────────────────────────────────

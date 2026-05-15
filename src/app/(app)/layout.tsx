@@ -186,16 +186,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (checking) return; // wait until auth is confirmed
     if (typeof window === "undefined") return;
 
-    // Register the handler so native code can call it any time
+    // Register the handler so native code can call it any time.
+    // Validate that the URL is a relative app path (starts with "/") to prevent
+    // open-redirect attacks via the native bridge.
     (window as any).__sayitHandleNav = (url: string) => {
-      if (url) router.push(url);
+      if (url && url.startsWith("/")) router.push(url);
     };
 
     // Drain any URL that arrived before the handler was registered
     const pending = (window as any).__sayitNavPending as string | undefined;
     if (pending) {
       (window as any).__sayitNavPending = null;
-      router.push(pending);
+      if (pending.startsWith("/")) router.push(pending);
     }
 
     return () => {
@@ -263,18 +265,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       // On web this fires almost instantly; on native it waits for storage I/O.
       let session = await initialSessionPromise.current;
 
-      // Safety net: on cold start the Capacitor bridge can race with Supabase's
-      // first storage read, causing INITIAL_SESSION to fire with null even though
-      // a valid session exists in storage.  getSession() re-reads current state
-      // and can recover the session if the bridge caught up in the interim.
-      if (!session) {
-        const { data } = await supabase.auth.getSession();
-        session = data.session;
-      }
-
       console.log("[SayIt check] session:", session ? "found" : "null");
       if (!session) { router.replace("/login"); return; }
 
+      // Rely solely on getUser() for authentication — getSession() is not used
+      // as an auth gate because it only validates locally and does not verify
+      // the token with the server.
       let { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         const { data: refreshed } = await supabase.auth.refreshSession();

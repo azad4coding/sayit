@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
+import { timingSafeEqual } from "crypto";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,9 +43,16 @@ function computeNextRun(schedule: any): string {
 }
 
 export async function GET(req: NextRequest) {
-  // Verify Vercel Cron secret
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Verify Vercel Cron secret using timing-safe comparison to prevent timing attacks
+  const auth       = req.headers.get("authorization") ?? "";
+  const expected   = `Bearer ${process.env.CRON_SECRET ?? ""}`;
+  const authBuf    = Buffer.from(auth);
+  const expectedBuf = Buffer.from(expected);
+  const secretValid =
+    authBuf.length === expectedBuf.length &&
+    timingSafeEqual(authBuf, expectedBuf);
+
+  if (!secretValid) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

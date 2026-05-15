@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkOtpRateLimit } from "@/lib/otp-rate-limit";
 
 // POST /api/otp/send
 // Body: { phone: "+919876543210" }
@@ -24,6 +25,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Phone must be an E.164 number (e.g. +919876543210)" },
         { status: 400 }
+      );
+    }
+
+    // ── Rate limiting ────────────────────────────────────────────────────────
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+    if (!checkOtpRateLimit(phone, ip)) {
+      return NextResponse.json(
+        { error: "Too many OTP requests. Please wait 10 minutes before trying again." },
+        { status: 429 }
       );
     }
 

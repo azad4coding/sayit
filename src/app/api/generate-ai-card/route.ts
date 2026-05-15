@@ -9,6 +9,11 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+const anonClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
 const OPENAI_API_KEY   = process.env.OPENAI_API_KEY!;
 const REMOVEBG_API_KEY = process.env.REMOVEBG_API_KEY ?? "";   // optional — set in Vercel env
 const AI_DAILY_LIMIT   = 2;
@@ -272,15 +277,24 @@ async function uploadToStorage(
 // ── Route handler ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    // ── Auth guard: derive userId exclusively from the verified token ─────────
+    const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
+    if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // userId is derived server-side from the verified token — never trust formData
+    const userId = user.id;
+
     const formData = await req.formData();
 
-    const userId      = formData.get("userId")     as string;
     const category    = formData.get("category")   as string;
     const locationId  = formData.get("locationId") as string;
     const userMessage = (formData.get("message")   as string) ?? "";
     const photoFile   = formData.get("photo")      as File | null;
 
-    if (!userId || !category || !locationId) {
+    if (!category || !locationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     if (!OPENAI_API_KEY) {
