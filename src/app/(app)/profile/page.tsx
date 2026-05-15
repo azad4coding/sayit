@@ -169,7 +169,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: "100%", background: "#f5f6f7" }}>
+      <div className="flex-1 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin" />
       </div>
     );
