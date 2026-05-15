@@ -211,6 +211,28 @@ function RegisterInner() {
 
   // ── Google ────────────────────────────────────────────────────
   async function handleGoogle() {
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        // Native: open Google auth in SFSafariViewController / Chrome Custom Tab.
+        // Google blocks OAuth in embedded WebViews — must use system browser.
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: "com.azad.sayit://home",
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) return;
+        if (data?.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url });
+        }
+        return;
+      }
+    } catch { /* fall through to web flow */ }
+
+    // Web: standard redirect flow (preserves card code for new-user card preview)
     const pending = getPendingCard();
     const code = cardCode || pending?.code;
     const redirectTo = code ? `${location.origin}/preview/${code}` : `${location.origin}/home`;

@@ -24,7 +24,14 @@ export function OAuthCallbackHandler() {
           if (!url.startsWith("com.azad.sayit://")) return;
           await Browser.close().catch(() => {});
           const { error } = await supabase.auth.exchangeCodeForSession(url);
-          if (!error) router.replace("/home");
+          if (!error) {
+            // Small delay: lets async nativeStorage finish writing the session
+            // before the page reload triggers (app)/layout.tsx auth check.
+            await new Promise(r => setTimeout(r, 300));
+            // Full page reload instead of router.replace — ensures Supabase
+            // client re-reads fresh session from storage on cold mount.
+            window.location.href = "/home";
+          }
         });
         cleanup = () => handle.remove();
       } catch { /* not in a Capacitor context */ }
