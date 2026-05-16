@@ -1,0 +1,32 @@
+# Appium 2 capabilities for iOS
+# Values can be overridden by environment variables in .env
+platformName: iOS
+automationName: XCUITest
+
+# Device — override with IOS_DEVICE_NAME / IOS_PLATFORM_VERSION env vars
+deviceName: "iPhone 17 Pro"
+platformVersion: "26.4"
+
+# App — use bundleId if app is already installed, or app path for fresh install
+bundleId: "com.azad.sayit"
+# app: "/path/to/SayIt.app"   # uncomment to install fresh each run
+
+# WebView / Hybrid settings
+# SayIt is a Capacitor app — the main UI is a WKWebView.
+# Appium needs these to switch into the WebView context.
+# autoWebview: false           # we control context switching manually in tests
+# chromedriverExecutable: ""   # not needed for WKWebView
+
+# Performance
+newCommandTimeout: 120
+launchTimeout: 60000
+waitForQuiescence: false       # prevents Appium stalling on background animations
+
+# Reduce flakiness
+shouldUseSingletonTestManager: false
+
+# Native alert handling
+# Automatically dismiss iOS permission popups (notifications, contacts, etc.)
+# so they never block WebView interaction during tests.
+# Set to true to auto-accept instead (e.g. to pre-grant notification permission).
+autoDismissAlerts: true

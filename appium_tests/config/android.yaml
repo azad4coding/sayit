@@ -1,0 +1,26 @@
+# Appium 2 capabilities for Android
+platformName: Android
+automationName: UiAutomator2
+
+# Device — override with ANDROID_DEVICE_NAME / ANDROID_PLATFORM_VERSION env vars
+deviceName: "emulator-5554"
+platformVersion: "14"
+
+# App
+appPackage: "com.azad.sayit"
+appActivity: "com.azad.sayit.MainActivity"
+# app: "/path/to/app-debug.apk"   # uncomment to install fresh each run
+
+# WebView / Hybrid settings
+# SayIt uses a Capacitor WebView — Chromedriver bridges to it.
+# Appium auto-detects the correct chromedriver version.
+autoGrantPermissions: true        # auto-accept permissions dialogs
+chromedriverAutodownload: true
+
+# Performance
+newCommandTimeout: 120
+adbExecTimeout: 60000
+androidInstallTimeout: 120000
+
+# Reduce flakiness
+ignoreUnimportantViews: true
