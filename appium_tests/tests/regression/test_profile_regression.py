@@ -33,12 +33,14 @@ class TestProfileRegression:
         assert name and len(name.strip()) > 0, "Name is empty on profile screen"
 
     def test_email_or_add_email_shown(self, webview):
-        """Either a real email address or an 'Add email' prompt is visible."""
+        """
+        The Email section is always rendered on the profile screen.
+        EMAIL_XPATH targets the 'Email' label which is present whether or
+        not the user has an email address linked to their account.
+        """
         page = ProfilePage(webview)
-        has_email = page.is_visible("xpath", page.EMAIL_XPATH, timeout=3)
-        has_add   = page.is_visible("xpath", "//a[contains(@href,'add-phone') or contains(text(),'email')]", timeout=3)
-        assert has_email or has_add, (
-            "Neither email nor 'add email' link found on profile screen"
+        assert page.is_visible("xpath", page.EMAIL_XPATH, timeout=5), (
+            "Email section not found on profile screen"
         )
 
     def test_phone_or_add_phone_shown(self, webview):

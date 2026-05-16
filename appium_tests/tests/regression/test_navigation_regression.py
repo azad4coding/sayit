@@ -58,15 +58,12 @@ class TestNavigationRegression:
         assert header_visible, "Wishes screen header not found"
 
     def test_back_to_home_from_circle(self, webview):
-        """Back button on Circle page returns to Home."""
+        """Back arrow button in the Circle header navigates back to Home."""
         home = HomePage(webview)
         home.go_to_circle()
         circle = CirclePage(webview)
-        assert circle.is_loaded()
+        assert circle.is_loaded(), "Circle screen did not load"
 
-        # Tap the back arrow in the circle header
-        circle.tap(
-            AppiumBy.XPATH,
-            "//button[@style and .//svg]",   # the back-arrow button
-        )
-        assert home.is_loaded(timeout=10), "Did not return to Home after back button"
+        # Tap the back-arrow button (first button with style + SVG child in header)
+        circle.tap_back()
+        assert home.is_loaded(timeout=10), "Did not return to Home after tapping back arrow"

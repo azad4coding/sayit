@@ -20,6 +20,8 @@ class TestAuthRegression:
     def test_invalid_phone_shows_error(self, webview):
         """Entering fewer than 6 digits and tapping Send OTP shows an error."""
         page = LoginPage(webview)
+        if not page.is_on_login_screen():
+            pytest.skip("Already logged in — login screen required for this test")
         page.enter_phone("123")
         page.tap_send_otp()
         time.sleep(1)
@@ -33,6 +35,8 @@ class TestAuthRegression:
         Uses TEST_PHONE from .env.
         """
         page = LoginPage(webview)
+        if not page.is_on_login_screen():
+            pytest.skip("Already logged in — login screen required for this test")
         # Strip country code — the page prepends +91 by default
         digits = test_phone.lstrip("+").lstrip("91")
         page.enter_phone(digits)
