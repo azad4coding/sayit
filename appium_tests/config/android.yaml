@@ -22,5 +22,10 @@ newCommandTimeout: 120
 adbExecTimeout: 60000
 androidInstallTimeout: 120000
 
+# Preserve login state between test runs.
+# Remove (or set false) only when you want a fresh install/reset.
+noReset: true
+fullReset: false
+
 # Reduce flakiness
 ignoreUnimportantViews: true

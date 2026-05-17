@@ -25,6 +25,11 @@ waitForQuiescence: false       # prevents Appium stalling on background animatio
 # Reduce flakiness
 shouldUseSingletonTestManager: false
 
+# Preserve login state between test runs.
+# Remove (or set false) only when you want a fresh install/reset.
+noReset: true
+fullReset: false
+
 # Native alert handling
 # Automatically dismiss iOS permission popups (notifications, contacts, etc.)
 # so they never block WebView interaction during tests.

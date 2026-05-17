@@ -57,12 +57,13 @@ def driver(platform):
 
 
 @pytest.fixture(scope="session")
-def webview(driver):
+def webview(driver, platform):
     """
     Driver already switched into the Capacitor WebView.
     All CSS/XPath selectors in page objects target this context.
+    Platform is passed so iOS-specific alert dismissal is skipped on Android.
     """
-    ok = switch_to_webview(driver)
+    ok = switch_to_webview(driver, platform=platform)
     assert ok, "Could not find WebView context — is the app loaded?"
     yield driver
     # Don't switch back — session teardown handles cleanup

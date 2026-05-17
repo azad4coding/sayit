@@ -93,24 +93,30 @@ def dismiss_native_alerts(driver: webdriver.Remote) -> None:
         pass  # No alert present — that's fine
 
 
-def switch_to_webview(driver: webdriver.Remote) -> bool:
+def switch_to_webview(driver: webdriver.Remote, platform: str = "ios") -> bool:
     """
     Switch into the Capacitor WebView context.
     Returns True on success, False if no WebView found within timeout.
 
-    Dismisses any native iOS alerts (e.g. notification permission popup,
-    contacts permission popup) each loop iteration so they never block
-    the WebView from becoming available.
+    iOS:     dismisses native alert popups each loop iteration
+             (notifications, contacts). autoDismissAlerts capability also
+             handles these, but the explicit dismiss is a belt-and-suspenders
+             fallback for alerts that appear after session start.
+
+    Android: skips alert dismissal — autoGrantPermissions: true in
+             android.yaml handles permissions at the OS level, and
+             Android permission dialogs are not WebDriver alerts.
     """
     deadline = time.time() + WEBVIEW_TIMEOUT
     while time.time() < deadline:
-        # Always ensure we're in native context before dismissing alerts
-        try:
-            if driver.current_context != "NATIVE_APP":
-                driver.switch_to.context("NATIVE_APP")
-        except Exception:
-            pass
-        dismiss_native_alerts(driver)
+        if platform == "ios":
+            # Ensure we're in native context before attempting alert dismissal
+            try:
+                if driver.current_context != "NATIVE_APP":
+                    driver.switch_to.context("NATIVE_APP")
+            except Exception:
+                pass
+            dismiss_native_alerts(driver)
 
         contexts = driver.contexts
         webview = next(
